@@ -5,6 +5,7 @@ import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import javax.annotation.Nullable;
 import java.util.Map;
 
+@IFMLLoadingPlugin.SortingIndex(1540)
 public class CbtCoreMod implements IFMLLoadingPlugin {
 
     @Override
