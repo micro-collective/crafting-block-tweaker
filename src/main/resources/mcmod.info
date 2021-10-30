@@ -11,7 +11,7 @@
   "logoFile": "",
   "screenshots": [],
   "useDependencyInformation": true,
-  "dependencies": ["libnine"],
+  "dependencies": ["libnine", "jei"],
   "requiredMods": ["libnine@[1.2.1,)", "jei"]
 }
 ]
