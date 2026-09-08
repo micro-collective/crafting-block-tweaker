@@ -1,14 +1,16 @@
 itemGroup.cbtweaker=Crafting Block Tweaker
 
-item.cbtweaker:vis_tool.name=The Grand Design
+item.cbtweaker.vis_tool.name=The Grand Design
 
 cbtweaker.tooltip.enabled=Enabled
 cbtweaker.tooltip.disabled=Disabled
+cbtweaker.tooltip.empty=Empty
 cbtweaker.tooltip.idle=Idle...
-cbtweaker.tooltip.ticks=%,d ticks
+cbtweaker.tooltip.ticks=%,d tick(s)
+cbtweaker.tooltip.seconds=%,d seconds(s)
 cbtweaker.tooltip.buffer_group=Buffer Group: %s
 cbtweaker.tooltip.vis_tool=Visualizes multi-block structures
-cbtweaker.tooltip.bind_to_block=Sneak+RClick to bind to a block
+cbtweaker.tooltip.bind_to_block=Sneak+use to bind to a block
 
 cbtweaker.tooltip.configure_sides=Configure sides
 cbtweaker.tooltip.redstone_behaviour=Redstone Behaviour
@@ -33,5 +35,3 @@ cbtweaker.tooltip.vis_layer_down=Layer Down
 cbtweaker.gui.vis_tool.not_bound=Not bound to a multi-block controller!
 
 cbtweaker.jei.category.multiblock_structure=Multi-Block Structure
-
-cbtweaker.integration.mekanism.laser=Laser
