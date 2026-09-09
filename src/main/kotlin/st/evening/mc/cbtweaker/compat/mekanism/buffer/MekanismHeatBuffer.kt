@@ -295,8 +295,8 @@ class MekanismHeatBuffer(
                 dto.expectDouble("insulation_coeff") ?: 1.0,
                 dto.expectBool("spread_heat") ?: true,
                 dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
-                dto.useAny("bar_bg") { DrawableData.loadSliceOrBlank(it, 6, 36) } ?: CbtGuiData.ENERGY_BAR_BG,
-                dto.useAny("bar_fg") { DrawableData.loadSliceOrBlank(it, 4, 34) } ?: CbtGuiData.ENERGY_BAR_FG,
+                dto.useAny("bar_bg") { DrawableData.loadSliceOrBlank(it, 6, 36) } ?: CbtGuiData.MEKANISM_HEAT_BAR_BG,
+                dto.useAny("bar_fg") { DrawableData.loadSliceOrBlank(it, 4, 34) } ?: CbtGuiData.MEKANISM_HEAT_BAR_FG,
                 dto.expectInt("bar_offset_x") ?: 1,
                 dto.expectInt("bar_offset_y") ?: 1,
                 dto.useString("bar_orientation") { DrawOrientation.serializer.deserializeFromJson(it) }
