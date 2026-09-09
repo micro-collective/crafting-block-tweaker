@@ -15,6 +15,7 @@ import st.evening.mc.prelude.api.util.collection.forEachInline
 import st.evening.mc.prelude.api.util.collection.getOrPutNonNull
 import st.evening.mc.prelude.api.util.collection.minusAssign
 import st.evening.mc.prelude.api.util.collection.plusAssign
+import st.evening.mc.prelude.api.util.data.ThreadLocalProperty
 import java.util.IdentityHashMap
 import java.util.LinkedList
 
@@ -23,7 +24,7 @@ class RoiTracker(reg: ModRegistrar) {
         private const val ROI_CLEANUP_INTERVAL: Long = 5L * 60L * 1000L
     }
 
-    private val worldTable: Int2ObjectMap<WorldRoiData> = Int2ObjectOpenHashMap()
+    private val worldTable: Int2ObjectMap<WorldRoiData> by ThreadLocalProperty { Int2ObjectOpenHashMap() }
 
     init {
         reg.on<BlockStateChangedEvent> { event ->
