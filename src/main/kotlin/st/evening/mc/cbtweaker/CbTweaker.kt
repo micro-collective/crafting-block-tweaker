@@ -53,11 +53,13 @@ import st.evening.mc.cbtweaker.template.TemplateManager
 import st.evening.mc.cbtweaker.util.EventRegistry
 import st.evening.mc.cbtweaker.util.capability.CapabilityMerger
 import st.evening.mc.cbtweaker.world.RoiTracker
+import st.evening.mc.prelude.api.PreludeInternal
 import st.evening.mc.prelude.api.PreludeMod
 import st.evening.mc.prelude.api.config.json.JsonConfig
 import st.evening.mc.prelude.api.config.json.defaultInit
 import st.evening.mc.prelude.api.network.PacketType
 import st.evening.mc.prelude.api.newModLogger
+import st.evening.mc.prelude.api.registration.BlockRegistrar
 import st.evening.mc.prelude.api.registration.ContainerType
 import st.evening.mc.prelude.api.registration.ModRegistrar
 import st.evening.mc.prelude.api.registration.TileEntityType
@@ -205,6 +207,8 @@ class CbtDefinitions(reg: ModRegistrar) {
         by reg.s2cPacket(S2CBindMultiBlockAssembly.Serializer, S2CBindMultiBlockAssembly.Handler)
 
     init {
+        @OptIn(PreludeInternal::class)
+        reg.getState(BlockRegistrar.TARGET) // ensure the listeners are registered before the registry events are fired
         // we want this to run after pre-init but before proper block registration
         reg.on<RegistryEvent.Register<Block>>(priority = EventPriority.HIGHEST) {
             bufferTypes.init()
@@ -230,13 +234,13 @@ class CbtDefinitions(reg: ModRegistrar) {
             }
         }
         reg.on<RegistryEvent.Register<IRecipe>> {
-            templates.loadInit()
-            singleBlocks.loadAll()
-            multiBlocks.loadAll()
             recipeSets.loadRecipes()
         }
         reg.on<FMLInitializationEvent> {
             CapabilityMerger.init()
+            templates.loadInit()
+            singleBlocks.loadAll()
+            multiBlocks.loadAll()
         }
         onPhysicalClient {
             reg.on<RenderWorldLastEvent> { event ->
