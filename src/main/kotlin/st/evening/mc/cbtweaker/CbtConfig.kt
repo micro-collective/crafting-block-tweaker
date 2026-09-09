@@ -7,24 +7,24 @@ class CbtConfig(config: JsonConfig.ConfigObject) {
 
     class BuiltIns(config: JsonConfig.ConfigObject) {
         val loadBuiltInBuffers: Boolean by config.bool(
-            true, "Load built-in buffer types?", sync = false,
-            restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+            true, "Load built-in buffer types?",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
         )
         val loadBuiltInMachineBehaviours: Boolean by config.bool(
-            true, "Load built-in machine behaviours?", sync = false,
-            restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+            true, "Load built-in machine behaviours?",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
         )
         val loadBuiltInStructureBlockMatchers: Boolean by config.bool(
-            true, "Load built-in structure block matcher types?", sync = false,
-            restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+            true, "Load built-in structure block matcher types?",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
         )
         val loadBuiltInStructureMatchers: Boolean by config.bool(
-            true, "Load built-in structure matcher types?", sync = false,
-            restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+            true, "Load built-in structure matcher types?",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
         )
         val loadBuiltInWindowTemplates: Boolean by config.bool(
-            true, "Load built-in window config templates?", sync = false,
-            restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+            true, "Load built-in window config templates?",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
         )
     }
 
@@ -35,9 +35,22 @@ class CbtConfig(config: JsonConfig.ConfigObject) {
 
         class Mekanism(config: JsonConfig.ConfigObject) {
             val enabled: Boolean by config.bool(
-                true, "Enable Mekanism integration?", sync = false,
-                restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+                true, "Enable Mekanism integration?",
+                sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
             )
         }
+    }
+
+    val dataGen: DataGen by config.obj(factory = ::DataGen)
+
+    class DataGen(config: JsonConfig.ConfigObject) {
+        val resourceDir: String by config.string(
+            "resources", "Subdirectory of the game directory in which generated resources should be placed.",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+        )
+        val genBlockModels: Boolean by config.bool(
+            false, "Generate missing block models?",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+        )
     }
 }

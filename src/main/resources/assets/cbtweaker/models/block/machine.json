@@ -1,0 +1,8 @@
+{
+  "parent": "block/orientable",
+  "textures": {
+    "top": "cbtweaker:blocks/machine_side",
+    "front": "cbtweaker:blocks/machine_front",
+    "side": "cbtweaker:blocks/machine_side"
+  }
+}

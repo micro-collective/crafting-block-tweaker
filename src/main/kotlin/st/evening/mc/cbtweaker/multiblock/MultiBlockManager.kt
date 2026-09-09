@@ -4,6 +4,7 @@ import net.minecraft.util.ResourceLocation
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.common.BlockConfig
 import st.evening.mc.cbtweaker.gui.inventory.WindowConfig
+import st.evening.mc.cbtweaker.util.DataGenHelper
 import st.evening.mc.cbtweaker.util.forEachFile
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
@@ -29,15 +30,22 @@ class MultiBlockManager(private val specDir: Path, private val reg: ModRegistrar
     fun preloadAll() {
         CbTweaker.logger.info("Loading multi-block types...")
         try {
-            specDir.forEachFile { mbDir ->
+            specDir.forEachFile { specFile ->
                 try {
-                    if (!Files.isDirectory(mbDir)) return@forEachFile
-                    val specFile = mbDir.resolve("multiblock.tjson")
-                    if (!Files.isRegularFile(specFile)) {
-                        CbTweaker.logger.warn("Ignoring multi-block directory without a multiblock.tjson: {}", mbDir)
+                    if (!Files.isRegularFile(specFile)) return@forEachFile
+                    val specFileName = specFile.fileName.toString()
+                    if (!specFileName.endsWith(".tjson")) {
+                        CbTweaker.logger.warn(
+                            "Ignoring non-TJSON file in multi-block specification directory: {}",
+                            specFileName
+                        )
                         return@forEachFile
                     }
-                    val mbId = mbDir.fileName.toString()
+                    val mbId = specFileName.dropLast(6)
+                    if (mbId.isBlank()) {
+                        throw SerializationException("Empty multi-block ID!")
+                    }
+
                     val specDto = TypedJsonParser.parseObject(specFile.readText())
                     val mbType = JsonPath.atRoot {
                         MultiBlockType(
@@ -59,13 +67,32 @@ class MultiBlockManager(private val specDir: Path, private val reg: ModRegistrar
                     mbTypeTable[mbId] = mbType
                     CbTweaker.logger.debug("Loaded multi-block: {}", mbId)
                 } catch (e: Exception) {
-                    throw IllegalStateException("Failed to load multi-block specification: $mbDir", e)
+                    throw IllegalStateException("Failed to load multi-block specification: $specFile", e)
                 }
             }
         } catch (e: Exception) {
             throw IllegalStateException("Failed to load multi-block types!", e)
         }
         CbTweaker.logger.info("Finished loading multi-block specifications.")
+    }
+
+    fun dataGenBlockModels(resourceDir: Path) {
+        if (mbTypeTable.isEmpty()) return
+        val cbtDir = resourceDir.resolve("cbtweaker")
+        val blockStateDir = Files.createDirectories(cbtDir.resolve("blockstates"))
+        val itemModelDir = Files.createDirectories(cbtDir.resolve("models/item"))
+        mbTypeTable.keys.forEach { id ->
+            val bsFile = blockStateDir.resolve("mb_$id.json")
+            if (!Files.exists(bsFile)) {
+                CbTweaker.logger.info("Generating multi-block controller block state mapping: ${bsFile.fileName}")
+                DataGenHelper.writeToFile(bsFile, DataGenHelper.machineBlockState)
+            }
+            val imFile = itemModelDir.resolve("mb_$id.json")
+            if (!Files.exists(imFile)) {
+                CbTweaker.logger.info("Generating multi-block controller item model: ${imFile.fileName}")
+                DataGenHelper.writeToFile(imFile, DataGenHelper.machineItemModel)
+            }
+        }
     }
 
     fun loadAll() {

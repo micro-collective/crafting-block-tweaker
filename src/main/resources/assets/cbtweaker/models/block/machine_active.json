@@ -1,0 +1,6 @@
+{
+  "parent": "cbtweaker:machine",
+  "textures": {
+    "front": "cbtweaker:blocks/machine_front_active"
+  }
+}

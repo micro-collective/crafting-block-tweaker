@@ -5,6 +5,7 @@ import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.buffer.BufferType
 import st.evening.mc.cbtweaker.common.BlockConfig
 import st.evening.mc.cbtweaker.gui.inventory.WindowConfig
+import st.evening.mc.cbtweaker.util.DataGenHelper
 import st.evening.mc.cbtweaker.util.forEachFile
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
@@ -19,9 +20,10 @@ import st.evening.mc.prelude.api.data.tjson.useStringValue
 import st.evening.mc.prelude.api.registration.ModRegistrar
 import st.evening.mc.prelude.api.util.data.TypedJsonHelper
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.io.path.readText
 
-class HatchManager(private val specDir: java.nio.file.Path, private val reg: ModRegistrar) : Iterable<HatchType<*>> {
+class HatchManager(private val specDir: Path, private val reg: ModRegistrar) : Iterable<HatchType<*>> {
     private val hatchTypeTable: MutableMap<String, HatchType<*>> = mutableMapOf()
 
     operator fun get(id: String): HatchType<*>? = hatchTypeTable[id]
@@ -42,7 +44,7 @@ class HatchManager(private val specDir: java.nio.file.Path, private val reg: Mod
                         )
                         return@forEachFile
                     }
-                    val hatchId = specFileName.dropLast(5)
+                    val hatchId = specFileName.dropLast(6)
                     if (hatchId.isBlank()) {
                         throw SerializationException("Empty hatch ID!")
                     }
@@ -95,4 +97,39 @@ class HatchManager(private val specDir: java.nio.file.Path, private val reg: Mod
 
     private fun merge(archetype: TJson.Object?, instance: TJson.Object): TJson.Object =
         archetype?.let { TypedJsonHelper.merge(it, instance) } ?: instance
+
+    fun dataGenBlockModels(resourceDir: Path) {
+        if (hatchTypeTable.isEmpty()) return
+        val cbtDir = resourceDir.resolve("cbtweaker")
+        val blockStateDir = Files.createDirectories(cbtDir.resolve("blockstates"))
+        val itemModelDir = cbtDir.resolve("models/item")
+        hatchTypeTable.forEach { (id, hatchType) ->
+            val bsFile = blockStateDir.resolve("hatch_$id.json")
+            if (!Files.exists(bsFile)) {
+                CbTweaker.logger.info("Generating hatch block state mapping: ${bsFile.fileName}")
+                DataGenHelper.writeToFile(bsFile) {
+                    "forge_marker" number 1
+                    "variants" obj {
+                        "tier" obj {
+                            for (i in 0..<hatchType.tierCount) {
+                                i.toString() obj {
+                                    "model" string "cbtweaker:hatch_${i.coerceAtMost(3)}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            val hatchItemModelDir = Files.createDirectories(itemModelDir.resolve("hatch_$id"))
+            for (i in 0..<hatchType.tierCount) {
+                val tierFile = hatchItemModelDir.resolve("hatch_${id}_$i.json")
+                if (!Files.exists(tierFile)) {
+                    CbTweaker.logger.info("Generating hatch item model: ${tierFile.fileName}")
+                    DataGenHelper.writeToFile(tierFile) {
+                        "parent" string "cbtweaker:block/hatch_${i.coerceAtMost(3)}"
+                    }
+                }
+            }
+        }
+    }
 }

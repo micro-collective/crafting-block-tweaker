@@ -1,6 +1,7 @@
 package st.evening.mc.cbtweaker
 
 import net.minecraft.block.Block
+import net.minecraft.client.Minecraft
 import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.item.ItemStack
 import net.minecraft.item.crafting.IRecipe
@@ -214,6 +215,19 @@ class CbtDefinitions(reg: ModRegistrar) {
             hatches.loadAll()
             singleBlocks.preloadAll()
             multiBlocks.preloadAll()
+
+            onPhysicalClient {
+                if (CbTweaker.config.dataGen.genBlockModels) {
+                    val mcDir = Minecraft.getMinecraft().gameDir.toPath()
+                    val resourceDir = mcDir.resolve(CbTweaker.config.dataGen.resourceDir)
+                    if (!resourceDir.startsWith(mcDir)) {
+                        throw IllegalArgumentException("Resource directory must be in the game directory: $resourceDir")
+                    }
+                    hatches.dataGenBlockModels(resourceDir)
+                    singleBlocks.dataGenBlockModels(resourceDir)
+                    multiBlocks.dataGenBlockModels(resourceDir)
+                }
+            }
         }
         reg.on<RegistryEvent.Register<IRecipe>> {
             templates.loadInit()

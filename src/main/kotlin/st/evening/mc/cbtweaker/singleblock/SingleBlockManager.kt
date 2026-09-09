@@ -7,6 +7,7 @@ import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.buffer.BufferGroup
 import st.evening.mc.cbtweaker.common.BlockConfig
 import st.evening.mc.cbtweaker.gui.inventory.WindowConfig
+import st.evening.mc.cbtweaker.util.DataGenHelper
 import st.evening.mc.cbtweaker.util.forEachFile
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
@@ -33,15 +34,22 @@ class SingleBlockManager(private val specDir: Path, private val reg: ModRegistra
     fun preloadAll() {
         CbTweaker.logger.info("Loading single-block types...")
         try {
-            specDir.forEachFile { sbDir ->
+            specDir.forEachFile { specFile ->
                 try {
-                    if (!Files.isDirectory(sbDir)) return@forEachFile
-                    val specFile = sbDir.resolve("singleblock.tjson")
-                    if (!Files.isRegularFile(specFile)) {
-                        CbTweaker.logger.warn("Ignoring single-block directory without a singleblock.tjson: {}", sbDir)
+                    if (!Files.isRegularFile(specFile)) return@forEachFile
+                    val specFileName = specFile.fileName.toString()
+                    if (!specFileName.endsWith(".tjson")) {
+                        CbTweaker.logger.warn(
+                            "Ignoring non-TJSON file in single-block specification directory: {}",
+                            specFileName
+                        )
                         return@forEachFile
                     }
-                    val sbId = sbDir.fileName.toString()
+                    val sbId = specFileName.dropLast(6)
+                    if (sbId.isBlank()) {
+                        throw SerializationException("Empty single-block ID!")
+                    }
+
                     val specDto = TypedJsonParser.parseObject(specFile.readText())
                     val sbType = JsonPath.atRoot {
                         SingleBlockType(
@@ -79,13 +87,32 @@ class SingleBlockManager(private val specDir: Path, private val reg: ModRegistra
                     sbTypeTable[sbId] = sbType
                     CbTweaker.logger.debug("Loaded single-block: {}", sbId)
                 } catch (e: Exception) {
-                    throw IllegalStateException("Failed to load single-block specification: $sbDir", e)
+                    throw IllegalStateException("Failed to load single-block specification: $specFile", e)
                 }
             }
         } catch (e: Exception) {
             throw IllegalStateException("Failed to load single-block types!", e)
         }
         CbTweaker.logger.info("Finished loading single-block specifications.")
+    }
+
+    fun dataGenBlockModels(resourceDir: Path) {
+        if (sbTypeTable.isEmpty()) return
+        val cbtDir = resourceDir.resolve("cbtweaker")
+        val blockStateDir = Files.createDirectories(cbtDir.resolve("blockstates"))
+        val itemModelDir = Files.createDirectories(cbtDir.resolve("models/item"))
+        sbTypeTable.keys.forEach { id ->
+            val bsFile = blockStateDir.resolve("sb_$id.json")
+            if (!Files.exists(bsFile)) {
+                CbTweaker.logger.info("Generating single-block machine block state mapping: ${bsFile.fileName}")
+                DataGenHelper.writeToFile(bsFile, DataGenHelper.machineBlockState)
+            }
+            val imFile = itemModelDir.resolve("sb_$id.json")
+            if (!Files.exists(imFile)) {
+                CbTweaker.logger.info("Generating single-block machine item model: ${imFile.fileName}")
+                DataGenHelper.writeToFile(imFile, DataGenHelper.machineItemModel)
+            }
+        }
     }
 
     fun loadAll() {
