@@ -81,12 +81,8 @@ class FluidBuffer(
     storedFluid: FluidStack?,
     private val observer: BufferObserver?
 ) : IFluidTank, IFluidHandler, IFluidTankProperties, NbtCompoundSerializable {
-    companion object {
-        private const val SER_FLUID: String = "fluid"
-    }
-
-    val restrictedHandler: IFluidHandler = RatedFluidHandler(this, config.insertRate ?: -1, config.extractRate ?: -1)
     private val tankProps: Array<IFluidTankProperties> = arrayOf(this)
+    val restrictedHandler: IFluidHandler = RatedFluidHandler(this, config.insertRate ?: -1, config.extractRate ?: -1)
 
     private val tankState: ValueStateAtom<FluidStack?> = ValueStateAtom(storedFluid, FluidStackSerializer)
 
