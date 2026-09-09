@@ -335,7 +335,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
 
         init {
             val yawR = yaw * MathsHelper.D2R_F
-            this.panBasisX = Vec3d(MathHelper.sin(yawR).toDouble(), 0.0, MathHelper.cos(yawR).toDouble())
+            this.panBasisX = Vec3d(MathHelper.cos(yawR).toDouble(), 0.0, MathHelper.sin(yawR).toDouble())
             this.panBasisZ = Vec3d(panBasisX.z, 0.0, -panBasisX.x)
         }
 
