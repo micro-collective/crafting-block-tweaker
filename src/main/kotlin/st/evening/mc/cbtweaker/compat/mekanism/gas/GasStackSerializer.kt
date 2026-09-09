@@ -4,6 +4,7 @@ import mekanism.api.gas.GasRegistry
 import mekanism.api.gas.GasStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
+import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
 import st.evening.mc.prelude.api.data.ser.FullSerializer
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
@@ -11,7 +12,9 @@ import st.evening.mc.prelude.api.data.tjson.TJsonDsl
 import st.evening.mc.prelude.api.data.tjson.expectIntValue
 import st.evening.mc.prelude.api.data.tjson.useStringValue
 import st.evening.mc.prelude.api.util.data.readString
+import st.evening.mc.prelude.api.util.game.RequireMod
 
+@RequireMod(MekanismCompat.MOD_ID)
 object GasStackSerializer : FullSerializer<GasStack?, NBTTagCompound, TJson.Object> {
     private const val SER_GAS: String = "gas"
     private const val SER_AMOUNT: String = "amount"

@@ -7,7 +7,9 @@ import mekanism.api.gas.IGasHandler
 import mekanism.api.lasers.ILaserReceptor
 import net.minecraft.util.EnumFacing
 import st.evening.mc.cbtweaker.compat.mekanism.gas.drawFiltered
+import st.evening.mc.prelude.api.util.game.RequireMod
 
+@RequireMod(MekanismCompat.MOD_ID)
 class ConcatGasHandler(private val handlers: List<IGasHandler>) : IGasHandler {
     private val tankInfoArray: Array<GasTankInfo>
 
@@ -73,6 +75,7 @@ class ConcatGasHandler(private val handlers: List<IGasHandler>) : IGasHandler {
     override fun canDrawGas(face: EnumFacing?, gas: Gas): Boolean = handlers.any { it.canDrawGas(face, gas) }
 }
 
+@RequireMod(MekanismCompat.MOD_ID)
 class ConcatLaserReceptor(private val receptors: List<ILaserReceptor>) : ILaserReceptor {
     override fun receiveLaserEnergy(amount: Double, face: EnumFacing?) {
         val portion = amount / receptors.size

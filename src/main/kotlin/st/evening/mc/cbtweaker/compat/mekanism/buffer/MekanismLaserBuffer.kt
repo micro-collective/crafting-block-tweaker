@@ -17,6 +17,7 @@ import st.evening.mc.cbtweaker.buffer.ingredient.IngredientMatcher
 import st.evening.mc.cbtweaker.buffer.ingredient.IngredientMatcherType
 import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
 import st.evening.mc.cbtweaker.compat.jei.ui.JeiUiElement
+import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
 import st.evening.mc.cbtweaker.compat.mekanism.jei.JeiMekanismJoulesIngredient
 import st.evening.mc.cbtweaker.gui.CbtGuiData
 import st.evening.mc.cbtweaker.gui.element.BarControl
@@ -46,10 +47,12 @@ import st.evening.mc.prelude.api.resource
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.CapabilityVisitor
 import st.evening.mc.prelude.api.util.game.ClientSide
+import st.evening.mc.prelude.api.util.game.RequireMod
 import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.render.gui.DrawOrientation
 
+@RequireMod(MekanismCompat.MOD_ID)
 class MekanismLaserBuffer(
     val config: Config,
     val world: World,

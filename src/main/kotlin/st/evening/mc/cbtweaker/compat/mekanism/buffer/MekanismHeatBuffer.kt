@@ -19,6 +19,7 @@ import st.evening.mc.cbtweaker.buffer.ingredient.IngredientProvider
 import st.evening.mc.cbtweaker.buffer.ingredient.IngredientProviderType
 import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
 import st.evening.mc.cbtweaker.compat.jei.ui.JeiUiElement
+import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
 import st.evening.mc.cbtweaker.compat.mekanism.gui.HeatBarControl
 import st.evening.mc.cbtweaker.compat.mekanism.jei.JeiMekanismHeatIngredient
 import st.evening.mc.cbtweaker.compat.mekanism.jei.JeiMekanismTemperatureIngredient
@@ -50,11 +51,13 @@ import st.evening.mc.prelude.api.resource
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.CapabilityVisitor
 import st.evening.mc.prelude.api.util.game.ClientSide
+import st.evening.mc.prelude.api.util.game.RequireMod
 import st.evening.mc.prelude.api.util.math.DoubleArithmetic
 import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.render.gui.DrawOrientation
 
+@RequireMod(MekanismCompat.MOD_ID)
 class MekanismHeatBuffer(
     val config: Config,
     private val world: World,

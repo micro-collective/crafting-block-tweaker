@@ -5,7 +5,10 @@ import mekanism.api.gas.GasStack
 import mekanism.api.gas.GasTankInfo
 import mekanism.api.gas.IGasHandler
 import net.minecraft.util.EnumFacing
+import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
+import st.evening.mc.prelude.api.util.game.RequireMod
 
+@RequireMod(MekanismCompat.MOD_ID)
 interface SingleGasTank : GasTankInfo, IGasHandler {
     val gasType: Gas?
 

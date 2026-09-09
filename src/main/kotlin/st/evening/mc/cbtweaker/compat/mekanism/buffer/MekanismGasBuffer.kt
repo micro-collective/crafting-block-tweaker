@@ -28,6 +28,7 @@ import st.evening.mc.cbtweaker.buffer.ingredient.IngredientProvider
 import st.evening.mc.cbtweaker.buffer.ingredient.IngredientProviderType
 import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
 import st.evening.mc.cbtweaker.compat.jei.ui.JeiUiElement
+import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
 import st.evening.mc.cbtweaker.compat.mekanism.gas.GasHelper
 import st.evening.mc.cbtweaker.compat.mekanism.gas.GasStackSerializer
 import st.evening.mc.cbtweaker.compat.mekanism.gas.RatedGasTank
@@ -65,12 +66,14 @@ import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
 import st.evening.mc.prelude.api.resource
 import st.evening.mc.prelude.api.util.game.CapabilityVisitor
 import st.evening.mc.prelude.api.util.game.ClientSide
+import st.evening.mc.prelude.api.util.game.RequireMod
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
 
+@RequireMod(MekanismCompat.MOD_ID)
 class MekanismGasBuffer(
     private val config: Config,
     val world: World,

@@ -4,7 +4,10 @@ import mekanism.api.gas.Gas
 import mekanism.api.gas.GasStack
 import mekanism.api.gas.GasTankInfo
 import net.minecraft.util.EnumFacing
+import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
+import st.evening.mc.prelude.api.util.game.RequireMod
 
+@RequireMod(MekanismCompat.MOD_ID)
 class RatedGasTank(
     private val delegate: SingleGasTank,
     private val inputRate: Int = -1,

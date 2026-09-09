@@ -51,7 +51,7 @@ object MekanismCompat {
                 }
             }
         }
-        CapabilityMerger.registerMerger(Capabilities.GAS_HANDLER_CAPABILITY, ::ConcatGasHandler)
-        CapabilityMerger.registerMerger(Capabilities.LASER_RECEPTOR_CAPABILITY, ::ConcatLaserReceptor)
+        CapabilityMerger.registerMerger(Capabilities.GAS_HANDLER_CAPABILITY) { ConcatGasHandler(it) }
+        CapabilityMerger.registerMerger(Capabilities.LASER_RECEPTOR_CAPABILITY) { ConcatLaserReceptor(it) }
     }
 }
