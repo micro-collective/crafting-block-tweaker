@@ -88,9 +88,10 @@ class CbtDefinitions(reg: ModRegistrar) {
     // REGISTRIES ======================================================================================================
 
     val bufferTypes: BufferTypeRegistry = BufferTypeRegistry()
-    val machineBehaviours: EventRegistry<MachineBehaviour<*>> = EventRegistry("machine behaviour")
-    val structureBlockMatchers: EventRegistry<StructureBlockMatcherType> = EventRegistry("structure block matcher")
-    val structureMatchers: EventRegistry<StructureMatcherType> = EventRegistry("structure matcher")
+    val machineBehaviours: EventRegistry.Simple<MachineBehaviour<*>> = EventRegistry.Simple("machine behaviour")
+    val structureBlockMatchers: EventRegistry.Simple<StructureBlockMatcherType> =
+        EventRegistry.Simple("structure block matcher")
+    val structureMatchers: EventRegistry.Simple<StructureMatcherType> = EventRegistry.Simple("structure matcher")
 
     init {
         val builtInsConfig = CbTweaker.config.builtIns
@@ -206,6 +207,7 @@ class CbtDefinitions(reg: ModRegistrar) {
         // we want this to run after pre-init but before proper block registration
         reg.on<RegistryEvent.Register<Block>>(priority = EventPriority.HIGHEST) {
             bufferTypes.init()
+            machineBehaviours.init()
             structureBlockMatchers.init()
             structureMatchers.init()
             templates.loadPreInit()

@@ -9,19 +9,16 @@ interface Identifiable {
     val id: ResourceLocation
 }
 
-open class EventRegistry<T : Identifiable>(private val objType: Class<T>, private val objName: String) {
-    companion object {
-        inline operator fun <reified T : Identifiable> invoke(objName: String): EventRegistry<T> =
-            EventRegistry(T::class.java, objName)
-    }
-
-    protected val entries: MutableMap<ResourceLocation, T> = mutableMapOf()
+abstract class EventRegistry<T : Identifiable, E>(private val objType: Class<T>, private val objName: String) {
+    protected val entries: MutableMap<ResourceLocation, E> = mutableMapOf()
 
     internal open fun init() {
         CbTweaker.logger.info("Loading $objName registry...")
         MinecraftForge.EVENT_BUS.post(CbtRegistrationEvent(objType, ::registerObject))
         CbTweaker.logger.info("Loaded ${entries.size} $objName entries")
     }
+
+    protected abstract fun createEntry(obj: T): E
 
     private fun registerObject(obj: T) {
         val objId = obj.id
@@ -31,9 +28,19 @@ open class EventRegistry<T : Identifiable>(private val objType: Class<T>, privat
                     "existing: ${it.javaClass.canonicalName}, new: ${obj.javaClass.canonicalName}"
             )
         }
-        entries[objId] = obj
+        entries[objId] = createEntry(obj)
         CbTweaker.logger.debug("Registered $objName {} ({})", objId, obj.javaClass.getCanonicalName())
     }
 
-    operator fun get(key: ResourceLocation): T? = entries[key]
+    operator fun get(key: ResourceLocation): E? = entries[key]
+
+    class Simple<T : Identifiable>(objType: Class<T>, objName: String) :
+        EventRegistry<T, T>(objType, objName) {
+        companion object {
+            inline operator fun <reified T : Identifiable> invoke(objName: String): Simple<T> =
+                Simple(T::class.java, objName)
+        }
+
+        override fun createEntry(obj: T): T = obj
+    }
 }

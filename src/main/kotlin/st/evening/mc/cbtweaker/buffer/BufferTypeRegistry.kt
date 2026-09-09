@@ -9,14 +9,19 @@ import st.evening.mc.cbtweaker.event.CbtIngredientHandlerRegistrationEvent
 import st.evening.mc.cbtweaker.util.EventRegistry
 import st.evening.mc.cbtweaker.util.Identifiable
 
-class BufferTypeRegistry : EventRegistry<BufferTypeRegistry.Entry<*, *, *, *>>(Entry::class.java, "buffer type") {
+class BufferTypeRegistry :
+    EventRegistry<BufferType<*, *, *, *>, BufferTypeRegistry.Entry<*, *, *, *>>(BufferType::class.java, "buffer type") {
+
     override fun init() {
+        super.init()
         CbTweaker.logger.info("Loading ingredient matchers...")
         entries.values.forEach {
             it.initMatcherTypes()
         }
         CbTweaker.logger.info("Loaded ingredient matchers")
     }
+
+    override fun createEntry(obj: BufferType<*, *, *, *>): Entry<*, *, *, *> = Entry(obj)
 
     class Entry<B, A, JB, JA>(val bufferType: BufferType<B, A, JB, JA>) : Identifiable {
         private val matcherTypeTable: MutableMap<ResourceLocation, IngredientMatcherType<A, JA>> = mutableMapOf()
