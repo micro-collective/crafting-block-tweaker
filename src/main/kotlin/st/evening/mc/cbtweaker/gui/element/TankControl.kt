@@ -105,7 +105,9 @@ abstract class TankControl<T, C>(
         }
 
         override fun onMouseClick(context: GuiContext, mouseX: Int, mouseY: Int, mouseButton: Int): ClickResult {
-            if (!interactive || (mouseButton != 0 && mouseButton != 1)) return ClickResult.Ignore
+            if (!interactive || (mouseButton != 0 && mouseButton != 1) || !containsPoint(mouseX, mouseY)) {
+                return ClickResult.Ignore
+            }
             val mc = context.gui.mc
             if (mc.player.inventory.itemStack.isEmpty) return ClickResult.Ignore
             CbTweaker.defns.c2sInteractTankTransfer.sendToServer(

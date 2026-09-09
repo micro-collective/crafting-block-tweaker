@@ -51,7 +51,7 @@ class HatchAutoExportControl(private val exportHandler: AutoExportHandler<*>) : 
         }
 
         override fun onMouseClick(context: GuiContext, mouseX: Int, mouseY: Int, mouseButton: Int): ClickResult {
-            if (mouseButton != 0 && mouseButton != 1) return ClickResult.Ignore
+            if ((mouseButton != 0 && mouseButton != 1) || !containsPoint(mouseX, mouseY)) return ClickResult.Ignore
             CbTweaker.defns.c2sSetHatchAutoExporting.sendToServer(
                 C2SSetHatchAutoExporting(context.assertWindowId(), !exportHandler.autoExporting)
             )

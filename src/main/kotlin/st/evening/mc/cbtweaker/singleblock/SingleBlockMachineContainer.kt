@@ -83,4 +83,9 @@ class SingleBlockMachineGui(container: SingleBlockMachineContainer) :
             addChild(x - 13, y, RedstoneBehaviourControl(it))
         }
     }
+
+    override fun isPointInRegion( // only used to check whether the mouse is over a slot or not
+        rectX: Int, rectY: Int, rectWidth: Int, rectHeight: Int, pointX: Int, pointY: Int
+    ): Boolean = !container.ioConfigState.booleanValue() &&
+        super.isPointInRegion(rectX, rectY, rectWidth, rectHeight, pointX, pointY)
 }

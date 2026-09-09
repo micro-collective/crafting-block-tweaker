@@ -52,6 +52,7 @@ class RedstoneBehaviourControl(private val rsHandler: RedstoneControlHandler) : 
         }
 
         override fun onMouseClick(context: GuiContext, mouseX: Int, mouseY: Int, mouseButton: Int): ClickResult {
+            if (!containsPoint(mouseX, mouseY)) return ClickResult.Ignore
             when (mouseButton) {
                 0 -> {
                     CbTweaker.defns.c2sSetRedstoneBehaviour.sendToServer(

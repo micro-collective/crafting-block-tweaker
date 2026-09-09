@@ -62,7 +62,7 @@ class IoConfigModeControl(private val configState: MutableBoolean) : AbstractGui
         }
 
         override fun onMouseClick(context: GuiContext, mouseX: Int, mouseY: Int, mouseButton: Int): ClickResult {
-            if (mouseButton != 0 && mouseButton != 1) return ClickResult.Ignore
+            if ((mouseButton != 0 && mouseButton != 1) || !containsPoint(mouseX, mouseY)) return ClickResult.Ignore
             configState.value = !configState.booleanValue()
             context.gui.mc.soundHandler.playSound(
                 PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F)
@@ -97,7 +97,8 @@ abstract class IoConfigControl(
 
         private fun computeConfigX(): Int = part.posX + (part.width - CbtGuiResources.SIDE_CONFIG.width) / 2
 
-        private fun computeConfigY(): Int = part.posY + (part.height - CbtGuiResources.SIDE_CONFIG.height) / 2
+        // the icon is a square but the sprite sheet is a tall rectangle, so use width here
+        private fun computeConfigY(): Int = part.posY + (part.height - CbtGuiResources.SIDE_CONFIG.width) / 2
 
         override fun setPosition(context: GuiContext, x: Int, y: Int, clipBox: Rect2i?) {
             part.setPosition(context, x, y, clipBox)
@@ -105,14 +106,15 @@ abstract class IoConfigControl(
             configY = computeConfigY()
         }
 
-        override fun drawOverlay(context: GuiContext, partialTicks: Float, mouseY: Int, mouseX: Int) {
-            part.drawOverlay(context, partialTicks, mouseY, mouseX)
+        override fun drawOverlay(context: GuiContext, partialTicks: Float, mouseX: Int, mouseY: Int) {
+            part.drawOverlay(context, partialTicks, mouseX, mouseY)
             if (!configState.booleanValue()) return
             RenderingHelper.pushMatrix {
                 GlStateManager.translate(0F, 0F, 800F)
                 GlStateManager.disableTexture2D()
+                GlStateManager.enableBlend()
                 GlStateManager.color(0F, 0F, 0F, 0.5F)
-                GuiRenderHelper.drawUntexturedQuad(part.posX, part.posY, part.width, part.height)
+                GuiRenderHelper.drawUntexturedSizedQuad(part.posX, part.posY, part.width, part.height)
                 RenderingHelper.resetColour()
                 GlStateManager.enableTexture2D()
                 drawConfig(partialTicks)

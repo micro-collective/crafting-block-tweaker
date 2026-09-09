@@ -24,7 +24,7 @@ open class CbtCustomContainerGui<C : CbtCustomContainer>(container: C) : PrefabE
         val playerRegion = container.windowConfig.playerInvRegion
         addChild(playerRegion.posX, playerRegion.posY, TableLayout(4, 9, playerRegion.width, playerRegion.height)) {
             configure {
-                configureRow(3, startPadding = 4)
+                configureRow(3, flex = 1F, startPadding = 4)
             }
             for (row in 0..<3) {
                 for (col in 0..<9) {
