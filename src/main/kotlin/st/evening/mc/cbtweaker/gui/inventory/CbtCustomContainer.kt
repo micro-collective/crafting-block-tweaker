@@ -34,7 +34,7 @@ abstract class CbtCustomContainer(
         get() = (syncProxy ?: throw IllegalStateException("Sync proxy not initialized!")).syncManager
 
     override val weakValidity: WeakValidity
-        get() = WeakValidity.WEAK_VALID
+        get() = syncProxy?.weakValidity ?: WeakValidity.INVALID
 
     init {
         for (i in 0..<playerInv.sizeInventory) {
@@ -96,6 +96,16 @@ abstract class CbtCustomContainer(
         }
     }
 
+    override fun onContainerClosed(player: EntityPlayer) {
+        syncProxy?.let {
+            onServer {
+                if (it.listeningPlayers.remove(player) && it.listeningPlayers.isEmpty()) {
+                    it.weakValidity = WeakValidity.INVALID
+                }
+            }
+        }
+    }
+
     @ServerSide
     override fun <M> dispatchSync(packetType: PacketType.S2C<M>, message: M) {
         syncProxy?.dispatchSync(packetType, message)
@@ -105,10 +115,9 @@ abstract class CbtCustomContainer(
         @ServerSide
         val listeningPlayers: MutableList<EntityPlayerMP> = mutableListOf()
 
-        override val syncManager: SyncManager = SyncManager.create(this, ListStateComposite.fromStates(syncState))
+        override var weakValidity: WeakValidity = WeakValidity.WEAK_VALID
 
-        override val weakValidity: WeakValidity
-            get() = WeakValidity.WEAK_VALID
+        override val syncManager: SyncManager = SyncManager.create(this, ListStateComposite.fromStates(syncState))
 
         @ServerSide
         override fun <M> dispatchSync(packetType: PacketType.S2C<M>, message: M) {
