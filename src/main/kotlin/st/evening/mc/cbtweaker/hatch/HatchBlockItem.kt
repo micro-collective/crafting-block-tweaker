@@ -4,7 +4,6 @@ import net.minecraft.client.renderer.block.model.ModelResourceLocation
 import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
 import net.minecraftforge.client.model.ModelLoader
-import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.prelude.api.item.CustomModelItem
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.mapPath
@@ -12,7 +11,6 @@ import st.evening.mc.prelude.api.util.game.mapPath
 class HatchBlockItem(private val hatchBlock: HatchBlock) : ItemBlock(hatchBlock), CustomModelItem {
     init {
         setHasSubtypes(true)
-        creativeTab = CbTweaker.defns.creativeTab
     }
 
     override fun getMetadata(damage: Int): Int = damage

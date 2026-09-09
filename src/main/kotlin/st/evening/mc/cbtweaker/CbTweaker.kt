@@ -183,7 +183,11 @@ class CbtDefinitions(reg: ModRegistrar) {
     val tileEntityMultiBlockController: TileEntityType<MultiBlockControllerTileEntity> by reg.tileEntity("mb_ctrl")
 
     val creativeTab: CreativeTabs = reg.creativeTab { ItemStack(itemVisualizationTool) }
-    val itemVisualizationTool: VisualizationToolItem by reg.item("vis_tool", ::VisualizationToolItem)
+    val itemVisualizationTool: VisualizationToolItem by reg.item("vis_tool") {
+        VisualizationToolItem().also {
+            it.creativeTab = creativeTab
+        }
+    }
 
     val containerHatch: ContainerType by reg.container(HatchContainer.Factory)
     val containerSingleBlockMachine: ContainerType by reg.container(SingleBlockMachineContainer.Factory)

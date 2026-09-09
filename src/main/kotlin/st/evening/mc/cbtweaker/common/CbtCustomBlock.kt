@@ -3,6 +3,7 @@ package st.evening.mc.cbtweaker.common
 import net.minecraft.block.Block
 import net.minecraft.block.SoundType
 import net.minecraft.block.material.Material
+import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.util.BlockConfigData
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
@@ -64,6 +65,7 @@ abstract class CbtCustomBlock(material: Material) : Block(material) {
         config.harvestLevel.forEach { (toolClass, harvestLevel) ->
             setHarvestLevel(toolClass, harvestLevel)
         }
+        creativeTab = CbTweaker.defns.creativeTab
     }
 
     // TODO wrench disassembly support might be useful
