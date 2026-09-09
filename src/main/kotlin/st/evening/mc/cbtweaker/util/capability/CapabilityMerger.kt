@@ -19,7 +19,7 @@ fun interface CapabilityMerger<T : Any> {
         private val mergerTable: MutableMap<Capability<*>, CapabilityMerger<*>> = IdentityHashMap()
         private val warned: MutableSet<Capability<*>> = ObjectOpenCustomHashSet(IdentityHashStrategy())
 
-        init {
+        internal fun init() {
             registerMerger(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, ConcatItemHandler::wrapMaybeModifiable)
             registerMerger(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, ::FluidHandlerConcatenate)
             registerMerger(CapabilityEnergy.ENERGY, ::ConcatEnergyStorage)

@@ -1,6 +1,7 @@
 package st.evening.mc.cbtweaker.compat.mekanism
 
 import mekanism.common.capabilities.Capabilities
+import net.minecraftforge.fml.common.event.FMLInitializationEvent
 import st.evening.mc.cbtweaker.buffer.BufferType
 import st.evening.mc.cbtweaker.compat.mekanism.buffer.MekanismGasBuffer
 import st.evening.mc.cbtweaker.compat.mekanism.buffer.MekanismHeatBuffer
@@ -51,7 +52,9 @@ object MekanismCompat {
                 }
             }
         }
-        CapabilityMerger.registerMerger(Capabilities.GAS_HANDLER_CAPABILITY) { ConcatGasHandler(it) }
-        CapabilityMerger.registerMerger(Capabilities.LASER_RECEPTOR_CAPABILITY) { ConcatLaserReceptor(it) }
+        reg.on<FMLInitializationEvent> {
+            CapabilityMerger.registerMerger(Capabilities.GAS_HANDLER_CAPABILITY) { ConcatGasHandler(it) }
+            CapabilityMerger.registerMerger(Capabilities.LASER_RECEPTOR_CAPABILITY) { ConcatLaserReceptor(it) }
+        }
     }
 }

@@ -7,6 +7,7 @@ import net.minecraft.item.crafting.IRecipe
 import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.common.Loader
+import net.minecraftforge.fml.common.event.FMLInitializationEvent
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import org.apache.logging.log4j.Logger
 import st.evening.mc.cbtweaker.behaviour.MachineBehaviour
@@ -49,6 +50,7 @@ import st.evening.mc.cbtweaker.structure.impl.LinearStructureMatcher
 import st.evening.mc.cbtweaker.structure.impl.SimpleStructureMatcher
 import st.evening.mc.cbtweaker.template.TemplateManager
 import st.evening.mc.cbtweaker.util.EventRegistry
+import st.evening.mc.cbtweaker.util.capability.CapabilityMerger
 import st.evening.mc.cbtweaker.world.RoiTracker
 import st.evening.mc.prelude.api.PreludeMod
 import st.evening.mc.prelude.api.config.json.JsonConfig
@@ -216,6 +218,9 @@ class CbtDefinitions(reg: ModRegistrar) {
             singleBlocks.loadAll()
             multiBlocks.loadAll()
             recipeSets.loadRecipes()
+        }
+        reg.on<FMLInitializationEvent> {
+            CapabilityMerger.init()
         }
         onPhysicalClient {
             reg.on<RenderWorldLastEvent> { event ->
