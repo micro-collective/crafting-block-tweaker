@@ -76,7 +76,7 @@ data class ClientVisualizationState(
             val mbType = ctrlBlock.mbType
             if (state != null && state.mbType == mbType) {
                 currentState = state.copy(
-                    visToolStack = stack,
+                    visToolStack = stack.copy(),
                     hand = hand,
                     ctrlPos = ctrlPos,
                     ctrlFront = ctrlState.getValue(BlockSidedIfc.PROP_FACING)
@@ -87,7 +87,7 @@ data class ClientVisualizationState(
             val visRenderer = VisualizationRenderer(mbType.structureMatcher)
             visRenderer.level = VisualizationToolItem.getLevel(stack)
             currentState = ClientVisualizationState(
-                stack,
+                stack.copy(),
                 hand,
                 mbType,
                 ctrlPos,
