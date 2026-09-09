@@ -53,7 +53,7 @@ class RedstoneControlHandler(private var redstoneState: Boolean) : Piecewise.Ato
     }
 
     fun readFromNbt(strValue: String) {
-        redstoneBehaviour = RedstoneBehaviour.serializer.deserializeFromNbt(strValue)
+        redstoneBehaviour = RedstoneBehaviour.serializer.deserializeFromNbt(strValue) ?: RedstoneBehaviour.ACTIVE_LOW
         syncObservers.onObservableUpdate()
     }
 
