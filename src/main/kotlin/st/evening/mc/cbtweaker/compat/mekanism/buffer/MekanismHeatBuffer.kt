@@ -462,7 +462,7 @@ class MekanismHeatBuffer(
         override fun populateJei(acc: JeiAccumulator): Boolean = acc.addIngredient(jeiIngredient)
 
         object Type : IngredientProviderType<Accumulator, JeiAccumulator> {
-            override val id: ResourceLocation = CbTweaker.resource("heat_rate")
+            override val id: ResourceLocation = CbTweaker.resource("heat")
 
             context(_: JsonPath)
             override fun loadProvider(dto: TJson.Object): HeatProvider = HeatProvider(dto.expectDoubleValue("amount"))
