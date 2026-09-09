@@ -278,6 +278,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         }
 
         fun tick(ticker: TickModulator) {
+            if (world.isRemote) return
             doWork(ticker)
             if (stateDirty) {
                 stateDirty = false
@@ -286,9 +287,8 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         }
 
         private fun doWork(ticker: TickModulator) {
-            if (!rsHandler.canWork()) return
+            if (!rsHandler.canWork() || !ticker.tick()) return
             val job = currentRecipe ?: tryFindAndStartRecipe(ticker) ?: return
-            if (!ticker.tick()) return
             val recipe = job.recipe
             val outputs = recipe.outputTable
             if (job.workDone < job.workNeeded) {
@@ -320,6 +320,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
         private fun tryFindAndStartRecipe(ticker: TickModulator): RunningRecipe? {
             if (!recipeDirty) return null
+            recipeDirty = false
             val consumeFactors = modState.consumeFactors
             cachedRecipe?.let {
                 if (it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)) {
@@ -330,7 +331,11 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             }
             val recipe = recipeDb.recipes.values.firstOrNull {
                 it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)
-            } ?: return null
+            }
+            if (recipe == null) {
+                ticker.increaseIntervalUntil(8, 60)
+                return null
+            }
             cachedRecipe = recipe
             ticker.interval = 1
             return startRecipe(recipe)
