@@ -45,7 +45,6 @@ import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
 import st.evening.mc.prelude.api.data.tjson.expectInt
-import st.evening.mc.prelude.api.data.tjson.expectIntValue
 import st.evening.mc.prelude.api.data.tjson.expectStringValue
 import st.evening.mc.prelude.api.data.tjson.useAny
 import st.evening.mc.prelude.api.data.tjson.useString
@@ -403,7 +402,7 @@ class ItemStackBuffer private constructor(
         context(_: JsonPath)
         override fun loadBufferFactory(dto: TJson.Object): BufferFactory<ItemStackBuffer, JeiBuffer> {
             val config = Config(
-                dto.expectIntValue("slots"),
+                dto.expectInt("slots") ?: 1,
                 dto.expectInt("stack_size") ?: 64,
                 dto.expectBool("allow_insert") ?: true,
                 dto.expectBool("allow_extract") ?: true,
