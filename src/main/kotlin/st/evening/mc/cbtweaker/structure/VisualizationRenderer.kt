@@ -301,11 +301,21 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
         }
 
         fun incrementLevel() {
-            level = level?.let { if (it >= maxLevel) null else (it + 1) } ?: minLevel
+            val currentLevel = level
+            level = when {
+                currentLevel == null -> minLevel
+                currentLevel >= maxLevel -> null
+                else -> currentLevel + 1
+            }
         }
 
         fun decrementLevel() {
-            level = level?.let { if (it <= minLevel) null else (it - 1) } ?: maxLevel
+            val currentLevel = level
+            level = when {
+                currentLevel == null -> maxLevel
+                currentLevel <= minLevel -> null
+                else -> currentLevel - 1
+            }
         }
 
         override fun getBlockState(pos: BlockPos): IBlockState =
