@@ -29,6 +29,9 @@ class MultiBlockControllerTileEntity : LazyTileEntity<MultiBlockData<*>>(), Mach
     val assembled: Boolean
         get() = data.assembled
 
+    val assemblyStateClock: Int
+        get() = data.assemblyStateClock
+
     override val isActive: Boolean
         get() = data.isActive
 

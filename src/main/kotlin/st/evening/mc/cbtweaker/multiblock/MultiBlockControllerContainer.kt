@@ -28,7 +28,10 @@ class MultiBlockControllerContainer(
     listOfNotNull(machine.rsHandler),
     listOfNotNull(machine.createMachineUiElement())
 ), MachineContainer {
-    override fun canInteractWith(player: EntityPlayer): Boolean = machine.isInInteractionRange(player)
+    private val expectedStateClock: Int = machine.assemblyStateClock
+
+    override fun canInteractWith(player: EntityPlayer): Boolean =
+        machine.assemblyStateClock == expectedStateClock && machine.isInInteractionRange(player)
 
     override fun getTranslationKey(): String = machine.mbType.translationKey
 

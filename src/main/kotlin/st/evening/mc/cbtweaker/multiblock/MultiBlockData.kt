@@ -30,6 +30,8 @@ class MultiBlockData<S>(
     private var assembly: MultiBlockAssembly<S>? = null
     private var bufferedAssemblyDeser: NBTTagCompound? = null
     private var bufferedAssemblyBind: BindData? = null
+    var assemblyStateClock: Int = 0
+        private set
     private var structDirty: Boolean = false
 
     private var refreshState: RefreshState = RefreshState.NONE
@@ -58,6 +60,7 @@ class MultiBlockData<S>(
                         it.handleDestruction(mbCtrl.world.getBlockState(mbCtrl.pos))
                     }
                     assembly = null
+                    assemblyStateClock++
                     mbCtrl.onAssemblyChanged(null)
                 }
                 structDirty = true
@@ -105,6 +108,7 @@ class MultiBlockData<S>(
                 assembly?.invalidate()
                 val assembly = MultiBlockAssembly.fromStructure(this, match, assembly)
                 this.assembly = assembly
+                assemblyStateClock++
                 mbCtrl.world.onClient {
                     bufferedAssemblyBind?.let {
                         assembly.bindSync(it.hostId, it.data)
