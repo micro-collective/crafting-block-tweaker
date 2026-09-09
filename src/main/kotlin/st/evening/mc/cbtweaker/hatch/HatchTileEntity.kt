@@ -13,7 +13,6 @@ import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
 import st.evening.mc.cbtweaker.util.TileEntitySyncProxy
-import st.evening.mc.cbtweaker.util.component.AutoExportHandler
 import st.evening.mc.prelude.api.util.collection.CapabilityMap
 import st.evening.mc.prelude.api.util.game.ServerSide
 
@@ -38,7 +37,7 @@ class HatchTileEntity : LazyTileEntity<HatchData<*>>(), ITickable {
     val tier: Int
         get() = data.hatchTier
 
-    val exportHandler: AutoExportHandler<*>?
+    val exportHandler: HatchData<*>.HatchAutoExportHandler?
         get() = data.exportHandler
 
     override fun hasCapability(capability: Capability<*>, facing: EnumFacing?): Boolean = capability in capabilities

@@ -26,7 +26,6 @@ import st.evening.mc.prelude.api.gui.engine.GuiElement
 import st.evening.mc.prelude.api.gui.engine.GuiPart
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiElement
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiPart
-import st.evening.mc.prelude.api.gui.engine.prefab.OffsetBox
 import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.math.Rect2i
@@ -70,17 +69,6 @@ class IoConfigModeControl(private val configState: MutableBoolean) : AbstractGui
             )
             return ClickResult.Consume
         }
-    }
-}
-
-class IoConfigModeControlElement(private val configState: MutableBoolean) : UiElement {
-    @ClientSide.Strong
-    override fun addToGuiScreen(uiIndex: Int, layout: StackLayout, baseSlotIndex: Int, wrapper: UiElementWrapper) {
-        layout.addChild(
-            OffsetBox(wrapper.wrap(uiIndex, IoConfigModeControl(configState)), -11, -11),
-            DrawAlignment.END,
-            DrawAlignment.START
-        )
     }
 }
 

@@ -7,8 +7,6 @@ import net.minecraft.util.text.TextFormatting
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.CbtLang
 import st.evening.mc.cbtweaker.gui.CbtGuiResources
-import st.evening.mc.cbtweaker.gui.inventory.UiElement
-import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.gui.inventory.assertWindowId
 import st.evening.mc.cbtweaker.network.C2SSetRedstoneBehaviour
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
@@ -18,12 +16,9 @@ import st.evening.mc.prelude.api.gui.engine.GuiContext
 import st.evening.mc.prelude.api.gui.engine.GuiPart
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiElement
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiPart
-import st.evening.mc.prelude.api.gui.engine.prefab.OffsetBox
-import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
 import st.evening.mc.prelude.api.util.data.cycleEnum
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.math.containsPoint
-import st.evening.mc.prelude.api.util.render.gui.DrawAlignment
 
 @ClientSide.Strong
 class RedstoneBehaviourControl(private val rsHandler: RedstoneControlHandler) : AbstractGuiElement() {
@@ -79,16 +74,5 @@ class RedstoneBehaviourControl(private val rsHandler: RedstoneControlHandler) : 
                 else -> return ClickResult.Ignore
             }
         }
-    }
-}
-
-class RedstoneBehaviourControlElement(private val rsHandler: RedstoneControlHandler) : UiElement {
-    @ClientSide.Strong
-    override fun addToGuiScreen(uiIndex: Int, layout: StackLayout, baseSlotIndex: Int, wrapper: UiElementWrapper) {
-        layout.addChild(
-            OffsetBox(wrapper.wrap(uiIndex, RedstoneBehaviourControl(rsHandler)), -24, -11),
-            DrawAlignment.END,
-            DrawAlignment.START
-        )
     }
 }

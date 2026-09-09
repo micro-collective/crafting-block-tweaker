@@ -5,12 +5,15 @@ import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.inventory.Container
 import net.minecraft.world.World
-import st.evening.mc.cbtweaker.gui.element.MultiBlockStatusDisplayElement
-import st.evening.mc.cbtweaker.gui.element.RedstoneBehaviourControlElement
+import st.evening.mc.cbtweaker.gui.element.MultiBlockStatusDisplay
+import st.evening.mc.cbtweaker.gui.element.RedstoneBehaviourControl
 import st.evening.mc.cbtweaker.gui.inventory.CbtCustomContainer
 import st.evening.mc.cbtweaker.gui.inventory.CbtCustomContainerGui
 import st.evening.mc.cbtweaker.gui.inventory.MachineContainer
 import st.evening.mc.cbtweaker.util.isInInteractionRange
+import st.evening.mc.prelude.api.gui.engine.GuiElementDslContext
+import st.evening.mc.prelude.api.gui.engine.addChild
+import st.evening.mc.prelude.api.gui.engine.prefab.AbsoluteLayout
 import st.evening.mc.prelude.api.registration.ContainerFactory
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
@@ -22,13 +25,8 @@ class MultiBlockControllerContainer(
 ) : CbtCustomContainer(
     playerInv,
     machine.mbType.windowConfig,
-    buildList {
-        add(MultiBlockStatusDisplayElement(machine))
-        machine.rsHandler?.let {
-            add(RedstoneBehaviourControlElement(it))
-        }
-        machine.createMachineUiElement()?.let { add(it) }
-    }
+    listOfNotNull(machine.rsHandler),
+    listOfNotNull(machine.createMachineUiElement())
 ), MachineContainer {
     override fun canInteractWith(player: EntityPlayer): Boolean = machine.isInInteractionRange(player)
 
@@ -44,7 +42,23 @@ class MultiBlockControllerContainer(
         @ClientSide.Strong
         override fun createClientContainer(player: EntityPlayer, world: World, x: Int, y: Int, z: Int): GuiContainer? =
             world.findTileEntity<MultiBlockControllerTileEntity>(x, y, z)?.let {
-                CbtCustomContainerGui(MultiBlockControllerContainer(it, player.inventory))
+                MultiBlockControllerGui(MultiBlockControllerContainer(it, player.inventory))
             }
+    }
+}
+
+@ClientSide.Strong
+class MultiBlockControllerGui(container: MultiBlockControllerContainer) :
+    CbtCustomContainerGui<MultiBlockControllerContainer>(container) {
+
+    override fun GuiElementDslContext<AbsoluteLayout>.addElements(windowWidth: Int, windowHeight: Int) {
+        val mbCtrl = container.machine
+        val region = container.windowConfig.machineInvRegion
+        val x = region.posX + region.width - 11
+        val y = region.posY - 11
+        addChild(x, y, MultiBlockStatusDisplay(mbCtrl))
+        mbCtrl.rsHandler?.let {
+            addChild(x - 13, y, RedstoneBehaviourControl(it))
+        }
     }
 }

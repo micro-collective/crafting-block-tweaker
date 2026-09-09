@@ -40,14 +40,12 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
 
     val buffer: B = hatchType.getTier(hatchTier).bufferFactory.createBuffer(hatch.world, hatch.pos, this)
 
-    private val _exportHandler: HatchAutoExportHandler? =
+    val exportHandler: HatchAutoExportHandler? =
         (hatchType.bufferType as? AutoExportingBufferType<B, *, *, *>)?.let { exportBufType ->
             exportBufType.getDefaultAutoExportState(buffer)?.let {
                 HatchAutoExportHandler(exportBufType, it)
             }
         }
-    val exportHandler: AutoExportHandler<B>?
-        get() = _exportHandler
 
     private val linkedMbControllers: ObjectSet<MultiBlockControllerTileEntity> =
         ObjectOpenCustomHashSet(IdentityHashStrategy())
@@ -96,7 +94,7 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
         }
         hatchType.bufferType.tick(buffer)
         hatch.world.onServer {
-            _exportHandler?.tick()
+            exportHandler?.tick()
         }
     }
 
@@ -120,7 +118,7 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
     override fun writeToNbt(dto: NBTTagCompound) {
         dto.runAction {
             SER_BUFFER tag NBTTagCompound().also { hatchType.bufferType.serializeBufferToNbt(buffer, it) }
-            _exportHandler?.let {
+            exportHandler?.let {
                 SER_EXPORT bool it.autoExporting
             }
         }
@@ -128,12 +126,12 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
 
     override fun readFromNbt(dto: NBTTagCompound) {
         hatchType.bufferType.deserializeBufferFromNbt(buffer, dto.getCompoundTag(SER_BUFFER))
-        _exportHandler?.setStateFromSync(dto.getBoolean(SER_EXPORT))
+        exportHandler?.setStateFromSync(dto.getBoolean(SER_EXPORT))
     }
 
     fun createUiElement(): UiElement? = hatchType.bufferType.createUiElement(buffer)
 
-    private inner class HatchAutoExportHandler(
+    inner class HatchAutoExportHandler(
         exportBufType: AutoExportingBufferType<B, *, *, *>,
         initiallyExporting: Boolean
     ) : AutoExportHandler<B>(exportBufType, buffer, initiallyExporting), Piecewise.Atom {
@@ -157,7 +155,7 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
             syncObservers += observer
         }
 
-        fun setStateFromSync(exporting: Boolean) {
+        internal fun setStateFromSync(exporting: Boolean) {
             if (setAutoExportState(exporting)) {
                 syncObservers.onObservableUpdate()
             }

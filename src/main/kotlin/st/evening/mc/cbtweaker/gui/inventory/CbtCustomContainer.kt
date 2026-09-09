@@ -21,6 +21,7 @@ import st.evening.mc.prelude.mod.network.S2CBindSyncedContainer
 abstract class CbtCustomContainer(
     val playerInv: InventoryPlayer,
     val windowConfig: WindowConfig,
+    containerSyncData: List<Piecewise>,
     override val uiElements: List<UiElement>
 ) : Container(), UiContainer, SyncHost {
     private val baseSlotIndices: IntArray = IntArray(uiElements.size)
@@ -40,8 +41,11 @@ abstract class CbtCustomContainer(
             baseSlotIndices[i] = inventorySlots.size
             uiElem.addToContainer(i, this, windowConfig.machineInvRegion)
         }
-        val syncData = uiElements.mapNotNull { // order must be deterministic!
-            (it.unwrap() as? SyncedUiElement)?.syncData
+        val syncData = containerSyncData.toMutableList()
+        uiElements.forEach { element -> // order must be deterministic!
+            (element.unwrap() as? SyncedUiElement)?.let {
+                syncData += it.syncData
+            }
         }
         syncProxy = if (syncData.isNotEmpty()) SyncProxy(syncData) else null
     }

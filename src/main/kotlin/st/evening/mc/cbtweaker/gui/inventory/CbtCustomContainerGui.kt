@@ -2,6 +2,7 @@ package st.evening.mc.cbtweaker.gui.inventory
 
 import st.evening.mc.cbtweaker.gui.CbtGuiResources
 import st.evening.mc.prelude.api.container.prefab.PrefabEngineGuiContainer
+import st.evening.mc.prelude.api.gui.engine.GuiElementDslContext
 import st.evening.mc.prelude.api.gui.engine.LayoutEngine
 import st.evening.mc.prelude.api.gui.engine.addChild
 import st.evening.mc.prelude.api.gui.engine.prefab.AbsoluteLayout
@@ -14,9 +15,7 @@ import st.evening.mc.prelude.api.gui.engine.setChild
 import st.evening.mc.prelude.api.util.game.ClientSide
 
 @ClientSide.Strong
-open class CbtCustomContainerGui(container: CbtCustomContainer) :
-    PrefabEngineGuiContainer<CbtCustomContainer>(container) {
-
+open class CbtCustomContainerGui<C : CbtCustomContainer>(container: C) : PrefabEngineGuiContainer<C>(container) {
     override val layoutEngine: LayoutEngine = LayoutEngine.fromDsl(
         container.windowConfig.background.drawable.let { AbsoluteLayout(it.width, it.height) },
         { BackgroundBox(it, container.windowConfig.background.drawable) }
@@ -50,5 +49,9 @@ open class CbtCustomContainerGui(container: CbtCustomContainer) :
         if (container.windowConfig.renderMachineName) {
             addChild(machineRegion.posX, machineRegion.posY - 10, TextDisplay.fromI18n(container.getTranslationKey()))
         }
+
+        addElements(element.contentWidth, element.contentHeight)
     }
+
+    protected open fun GuiElementDslContext<AbsoluteLayout>.addElements(windowWidth: Int, windowHeight: Int) {}
 }

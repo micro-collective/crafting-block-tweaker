@@ -263,6 +263,7 @@ class SidedBufferHandler(
     private val unsidedCapabilities: CapabilityMultimap = CapabilityMultimap()
 
     val bufferSyncState: List<Piecewise>
+    val configSyncState: List<Piecewise>
 
     init {
         // insertion-ordered maps do NOT inherently maintain the correct order; we MUST replicate the order in bufGroups
@@ -288,6 +289,14 @@ class SidedBufferHandler(
             }
             unsidedConfigTable.forEachConfig { config ->
                 config.getBufferSyncState()?.let { add(it) }
+            }
+        }
+        this.configSyncState = buildList {
+            sideConfigTable.forEachConfig {
+                add(it.configSyncState)
+            }
+            unsidedConfigTable.forEachConfig { config ->
+                config.configSyncState?.let { add(it) }
             }
         }
     }
