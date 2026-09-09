@@ -1,11 +1,13 @@
 package st.evening.mc.cbtweaker.gui.inventory
 
 import io.netty.buffer.Unpooled
+import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.entity.player.EntityPlayerMP
 import net.minecraft.entity.player.InventoryPlayer
 import net.minecraft.inventory.Container
 import net.minecraft.inventory.IContainerListener
 import net.minecraft.inventory.Slot
+import net.minecraft.item.ItemStack
 import net.minecraft.network.PacketBuffer
 import st.evening.mc.prelude.Prelude
 import st.evening.mc.prelude.api.data.state.ListStateComposite
@@ -14,6 +16,7 @@ import st.evening.mc.prelude.api.data.sync.SyncHost
 import st.evening.mc.prelude.api.data.sync.SyncManager
 import st.evening.mc.prelude.api.network.PacketType
 import st.evening.mc.prelude.api.util.collection.WeakValidity
+import st.evening.mc.prelude.api.util.game.InvHelper
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.game.onServer
 import st.evening.mc.prelude.mod.network.S2CBindSyncedContainer
@@ -55,6 +58,23 @@ abstract class CbtCustomContainer(
     }
 
     fun getBaseSlotIndex(uiElementIndex: Int): Int = baseSlotIndices[uiElementIndex]
+
+    override fun transferStackInSlot(player: EntityPlayer, index: Int): ItemStack =
+        InvHelper.transferStacks(inventorySlots[index], player) { stack ->
+            val totalSlotCount = inventorySlots.size
+            val playerSlotCount = playerInv.sizeInventory
+            return@transferStacks if (totalSlotCount > playerSlotCount) {
+                if (index < playerSlotCount) {
+                    mergeItemStack(stack, playerSlotCount, totalSlotCount, false)
+                } else {
+                    mergeItemStack(stack, 0, playerSlotCount, true)
+                }
+            } else if (index < 9) { // no machine slots; transfer within the player inventory only
+                mergeItemStack(stack, 9, playerSlotCount, false)
+            } else {
+                mergeItemStack(stack, 0, 9, false)
+            }
+        }
 
     abstract fun getTranslationKey(): String
 
