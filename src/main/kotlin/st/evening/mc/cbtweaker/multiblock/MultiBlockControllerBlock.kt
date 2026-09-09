@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.CbtConsts
+import st.evening.mc.cbtweaker.common.CustomBlockType
 import st.evening.mc.cbtweaker.common.OrientableMachineBlock
 import st.evening.mc.prelude.api.block.TileEntityBlock
 import st.evening.mc.prelude.api.registration.TileEntityType
@@ -18,8 +19,15 @@ import st.evening.mc.prelude.api.util.game.assertLogicalServer
 import st.evening.mc.prelude.api.util.world.onServer
 import st.evening.mc.prelude.api.util.world.useTileEntity
 
-class MultiBlockControllerBlock(val mbType: MultiBlockType<*>) :
-    OrientableMachineBlock(mbType.blockConfig), TileEntityBlock {
+class MultiBlockControllerBlock private constructor(val mbType: MultiBlockType<*>) :
+    OrientableMachineBlock(mbType.blockConfig.material), TileEntityBlock {
+    companion object {
+        fun construct(mbType: MultiBlockType<*>): MultiBlockControllerBlock =
+            MultiBlockControllerBlock(mbType).also { it.init() }
+    }
+
+    override val blockType: CustomBlockType
+        get() = mbType
 
     override fun getTileEntityType(world: World, meta: Int): TileEntityType<*> =
         CbTweaker.defns.tileEntityMultiBlockController

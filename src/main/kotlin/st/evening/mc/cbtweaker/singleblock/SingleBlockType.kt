@@ -31,7 +31,7 @@ class SingleBlockType<S>(
     override lateinit var stateFactory: MachineStateFactory<S>
         private set
 
-    val machineBlock: SingleBlockMachineBlock by reg.block("sb_$id") { SingleBlockMachineBlock(this) }
+    val machineBlock: SingleBlockMachineBlock by reg.block("sb_$id") { SingleBlockMachineBlock.construct(this) }
 
     override val craftingBlock: Block
         get() = machineBlock

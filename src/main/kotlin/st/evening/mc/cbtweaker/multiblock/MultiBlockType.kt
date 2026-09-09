@@ -25,7 +25,7 @@ class MultiBlockType<S>(
     override lateinit var stateFactory: MachineStateFactory<S>
         private set
 
-    val controllerBlock: MultiBlockControllerBlock by reg.block("mb_$id") { MultiBlockControllerBlock(this) }
+    val controllerBlock: MultiBlockControllerBlock by reg.block("mb_$id") { MultiBlockControllerBlock.construct(this) }
 
     override val craftingBlock: Block
         get() = controllerBlock

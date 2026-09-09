@@ -49,12 +49,19 @@ class BlockConfig(
     }
 }
 
-abstract class CbtCustomBlock(blockConfig: BlockConfig) : Block(blockConfig.material) {
-    init {
-        setSoundType(blockConfig.soundType)
-        setHardness(blockConfig.hardness)
-        setResistance(blockConfig.resistance)
-        blockConfig.harvestLevel.forEach { (toolClass, harvestLevel) ->
+interface CustomBlockType {
+    val blockConfig: BlockConfig
+}
+
+abstract class CbtCustomBlock(material: Material) : Block(material) {
+    abstract val blockType: CustomBlockType
+
+    open fun init() {
+        val config = blockType.blockConfig
+        setSoundType(config.soundType)
+        setHardness(config.hardness)
+        setResistance(config.resistance)
+        config.harvestLevel.forEach { (toolClass, harvestLevel) ->
             setHarvestLevel(toolClass, harvestLevel)
         }
     }

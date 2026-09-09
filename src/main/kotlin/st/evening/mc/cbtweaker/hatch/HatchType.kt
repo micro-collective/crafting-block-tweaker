@@ -5,6 +5,7 @@ import net.minecraft.item.ItemStack
 import st.evening.mc.cbtweaker.buffer.BufferFactory
 import st.evening.mc.cbtweaker.buffer.BufferType
 import st.evening.mc.cbtweaker.common.BlockConfig
+import st.evening.mc.cbtweaker.common.CustomBlockType
 import st.evening.mc.cbtweaker.gui.inventory.WindowConfig
 import st.evening.mc.prelude.api.registration.ModRegistrar
 import st.evening.mc.prelude.api.registration.block
@@ -12,10 +13,10 @@ import st.evening.mc.prelude.api.registration.block
 class HatchType<B>(
     reg: ModRegistrar,
     val id: String,
-    val blockConfig: BlockConfig,
+    override val blockConfig: BlockConfig,
     val bufferType: BufferType<B, *, *, *>,
     private val tierData: List<TierData<B>>
-) {
+) : CustomBlockType {
     val hatchBlock: HatchBlock by reg.block("hatch_$id") { HatchBlock.construct(this) }
 
     val tierCount: Int
