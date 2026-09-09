@@ -4,7 +4,6 @@ import net.minecraft.block.Block
 import net.minecraft.client.Minecraft
 import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.item.ItemStack
-import net.minecraft.item.crafting.IRecipe
 import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.common.Loader
@@ -233,14 +232,12 @@ class CbtDefinitions(reg: ModRegistrar) {
                 }
             }
         }
-        reg.on<RegistryEvent.Register<IRecipe>> {
-            recipeSets.loadRecipes()
-        }
         reg.on<FMLInitializationEvent> {
             CapabilityMerger.init()
             templates.loadInit()
             singleBlocks.loadAll()
             multiBlocks.loadAll()
+            recipeSets.loadRecipes()
         }
         onPhysicalClient {
             reg.on<RenderWorldLastEvent> { event ->
