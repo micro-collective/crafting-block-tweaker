@@ -59,10 +59,11 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
                 throw SerializationException("Recipe set directory is not a directory: $recipeDir")
             }
             val specFile = recipeDir.resolve("recipeset.tjson")
-            if (!Files.isRegularFile(specFile)) {
-                throw SerializationException("Recipe set directory has no recipeset.tjson: $recipeDir")
+            val specDto = if (Files.isRegularFile(specFile)) {
+                TypedJsonParser.parseObject(specFile.readText())
+            } else {
+                TJson.Object()
             }
-            val specDto = TypedJsonParser.parseObject(specFile.readText())
             database = JsonPath.atRoot { recipeType.loadDatabase(id, specDto) }
         }
 
