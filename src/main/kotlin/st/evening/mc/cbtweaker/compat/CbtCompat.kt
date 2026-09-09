@@ -22,7 +22,7 @@ object CbtCompat {
     ) {
         if (condition) {
             ifModLoaded(modId) {
-                CbTweaker.logger.info("Initializing $modId integration...")
+                CbTweaker.logger.info("Initializing {} integration...", modId)
                 action()
             }
         }

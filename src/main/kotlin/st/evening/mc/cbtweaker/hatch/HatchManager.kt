@@ -65,7 +65,7 @@ class HatchManager(private val specDir: Path, private val reg: ModRegistrar) : I
         } catch (e: Exception) {
             throw IllegalStateException("Failed to load hatch types!", e)
         }
-        CbTweaker.logger.info("Finished loading hatch specifications.")
+        CbTweaker.logger.info("Loaded {} hatch types", hatchTypeTable.size)
     }
 
     context(_: JsonPath)
@@ -106,7 +106,7 @@ class HatchManager(private val specDir: Path, private val reg: ModRegistrar) : I
         hatchTypeTable.forEach { (id, hatchType) ->
             val bsFile = blockStateDir.resolve("hatch_$id.json")
             if (!Files.exists(bsFile)) {
-                CbTweaker.logger.info("Generating hatch block state mapping: ${bsFile.fileName}")
+                CbTweaker.logger.info("Generating hatch block state mapping: {}", bsFile.fileName)
                 DataGenHelper.writeToFile(bsFile) {
                     "forge_marker" number 1
                     "variants" obj {
@@ -124,7 +124,7 @@ class HatchManager(private val specDir: Path, private val reg: ModRegistrar) : I
             for (i in 0..<hatchType.tierCount) {
                 val tierFile = hatchItemModelDir.resolve("hatch_${id}_$i.json")
                 if (!Files.exists(tierFile)) {
-                    CbTweaker.logger.info("Generating hatch item model: ${tierFile.fileName}")
+                    CbTweaker.logger.info("Generating hatch item model: {}", tierFile.fileName)
                     DataGenHelper.writeToFile(tierFile) {
                         "parent" string "cbtweaker:block/hatch_${i.coerceAtMost(3)}"
                     }

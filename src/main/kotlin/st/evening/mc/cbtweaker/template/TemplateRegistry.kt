@@ -25,7 +25,7 @@ class TemplateRegistry<T>(
                     try {
                         register(key, resolver(dto))
                     } catch (e: SerializationException) {
-                        CbTweaker.logger.warn("Ignoring bad $templateTypeName template: $key", e)
+                        CbTweaker.logger.warn("Ignoring bad {} template: {}", templateTypeName, key, e)
                     }
                 }
             }

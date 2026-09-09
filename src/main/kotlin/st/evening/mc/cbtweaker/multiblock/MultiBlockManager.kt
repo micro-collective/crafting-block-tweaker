@@ -73,7 +73,7 @@ class MultiBlockManager(private val specDir: Path, private val reg: ModRegistrar
         } catch (e: Exception) {
             throw IllegalStateException("Failed to load multi-block types!", e)
         }
-        CbTweaker.logger.info("Finished loading multi-block specifications.")
+        CbTweaker.logger.info("Loaded {} multi-block types", mbTypeTable.size)
     }
 
     fun dataGenBlockModels(resourceDir: Path) {
@@ -84,12 +84,12 @@ class MultiBlockManager(private val specDir: Path, private val reg: ModRegistrar
         mbTypeTable.keys.forEach { id ->
             val bsFile = blockStateDir.resolve("mb_$id.json")
             if (!Files.exists(bsFile)) {
-                CbTweaker.logger.info("Generating multi-block controller block state mapping: ${bsFile.fileName}")
+                CbTweaker.logger.info("Generating multi-block controller block state mapping: {}", bsFile.fileName)
                 DataGenHelper.writeToFile(bsFile, DataGenHelper.machineBlockState)
             }
             val imFile = itemModelDir.resolve("mb_$id.json")
             if (!Files.exists(imFile)) {
-                CbTweaker.logger.info("Generating multi-block controller item model: ${imFile.fileName}")
+                CbTweaker.logger.info("Generating multi-block controller item model: {}", imFile.fileName)
                 DataGenHelper.writeToFile(imFile, DataGenHelper.machineItemModel)
             }
         }

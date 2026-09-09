@@ -43,15 +43,21 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
         recipeSetTable.forEach { (id, entry) ->
             try {
                 entry.loadRecipes()
-                CbTweaker.logger.debug("Loaded recipes for recipe set: $id")
+                CbTweaker.logger.debug("Loaded recipes for recipe set: {}", id)
             } catch (e: Exception) {
                 throw IllegalStateException("Failed to load recipes for recipe set: $id", e)
             }
         }
-        CbTweaker.logger.info("Finished loading recipe sets.")
+        CbTweaker.logger.info(
+            "Loaded {} recipe sets with {} total recipes",
+            recipeSetTable.size,
+            recipeSetTable.values.sumOf { it.size }
+        )
     }
 
-    class Entry<R, D>(val id: String, val recipeType: RecipeSetType<R, D>, private val recipeDir: Path) : Iterable<R> {
+    class Entry<R, D>(val id: String, val recipeType: RecipeSetType<R, D>, private val recipeDir: Path) :
+        AbstractCollection<R>() {
+
         val database: D
 
         init {
@@ -69,6 +75,9 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
 
         private val defaultJeiEntry: JeiEntry? = recipeType.getJeiRecipeAdaptor(database)?.let { JeiEntry(it) }
         private val jeiEntries: MutableList<JeiEntry> = mutableListOf()
+
+        override val size: Int
+            get() = recipeType.getRecipeCount(database)
 
         override fun iterator(): Iterator<R> = recipeType.iterateRecipes(database)
 

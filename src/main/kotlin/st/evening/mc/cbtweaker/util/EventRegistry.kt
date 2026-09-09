@@ -13,9 +13,9 @@ abstract class EventRegistry<T : Identifiable, E>(private val objType: Class<T>,
     protected val entries: MutableMap<ResourceLocation, E> = mutableMapOf()
 
     internal open fun init() {
-        CbTweaker.logger.info("Loading $objName registry...")
+        CbTweaker.logger.info("Loading {} registry...", objName)
         MinecraftForge.EVENT_BUS.post(CbtRegistrationEvent(objType, ::registerObject))
-        CbTweaker.logger.info("Loaded ${entries.size} $objName entries")
+        CbTweaker.logger.info("Loaded {} {} entries", entries.size, objName)
     }
 
     protected abstract fun createEntry(obj: T): E
@@ -29,7 +29,7 @@ abstract class EventRegistry<T : Identifiable, E>(private val objType: Class<T>,
             )
         }
         entries[objId] = createEntry(obj)
-        CbTweaker.logger.debug("Registered $objName {} ({})", objId, obj.javaClass.getCanonicalName())
+        CbTweaker.logger.debug("Registered {} {} ({})", objName, objId, obj.javaClass.getCanonicalName())
     }
 
     operator fun get(key: ResourceLocation): E? = entries[key]

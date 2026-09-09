@@ -93,7 +93,7 @@ class SingleBlockManager(private val specDir: Path, private val reg: ModRegistra
         } catch (e: Exception) {
             throw IllegalStateException("Failed to load single-block types!", e)
         }
-        CbTweaker.logger.info("Finished loading single-block specifications.")
+        CbTweaker.logger.info("Loaded {} single-block types", sbTypeTable.size)
     }
 
     fun dataGenBlockModels(resourceDir: Path) {
@@ -104,12 +104,12 @@ class SingleBlockManager(private val specDir: Path, private val reg: ModRegistra
         sbTypeTable.keys.forEach { id ->
             val bsFile = blockStateDir.resolve("sb_$id.json")
             if (!Files.exists(bsFile)) {
-                CbTweaker.logger.info("Generating single-block machine block state mapping: ${bsFile.fileName}")
+                CbTweaker.logger.info("Generating single-block machine block state mapping: {}", bsFile.fileName)
                 DataGenHelper.writeToFile(bsFile, DataGenHelper.machineBlockState)
             }
             val imFile = itemModelDir.resolve("sb_$id.json")
             if (!Files.exists(imFile)) {
-                CbTweaker.logger.info("Generating single-block machine item model: ${imFile.fileName}")
+                CbTweaker.logger.info("Generating single-block machine item model: {}", imFile.fileName)
                 DataGenHelper.writeToFile(imFile, DataGenHelper.machineItemModel)
             }
         }
