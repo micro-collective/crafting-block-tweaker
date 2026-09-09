@@ -1,5 +1,5 @@
 {
-  "parent": "cbtweaker:machine",
+  "parent": "cbtweaker:block/machine",
   "textures": {
     "front": "cbtweaker:blocks/machine_front_active"
   }

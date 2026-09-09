@@ -15,13 +15,9 @@ class HatchBlockItem(private val hatchBlock: HatchBlock) : ItemBlock(hatchBlock)
         creativeTab = CbTweaker.defns.creativeTab
     }
 
-    override fun getMetadata(damage: Int): Int {
-        return damage
-    }
+    override fun getMetadata(damage: Int): Int = damage
 
-    override fun getTranslationKey(stack: ItemStack): String {
-        return hatchBlock.translationKey + "." + stack.metadata
-    }
+    override fun getTranslationKey(stack: ItemStack): String = hatchBlock.translationKey + "." + stack.metadata
 
     @ClientSide.Physical
     override fun registerItemModels() {
