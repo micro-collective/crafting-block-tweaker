@@ -152,7 +152,7 @@ class ItemComponentBuffer(
                 dto.expectInt("stack_size") ?: 64,
                 dto.useAny("item_filter") { IngredientLoader.loadItemFilter(it) },
                 dto.expectStringValue("component_id"),
-                dto.useAny("position") { UiPosition.load(it) } ?: UiPosition.CENTER,
+                dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
                 dto.useAny("slot_bg") { DrawableData.loadSliceOrBlank(it, 16, 16) } ?: CbtGuiData.ITEM_SLOT
             )
             return { world, pos, observer ->

@@ -407,7 +407,7 @@ class ItemStackBuffer private constructor(
                 dto.expectBool("allow_insert") ?: true,
                 dto.expectBool("allow_extract") ?: true,
                 dto.expectBool("allow_auto_export") ?: false,
-                dto.useAny("position") { UiPosition.load(it) } ?: UiPosition.CENTER,
+                dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
                 dto.useAny("slot_bg") { DrawableData.loadSliceOrBlank(it, 16, 16) } ?: CbtGuiData.ITEM_SLOT
             )
             return object : BufferFactory<ItemStackBuffer, JeiBuffer> {
