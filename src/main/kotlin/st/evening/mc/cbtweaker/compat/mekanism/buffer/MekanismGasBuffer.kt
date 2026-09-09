@@ -136,7 +136,7 @@ class MekanismGasBuffer(
         val storedGas = gas ?: return null
         val toTransfer = storedGas.amount.coerceAtMost(amount)
         if (commit) {
-            gas = GasStack(storedGas.gas, storedGas.amount + toTransfer)
+            gas = GasStack(storedGas.gas, storedGas.amount - toTransfer)
         }
         return GasStack(storedGas.gas, toTransfer)
     }
