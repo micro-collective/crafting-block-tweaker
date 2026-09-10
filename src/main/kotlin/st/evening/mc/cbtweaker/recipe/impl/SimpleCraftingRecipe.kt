@@ -11,6 +11,7 @@ import st.evening.mc.cbtweaker.compat.jei.recipe.JeiAccumulatorMap
 import st.evening.mc.cbtweaker.compat.jei.recipe.JeiBufferGroup
 import st.evening.mc.cbtweaker.compat.jei.recipe.JeiRecipeSetAdaptor
 import st.evening.mc.cbtweaker.compat.jei.recipe.JeiUi
+import st.evening.mc.cbtweaker.compat.jei.ui.impl.JeiBackgroundBoxElement
 import st.evening.mc.cbtweaker.compat.jei.ui.impl.JeiIconElement
 import st.evening.mc.cbtweaker.compat.jei.ui.impl.JeiProgressBarElement
 import st.evening.mc.cbtweaker.gui.CbtGuiData
@@ -36,6 +37,7 @@ import st.evening.mc.prelude.api.gui.drawable.prefab.DrawableBlank
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.math.IntArithmetic
 import st.evening.mc.prelude.api.util.math.IntRectangle
+import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.render.gui.DrawAlignment
 import st.evening.mc.prelude.api.util.render.gui.DrawOrientation
 
@@ -137,27 +139,14 @@ class SimpleCraftingRecipe(
             }
 
             val barRegion = barElem.ingredientRegion
-            JeiIconElement.layOutIconGroup(
-                container,
-                region.posX,
-                region.posY,
-                barRegion.posX - region.posX,
-                region.height,
-                DrawAlignment.CENTER,
-                DrawAlignment.CENTER,
-                inputIngs
-            )
-            val outputsX = barRegion.posX + barRegion.width
-            JeiIconElement.layOutIconGroup(
-                container,
-                outputsX,
-                region.posY,
-                region.posX + region.width - outputsX,
-                region.height,
-                DrawAlignment.CENTER,
-                DrawAlignment.CENTER,
-                outputIngs
-            )
+            val inRegion = Rect2i(region.posX, region.posY, barRegion.posX - region.posX - 4, region.height)
+            container.addJeiUiElement(JeiBackgroundBoxElement(inRegion, 0))
+            val outputsX = barRegion.posX + barRegion.width + 4
+            val outRegion = Rect2i(outputsX, region.posY, region.posX + region.width - outputsX, region.height)
+            container.addJeiUiElement(JeiBackgroundBoxElement(outRegion, 0))
+
+            JeiIconElement.layOutIconGroup(container, inRegion, DrawAlignment.CENTER, DrawAlignment.CENTER, inputIngs)
+            JeiIconElement.layOutIconGroup(container, outRegion, DrawAlignment.CENTER, DrawAlignment.CENTER, outputIngs)
         }
     }
 

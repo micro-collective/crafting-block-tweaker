@@ -43,20 +43,18 @@ class JeiIconElement<T : Any>(
     companion object {
         fun layOutIconGroup(
             container: JeiUi,
-            contX: Int,
-            contY: Int,
-            contWidth: Int,
-            contHeight: Int,
+            contRegion: IntRectangle,
             alignX: DrawAlignment,
             alignY: DrawAlignment,
             ingredients: Collection<Pair<JeiIngredient<*>, String?>>
         ) {
+            if (ingredients.isEmpty()) return
             val slotPosList = arrayOfNulls<Vec2i>(ingredients.size)
             val dims = CbtMathHelper.layOutSlotGroup(17, 17, slotPosList)
             @Suppress("UNCHECKED_CAST")
             slotPosList as Array<Vec2i>
-            val groupX = contX + alignX.computeOffset(IntArithmetic, dims.x, contWidth)
-            val groupY = contY + alignY.computeOffset(IntArithmetic, dims.y, contHeight)
+            val groupX = contRegion.posX + alignX.computeOffset(IntArithmetic, dims.x, contRegion.width)
+            val groupY = contRegion.posY + alignY.computeOffset(IntArithmetic, dims.y, contRegion.height)
             ingredients.forEachIndexed { i, (ing, bufGroupId) ->
                 val (slotX, slotY) = slotPosList[i]
                 container.addJeiUiElement(JeiIconElement(groupX + slotX, groupY + slotY, ing, bufGroupId))

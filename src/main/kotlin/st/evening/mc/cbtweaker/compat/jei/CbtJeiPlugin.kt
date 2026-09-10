@@ -16,20 +16,27 @@ import st.evening.mc.cbtweaker.compat.jei.structure.StructureVisualizationRecipe
 import st.evening.mc.cbtweaker.recipe.RecipeSetManager
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.math.Rect2i
+import java.util.IdentityHashMap
+
+private typealias RecipeSetSubMap = Map<RecipeSetManager.Entry<*, *>.JeiEntry, CraftingBlockRecipeCategory<*>>
 
 @JEIPlugin
 @ClientSide.Physical
 class CbtJeiPlugin : IModPlugin {
     private val structVisCat: StructureVisualizationRecipeCategory = StructureVisualizationRecipeCategory()
-    private val recipeSetCats: MutableMap<String, CraftingBlockRecipeCategory<*>> = mutableMapOf()
+    private val recipeSetCats: MutableMap<String, RecipeSetSubMap> = mutableMapOf()
 
     override fun registerCategories(registry: IRecipeCategoryRegistration) {
         registry.addRecipeCategories(structVisCat)
         CbTweaker.defns.recipeSets.forEach { entry ->
+            val subMap = IdentityHashMap<RecipeSetManager.Entry<*, *>.JeiEntry, CraftingBlockRecipeCategory<*>>()
             entry.getJeiMachines().forEach {
                 val cat = CraftingBlockRecipeCategory(entry.id, it.adaptor)
-                recipeSetCats[cat.uid] = cat
+                subMap[it] = cat
                 registry.addRecipeCategories(cat)
+            }
+            if (subMap.isNotEmpty()) {
+                recipeSetCats[entry.id] = subMap
             }
         }
     }
@@ -55,23 +62,23 @@ class CbtJeiPlugin : IModPlugin {
         entry: RecipeSetManager.Entry<R, *>,
         jeiHelpers: IJeiHelpers
     ) {
+        val subMap = recipeSetCats[entry.id] ?: return
         entry.getJeiMachines().forEach { jeiEntry ->
-            recipeSetCats[entry.id]?.let { recipeCat ->
-                val recipeCatUid = recipeCat.uid
-                jeiEntry.machines.forEach {
-                    registry.addRecipeCatalyst(ItemStack(it.craftingBlock), recipeCatUid)
-                }
-                val bg = recipeCat.background
-                val region = Rect2i(0, 0, bg.width, bg.height)
-                registry.addRecipes(
-                    entry.map {
-                        val recipeWrapper = CraftingBlockRecipeWrapper()
-                        jeiEntry.adaptor.addJeiUiElements(it, recipeWrapper, region, jeiHelpers)
-                        return@map recipeWrapper
-                    },
-                    recipeCatUid
-                )
+            val recipeCat = subMap[jeiEntry] ?: return@forEach
+            val recipeCatUid = recipeCat.uid
+            jeiEntry.machines.forEach {
+                registry.addRecipeCatalyst(ItemStack(it.craftingBlock), recipeCatUid)
             }
+            val bg = recipeCat.background
+            val region = Rect2i(0, 0, bg.width, bg.height)
+            registry.addRecipes(
+                entry.map {
+                    val recipeWrapper = CraftingBlockRecipeWrapper()
+                    jeiEntry.adaptor.addJeiUiElements(it, recipeWrapper, region, jeiHelpers)
+                    return@map recipeWrapper
+                },
+                recipeCatUid
+            )
         }
     }
 

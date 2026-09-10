@@ -10,6 +10,7 @@ import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.RequireMod
 import st.evening.mc.prelude.api.util.render.RenderingHelper
+import st.evening.mc.prelude.api.util.render.TextureResource
 import st.evening.mc.prelude.api.util.render.gui.GuiRenderHelper
 
 @RequireMod(MekanismCompat.MOD_ID)
@@ -29,6 +30,7 @@ class JeiMekanismGasIngredient(
     @ClientSide.Physical
     override fun drawIcon(x: Int, y: Int, ingredient: GasStack, partialTicks: Float) {
         val gas = ingredient.gas
+        TextureResource.ITEM_BLOCK_ATLAS.bind()
         RenderingHelper.setColourRgb(gas.tint)
         GuiRenderHelper.drawAtlasSprite(x, y, x + 16, y + 16, gas.sprite)
         RenderingHelper.resetColour()

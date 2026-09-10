@@ -381,7 +381,7 @@ class FluidBuffer(
                     barRenderer.drawBar(
                         ingredient,
                         amount,
-                        config.capacity.coerceAtMost(amount * 2), // ensure visibility even for very small amounts
+                        config.capacity.coerceAtMost(amount * 3), // ensure visibility even for very small amounts
                         barRegion,
                         partialTicks
                     )

@@ -9,6 +9,7 @@ import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.getStillSprite
 import st.evening.mc.prelude.api.util.render.RenderingHelper
+import st.evening.mc.prelude.api.util.render.TextureResource
 import st.evening.mc.prelude.api.util.render.gui.GuiRenderHelper
 
 class JeiFluidIngredient(
@@ -26,6 +27,7 @@ class JeiFluidIngredient(
 
     @ClientSide.Physical
     override fun drawIcon(x: Int, y: Int, ingredient: FluidStack, partialTicks: Float) {
+        TextureResource.ITEM_BLOCK_ATLAS.bind()
         RenderingHelper.setColourArgb(ingredient.fluid.getColor(ingredient))
         GuiRenderHelper.drawAtlasSprite(x, y, x + 16, y + 16, ingredient.getStillSprite())
         RenderingHelper.resetColour()
@@ -33,7 +35,7 @@ class JeiFluidIngredient(
 
     @ClientSide.Physical
     override fun getTooltip(ingredient: FluidStack, tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
-        tooltip += "${ingredient.fluid.getRarity(ingredient)}${ingredient.localizedName}"
+        tooltip += "${ingredient.fluid.getRarity(ingredient).color}${ingredient.localizedName}"
         tooltip += "${TextFormatting.GRAY}%,d %s".format(ingredient.amount, unitName)
     }
 }
