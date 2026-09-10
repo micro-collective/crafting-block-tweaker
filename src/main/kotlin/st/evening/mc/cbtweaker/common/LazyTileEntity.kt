@@ -10,6 +10,7 @@ import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
 import st.evening.mc.prelude.api.data.sync.SyncHost
 import st.evening.mc.prelude.api.util.data.buildArrayFromPacketBuffer
 import st.evening.mc.prelude.api.util.data.runAction
+import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.SidednessAssertion
 import st.evening.mc.prelude.api.util.game.assertPhysicalClient
 import st.evening.mc.prelude.api.util.world.onClient
@@ -67,11 +68,20 @@ abstract class LazyTileEntity<T : NbtCompoundSerializable> : TileEntity() {
     }
 
     override fun handleUpdateTag(tag: NBTTagCompound) {
-        super.handleUpdateTag(tag)
+        super.readFromNBT(tag)
         world.onClient {
-            syncProxy?.syncManager?.getClient()?.let { syncMgr ->
+            this.data // ensure the sync proxy is installed
+            val proxy = syncProxy
+            if (proxy != null) {
+                val syncMgr = proxy.syncManager.getClient()
                 syncMgr.registerClientSide(tag.getInteger(SER_SYNC_ID))
                 syncMgr.readFullState(PacketBuffer(Unpooled.wrappedBuffer(tag.getByteArray(SER_DATA))))
+            } else {
+                (data as? BufferedSyncHolder)?.let {
+                    val data = PacketBuffer(Unpooled.wrappedBuffer(tag.getByteArray(SER_DATA)))
+                    data.retain()
+                    it.bufferSyncData(tag.getInteger(SER_SYNC_ID), data)
+                }
             }
         }
     }
@@ -91,4 +101,9 @@ abstract class LazyTileEntity<T : NbtCompoundSerializable> : TileEntity() {
             bufferedDataDeser = tag
         }
     }
+}
+
+interface BufferedSyncHolder {
+    @ClientSide
+    fun bufferSyncData(hostId: Int, syncData: PacketBuffer)
 }

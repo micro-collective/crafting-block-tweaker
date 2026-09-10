@@ -9,6 +9,7 @@ import net.minecraft.util.EnumFacing
 import net.minecraft.util.EnumHand
 import net.minecraft.util.math.BlockPos
 import st.evening.mc.cbtweaker.CbTweaker
+import st.evening.mc.cbtweaker.common.BufferedSyncHolder
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.structure.impl.SimpleStructureMatcher
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
@@ -25,7 +26,7 @@ import st.evening.mc.prelude.api.util.world.onServer
 class MultiBlockData<S>(
     val mbCtrl: MultiBlockControllerTileEntity,
     val mbType: MultiBlockType<S>
-) : RoiHost, NbtCompoundSerializable {
+) : RoiHost, BufferedSyncHolder, NbtCompoundSerializable {
     private var mbRoiTicket: RoiTicket? = null
     private var assembly: MultiBlockAssembly<S>? = null
     private var bufferedAssemblyDeser: NBTTagCompound? = null
@@ -182,10 +183,15 @@ class MultiBlockData<S>(
         if (assembly != null) {
             assembly.bindSync(hostId, syncData)
         } else {
-            bufferedAssemblyBind?.data?.release()
-            syncData.retain()
-            bufferedAssemblyBind = BindData(hostId, syncData)
+            bufferSyncData(hostId, syncData)
         }
+    }
+
+    @ClientSide
+    override fun bufferSyncData(hostId: Int, syncData: PacketBuffer) {
+        bufferedAssemblyBind?.data?.release()
+        syncData.retain()
+        bufferedAssemblyBind = BindData(hostId, syncData)
     }
 
     override fun writeToNbt(dto: NBTTagCompound) {
