@@ -28,11 +28,11 @@ open class CbtCustomContainerGui<C : CbtCustomContainer>(container: C) : PrefabE
             }
             for (row in 0..<3) {
                 for (col in 0..<9) {
-                    setChild(row, col, InventorySlot(col + row * 9 + 9, CbtGuiResources.ITEM_SLOT))
+                    setChild(row, col, InventorySlot(col + row * 9, CbtGuiResources.ITEM_SLOT))
                 }
             }
             for (col in 0..<9) {
-                setChild(3, col, InventorySlot(col, CbtGuiResources.ITEM_SLOT))
+                setChild(3, col, InventorySlot(27 + col, CbtGuiResources.ITEM_SLOT))
             }
         }
         if (container.windowConfig.renderPlayerName) {

@@ -37,7 +37,10 @@ abstract class CbtCustomContainer(
         get() = syncProxy?.weakValidity ?: WeakValidity.INVALID
 
     init {
-        for (i in 0..<playerInv.sizeInventory) {
+        for (i in 9..<36) {
+            addSlotToContainer(Slot(playerInv, i, 0, 0))
+        }
+        for (i in 0..<9) {
             addSlotToContainer(Slot(playerInv, i, 0, 0))
         }
         uiElements.forEachIndexed { i, uiElem ->
@@ -62,17 +65,16 @@ abstract class CbtCustomContainer(
     override fun transferStackInSlot(player: EntityPlayer, index: Int): ItemStack =
         InvHelper.transferStacks(inventorySlots[index], player) { stack ->
             val totalSlotCount = inventorySlots.size
-            val playerSlotCount = playerInv.sizeInventory
-            return@transferStacks if (totalSlotCount > playerSlotCount) {
-                if (index < playerSlotCount) {
-                    mergeItemStack(stack, playerSlotCount, totalSlotCount, false)
+            return@transferStacks if (totalSlotCount > 36) {
+                if (index < 36) {
+                    mergeItemStack(stack, 36, totalSlotCount, false)
                 } else {
-                    mergeItemStack(stack, 0, playerSlotCount, true)
+                    mergeItemStack(stack, 0, 36, false)
                 }
-            } else if (index < 9) { // no machine slots; transfer within the player inventory only
-                mergeItemStack(stack, 9, playerSlotCount, false)
+            } else if (index < 27) { // no machine slots; transfer within the player inventory only
+                mergeItemStack(stack, 27, 36, false)
             } else {
-                mergeItemStack(stack, 0, 9, false)
+                mergeItemStack(stack, 0, 27, false)
             }
         }
 
