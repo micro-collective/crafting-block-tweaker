@@ -64,6 +64,7 @@ class CbtJeiPlugin : IModPlugin {
     ) {
         val subMap = recipeSetCats[entry.id] ?: return
         entry.getJeiMachines().forEach { jeiEntry ->
+            if (jeiEntry.machines.isEmpty()) return@forEach
             val recipeCat = subMap[jeiEntry] ?: return@forEach
             val recipeCatUid = recipeCat.uid
             jeiEntry.machines.forEach {
