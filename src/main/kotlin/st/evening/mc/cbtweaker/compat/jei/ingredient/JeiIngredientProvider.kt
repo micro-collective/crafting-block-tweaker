@@ -13,14 +13,17 @@ interface JeiIngredientProvider<JA> {
     fun populateJei(acc: JA): Boolean
 }
 
-class MutableJeiIngredientCollectVisitor : IngredientMatcherMap.Visitor, IngredientProviderMap.Visitor {
-    lateinit var jeiIngredients: MutableMap<BufferType<*, *, *, *>, MutableList<JeiIngredient<*>>>
+class MutableJeiIngredientPartitionVisitor(
+    private val inputIngs: MutableList<Pair<JeiIngredient<*>, String?>>,
+    private val outputIngs: MutableList<Pair<JeiIngredient<*>, String?>>,
+) : IngredientMatcherMap.Visitor, IngredientProviderMap.Visitor {
+    lateinit var bufGroupId: String
 
     override fun <B, A, JB, JA> visitMatchers(
         bufType: BufferType<B, A, JB, JA>,
         matchers: List<IngredientMatcher<A, JA>>
     ): Boolean {
-        matchers.flatMapTo(jeiIngredients.getOrPut(bufType) { mutableListOf() }) { it.getJeiIngredients() }
+        addIngredients(matchers)
         return true
     }
 
@@ -28,8 +31,19 @@ class MutableJeiIngredientCollectVisitor : IngredientMatcherMap.Visitor, Ingredi
         bufType: BufferType<B, A, JB, JA>,
         providers: List<IngredientProvider<A, JA>>
     ): Boolean {
-        providers.flatMapTo(jeiIngredients.getOrPut(bufType) { mutableListOf() }) { it.getJeiIngredients() }
+        addIngredients(providers)
         return true
+    }
+
+    private fun addIngredients(providers: List<JeiIngredientProvider<*>>) {
+        providers.forEach { provider ->
+            provider.getJeiIngredients().forEach {
+                when (it.role) {
+                    JeiIngredient.Role.INPUT -> inputIngs
+                    JeiIngredient.Role.OUTPUT -> outputIngs
+                } += it to bufGroupId
+            }
+        }
     }
 }
 

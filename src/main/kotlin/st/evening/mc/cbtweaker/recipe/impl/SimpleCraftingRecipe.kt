@@ -2,11 +2,10 @@ package st.evening.mc.cbtweaker.recipe.impl
 
 import mezz.jei.api.IJeiHelpers
 import net.minecraft.util.math.MathHelper
-import st.evening.mc.cbtweaker.buffer.BufferType
-import st.evening.mc.cbtweaker.buffer.ingredient.IngredientMatcher
 import st.evening.mc.cbtweaker.compat.jei.CbtJeiPlugin
 import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
 import st.evening.mc.cbtweaker.compat.jei.ingredient.MutableJeiIngredientAccumulateVisitor
+import st.evening.mc.cbtweaker.compat.jei.ingredient.MutableJeiIngredientPartitionVisitor
 import st.evening.mc.cbtweaker.compat.jei.recipe.JeiAccumulatorMap
 import st.evening.mc.cbtweaker.compat.jei.recipe.JeiBufferGroup
 import st.evening.mc.cbtweaker.compat.jei.recipe.JeiRecipeSetAdaptor
@@ -119,23 +118,14 @@ class SimpleCraftingRecipe(
 
             val inputIngs = mutableListOf<Pair<JeiIngredient<*>, String?>>()
             val outputIngs = mutableListOf<Pair<JeiIngredient<*>, String?>>()
+            val visitor = MutableJeiIngredientPartitionVisitor(inputIngs, outputIngs)
             recipe.inputTable.forEach { (bufGroupId, matchers) ->
-                matchers.forEach(object : IngredientMatcherMap.Visitor {
-                    override fun <B, A, JB, JA> visitMatchers(
-                        bufType: BufferType<B, A, JB, JA>,
-                        matchers: List<IngredientMatcher<A, JA>>
-                    ): Boolean {
-                        matchers.forEach { matcher ->
-                            matcher.getJeiIngredients().forEach {
-                                when (it.role) {
-                                    JeiIngredient.Role.INPUT -> inputIngs
-                                    JeiIngredient.Role.OUTPUT -> outputIngs
-                                } += it to bufGroupId
-                            }
-                        }
-                        return true
-                    }
-                })
+                visitor.bufGroupId = bufGroupId
+                matchers.forEach(visitor)
+            }
+            recipe.outputTable.forEach { (bufGroupId, providers) ->
+                visitor.bufGroupId = bufGroupId
+                providers.forEach(visitor)
             }
 
             val barRegion = barElem.ingredientRegion
