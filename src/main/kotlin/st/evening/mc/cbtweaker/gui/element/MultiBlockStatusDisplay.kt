@@ -1,11 +1,18 @@
 package st.evening.mc.cbtweaker.gui.element
 
+import net.minecraft.client.audio.PositionedSoundRecord
 import net.minecraft.client.resources.I18n
+import net.minecraft.init.SoundEvents
+import net.minecraft.util.EnumParticleTypes
 import net.minecraft.util.text.TextFormatting
 import st.evening.mc.cbtweaker.CbtLang
 import st.evening.mc.cbtweaker.gui.CbtGuiResources
 import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
+import st.evening.mc.cbtweaker.util.getRotationFromNorth
+import st.evening.mc.cbtweaker.util.offsetWithRotation
+import st.evening.mc.prelude.api.block.prefab.BlockSidedIfc
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
+import st.evening.mc.prelude.api.gui.engine.ClickResult
 import st.evening.mc.prelude.api.gui.engine.GuiContext
 import st.evening.mc.prelude.api.gui.engine.GuiPart
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiElement
@@ -46,6 +53,27 @@ class MultiBlockStatusDisplay(private val mbCtrl: MultiBlockControllerTileEntity
                 mouseX, mouseY
             )
             return true
+        }
+
+        override fun onMouseClick(context: GuiContext, mouseX: Int, mouseY: Int, mouseButton: Int): ClickResult {
+            if ((mouseButton != 0 && mouseButton != 1) || !containsPoint(mouseX, mouseY)) return ClickResult.Ignore
+            val ctrlPos = mbCtrl.pos
+            val rot = mbCtrl.world.getBlockState(ctrlPos).getValue(BlockSidedIfc.PROP_FACING).getRotationFromNorth()
+            val mc = context.gui.mc
+            mbCtrl.mbType.structureMatcher.visualization.forEach { (offset, matcher) ->
+                if (matcher.visualization.isEmpty()) return@forEach
+                val pos = ctrlPos.offsetWithRotation(offset, rot, false)
+                val particle = mc.effectRenderer.spawnEffectParticle(
+                    EnumParticleTypes.DRAGON_BREATH.particleID,
+                    pos.x + 0.5, pos.y + 0.5, pos.z + 0.5, 0.0, 0.0, 0.0
+                )
+                if (particle != null) {
+                    particle.setMaxAge(200)
+                    particle.multipleParticleScaleBy(1.5F)
+                }
+            }
+            mc.soundHandler.playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F))
+            return ClickResult.Consume
         }
     }
 }

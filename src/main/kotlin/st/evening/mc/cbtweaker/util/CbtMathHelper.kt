@@ -71,7 +71,10 @@ fun Rotation.rotate(vec: Vec3i, mirror: Boolean): Vec3i = when (this) {
     Rotation.COUNTERCLOCKWISE_90 -> if (mirror) Vec3i(-vec.z, vec.y, -vec.x) else Vec3i(vec.z, vec.y, -vec.x)
 }
 
+fun BlockPos.offsetWithRotation(offset: Vec3i, rotation: Rotation, mirror: Boolean): BlockPos =
+    this + rotation.rotate(offset, mirror)
+
 fun Rotation.rotate(pos: BlockPos, axisPos: BlockPos, mirror: Boolean): BlockPos =
-    axisPos + rotate(pos - axisPos, mirror)
+    axisPos.offsetWithRotation(pos - axisPos, this, mirror)
 
 fun TileEntity.isInInteractionRange(entity: Entity): Boolean = entity.getDistanceSqToCenter(pos) <= 64.0
