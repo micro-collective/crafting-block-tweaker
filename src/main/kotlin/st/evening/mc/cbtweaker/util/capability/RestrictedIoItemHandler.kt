@@ -1,13 +1,13 @@
 package st.evening.mc.cbtweaker.util.capability
 
 import net.minecraft.item.ItemStack
-import net.minecraftforge.items.IItemHandler
+import net.minecraftforge.items.IItemHandlerModifiable
 
 class RestrictedIoItemHandler(
-    private val delegate: IItemHandler,
+    private val delegate: IItemHandlerModifiable,
     private val allowInsert: Boolean,
     private val allowExtract: Boolean
-) : IItemHandler by delegate {
+) : IItemHandlerModifiable by delegate {
     override fun insertItem(slot: Int, stack: ItemStack, simulate: Boolean): ItemStack =
         if (allowInsert) delegate.insertItem(slot, stack, simulate) else stack
 
