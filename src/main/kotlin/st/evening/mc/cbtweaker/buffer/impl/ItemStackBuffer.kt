@@ -173,7 +173,7 @@ class ItemStackBuffer private constructor(
     ) : UiElement {
         override fun addToContainer(uiIndex: Int, container: UiContainer, region: IntRectangle) {
             for (i in 0..<config.slotCount) {
-                container.addSlot(SlotItemHandler(this@ItemStackBuffer, i, 0, 0))
+                container.addSlot(SlotItemHandler(restrictedInventory, i, 0, 0))
             }
         }
 
