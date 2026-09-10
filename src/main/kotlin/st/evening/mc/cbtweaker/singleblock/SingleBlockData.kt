@@ -98,9 +98,13 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
         sbMachine.markDirty()
     }
 
-    override fun onMachineStateChange() {
-        activeState.update(behaviour.isActive(machineState))
-        sbMachine.markDirty()
+    override fun onMachineStateChanged(sync: Boolean, save: Boolean) {
+        if (sync) {
+            activeState.update(behaviour.isActive(machineState))
+        }
+        if (save) {
+            sbMachine.markDirty()
+        }
     }
 
     fun tick() {

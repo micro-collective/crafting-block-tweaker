@@ -226,8 +226,17 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
         private var currentRecipe: RunningRecipe? = null
         private var cachedRecipe: SimpleCraftingRecipe? = null
+        private var working: Boolean = false
+            set(value) {
+                if (field != value) {
+                    field = value
+                    syncDirty = true
+                }
+            }
         private var recipeDirty: Boolean = true
-        private var stateDirty: Boolean = false
+
+        private var syncDirty: Boolean = false
+        private var saveDirty: Boolean = false
 
         val rsHandler: RedstoneControlHandler = RedstoneControlHandler(world, pos)
 
@@ -266,22 +275,25 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             }
         }
 
-        fun isActive(): Boolean = rsHandler.canWork() && currentRecipe != null
+        fun isActive(): Boolean = working && rsHandler.canWork()
 
         override fun onObservableUpdate() {
-            host.onMachineStateChange()
+            saveDirty = true
         }
 
         fun handleBlockUpdate() {
-            rsHandler.updateRedstoneState(world, pos)
+            if (rsHandler.updateRedstoneState(world, pos)) {
+                syncDirty = true
+            }
         }
 
         fun tick(ticker: TickModulator) {
             if (world.isRemote) return
             doWork(ticker)
-            if (stateDirty) {
-                stateDirty = false
-                host.onMachineStateChange()
+            if (syncDirty || saveDirty) {
+                host.onMachineStateChanged(syncDirty, saveDirty)
+                syncDirty = false
+                saveDirty = false
             }
         }
 
@@ -295,6 +307,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 val inputs = recipe.inputTable
                 val consumeFactors = modState.consumeFactors
                 if (!inputs.checkInputs(accs, consumeFactors, MatcherChecker.Periodic)) {
+                    working = false
                     ticker.increaseIntervalUntil(8, 60)
                     return
                 }
@@ -302,10 +315,11 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 outputs.useOutputs(accs, ProviderConsumer.Periodic)
                 job.workDone++
                 uiState.work.update(job.workDone)
-                stateDirty = true
+                saveDirty = true
             }
             if (job.workDone >= job.workNeeded) {
                 if (!outputs.checkOutputs(accs, ProviderChecker.Final)) {
+                    working = false
                     ticker.increaseIntervalUntil(8, 60)
                     return
                 }
@@ -313,9 +327,11 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 currentRecipe = null
                 uiState.work.update(0)
                 uiState.maxWork.update(0)
-                stateDirty = true
+                recipeDirty = true
+                saveDirty = true
             }
             ticker.interval = 1
+            working = true
         }
 
         private fun tryFindAndStartRecipe(ticker: TickModulator): RunningRecipe? {
@@ -334,6 +350,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)
             }
             if (recipe == null) {
+                working = false
                 ticker.increaseIntervalUntil(8, 60)
                 return null
             }
@@ -348,7 +365,8 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             currentRecipe = job
             uiState.work.update(job.workDone)
             uiState.maxWork.update(job.workNeeded)
-            stateDirty = true
+            working = true
+            saveDirty = true
             return job
         }
 
@@ -363,17 +381,22 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         }
 
         override fun readFromNbt(dto: NBTTagCompound) {
-            if (dto.hasKey(SER_RECIPE, Constants.NBT.TAG_STRING)) {
-                val recipeId = dto.getString(SER_RECIPE)
-                val recipe = recipeDb.recipes[recipeId]
-                if (recipe != null) {
-                    currentRecipe = RunningRecipe(recipe, dto.getInteger(SER_WORK), modState.modTable)
-                } else {
+            run {
+                if (dto.hasKey(SER_RECIPE, Constants.NBT.TAG_STRING)) {
+                    val recipeId = dto.getString(SER_RECIPE)
+                    val recipe = recipeDb.recipes[recipeId]
+                    if (recipe != null) {
+                        val job = RunningRecipe(recipe, dto.getInteger(SER_WORK), modState.modTable)
+                        currentRecipe = job
+                        uiState.work.update(job.workDone)
+                        uiState.maxWork.update(job.workNeeded)
+                        return@run
+                    }
                     CbTweaker.logger.warn("Unknown {} recipe: {}", host.machineType.id, recipeId)
-                    currentRecipe = null
                 }
-            } else {
                 currentRecipe = null
+                uiState.work.update(0)
+                uiState.maxWork.update(0)
             }
             rsHandler.readFromNbt(dto.getString(SER_REDSTONE))
         }

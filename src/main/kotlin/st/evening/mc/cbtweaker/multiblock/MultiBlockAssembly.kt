@@ -119,9 +119,13 @@ class MultiBlockAssembly<S>(
         behaviour.notifyState(machineState, orNull(refreshComponents) { collectComponents() })
     }
 
-    override fun onMachineStateChange() {
-        activeState.update(behaviour.isActive(machineState))
-        mbData.mbCtrl.markDirty()
+    override fun onMachineStateChanged(sync: Boolean, save: Boolean) {
+        if (sync) {
+            activeState.update(behaviour.isActive(machineState))
+        }
+        if (save) {
+            mbData.mbCtrl.markDirty()
+        }
     }
 
     @ServerSide

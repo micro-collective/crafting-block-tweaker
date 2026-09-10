@@ -18,7 +18,7 @@ import st.evening.mc.prelude.api.data.tjson.TJson
 interface MachineHost {
     val machineType: CraftingBlockType<*>
 
-    fun onMachineStateChange()
+    fun onMachineStateChanged(sync: Boolean, save: Boolean)
 }
 
 fun interface MachineStateFactory<S> {
