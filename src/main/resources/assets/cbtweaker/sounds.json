@@ -1,0 +1,11 @@
+{
+  "material.gas.transfer": {
+    "subtitle": "cbtweaker.subtitles.material.gas.transfer",
+    "sounds": [
+      {
+        "name": "random/fizz",
+        "pitch": 1.75
+      }
+    ]
+  }
+}

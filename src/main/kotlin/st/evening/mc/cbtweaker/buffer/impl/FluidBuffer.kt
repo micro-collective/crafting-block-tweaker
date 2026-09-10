@@ -200,7 +200,7 @@ class FluidBuffer(
             val stack = player.inventory.itemStack
             if (stack.isEmpty) return
             val playerInv = player.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null) ?: return
-            val result = when (transferType) { // TODO fluid insert/extract sounds
+            val result = when (transferType) {
                 TransferType.INSERT ->
                     FluidUtil.tryEmptyContainerAndStow(stack, this@FluidBuffer, playerInv, Int.MAX_VALUE, player, true)
                 TransferType.EXTRACT ->

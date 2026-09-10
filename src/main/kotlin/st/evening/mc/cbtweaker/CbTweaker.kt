@@ -4,6 +4,7 @@ import net.minecraft.block.Block
 import net.minecraft.client.Minecraft
 import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.item.ItemStack
+import net.minecraft.util.SoundEvent
 import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.common.Loader
@@ -68,6 +69,7 @@ import st.evening.mc.prelude.api.registration.creativeTab
 import st.evening.mc.prelude.api.registration.item
 import st.evening.mc.prelude.api.registration.on
 import st.evening.mc.prelude.api.registration.s2cPacket
+import st.evening.mc.prelude.api.registration.soundEvent
 import st.evening.mc.prelude.api.registration.tileEntity
 import st.evening.mc.prelude.api.util.game.onPhysicalClient
 import st.evening.mc.prelude.loader.PreludeLoader
@@ -177,6 +179,8 @@ class CbtDefinitions(reg: ModRegistrar) {
     val roiTracker: RoiTracker = RoiTracker(reg)
 
     // REGISTRY OBJECTS ================================================================================================
+
+    val soundGasTransfer: SoundEvent by reg.soundEvent("material.gas.transfer")
 
     val tileEntityHatch: TileEntityType<HatchTileEntity> by reg.tileEntity("hatch")
     val tileEntitySingleBlockMachine: TileEntityType<SingleBlockMachineTileEntity> by reg.tileEntity("sb_machine")

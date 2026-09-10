@@ -15,6 +15,7 @@ import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.EnumHand
 import net.minecraft.util.ResourceLocation
+import net.minecraft.util.SoundCategory
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 import st.evening.mc.cbtweaker.CbTweaker
@@ -188,7 +189,6 @@ class MekanismGasBuffer(
                     if (gasStack.amount > 0) {
                         item.addGas(heldStack, gasStack)
                     }
-                    // TODO gas insert sound
                 }
                 TransferType.EXTRACT -> {
                     val available = drawGas(null, item.getMaxGas(heldStack), false)
@@ -196,9 +196,12 @@ class MekanismGasBuffer(
                     val transferred = item.addGas(heldStack, available)
                     if (transferred <= 0) return
                     drawGas(null, transferred, true)
-                    // TODO gas extract sound
                 }
             }
+            world.playSound(
+                null, player.posX, player.posY + 0.5, player.posZ,
+                CbTweaker.defns.soundGasTransfer, SoundCategory.BLOCKS, 1F, 1F
+            )
             player.updateHeldItem()
         }
     }
