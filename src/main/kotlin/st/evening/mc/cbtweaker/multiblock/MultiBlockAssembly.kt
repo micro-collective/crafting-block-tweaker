@@ -51,9 +51,9 @@ class MultiBlockAssembly<S>(
         ): MultiBlockAssembly<S> {
             val hatches = mutableListOf<HatchTileEntity>()
             val bufGroups = Object2ObjectRBTreeMap<String, BufferGroup>()
-            structMatch.hatches.forEach { (groupId, hatches) ->
+            structMatch.hatches.forEach { (groupId, matchHatches) ->
                 val group = BufferGroup()
-                hatches.forEach {
+                matchHatches.forEach {
                     hatches += it
                     it.addToGroup(group)
                 }
