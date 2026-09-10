@@ -48,5 +48,6 @@ repositories {
 dependencies {
     api("st.evening.kt.invokecontrol:kt-invoke-control-lib:0.1.0")
     compileOnlyApi("mezz.jei:jei_1.12.2:4.15.0.291:api")
+    compileOnly(rfg.deobf("cofh:CoFHCore:1.12.2-4.6.3.27:universal"))
     implementation(rfg.deobf("curse.maven:mekanism-268560:2835175")) // 9.8.3.390
 }
