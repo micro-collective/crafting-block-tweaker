@@ -214,7 +214,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         val recipeDb: SimpleCraftingRecipe.Database,
         private var world: World,
         private var pos: BlockPos,
-        bufGroups: BufferGroups,
+        private var bufGroups: BufferGroups,
         private var modState: ModState,
         private var host: MachineHost
     ) : Observer.Simple, NbtCompoundSerializable {
@@ -224,7 +224,6 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             private const val SER_REDSTONE: String = "redstone"
         }
 
-        private var accs: LazyAccumulatorMap = LazyAccumulatorMap.Impl(bufGroups)
         private var currentRecipe: RunningRecipe? = null
         private var cachedRecipe: SimpleCraftingRecipe? = null
         private var recipeDirty: Boolean = true
@@ -244,7 +243,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         fun reinit(world: World, pos: BlockPos, bufGroups: BufferGroups, modState: ModState, host: MachineHost) {
             this.world = world
             this.pos = pos
-            this.accs = LazyAccumulatorMap.Impl(bufGroups)
+            this.bufGroups = bufGroups
             this.modState = modState
             this.host = host
             updateCurrentRecipeWorkNeeded()
@@ -291,6 +290,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             val job = currentRecipe ?: tryFindAndStartRecipe(ticker) ?: return
             val recipe = job.recipe
             val outputs = recipe.outputTable
+            val accs = LazyAccumulatorMap.Impl(bufGroups)
             if (job.workDone < job.workNeeded) {
                 val inputs = recipe.inputTable
                 val consumeFactors = modState.consumeFactors
@@ -321,11 +321,12 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         private fun tryFindAndStartRecipe(ticker: TickModulator): RunningRecipe? {
             if (!recipeDirty) return null
             recipeDirty = false
+            val accs = LazyAccumulatorMap.Impl(bufGroups)
             val consumeFactors = modState.consumeFactors
             cachedRecipe?.let {
                 if (it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)) {
                     ticker.interval = 1
-                    return startRecipe(it)
+                    return startRecipe(it, accs)
                 }
                 cachedRecipe = null
             }
@@ -338,10 +339,10 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             }
             cachedRecipe = recipe
             ticker.interval = 1
-            return startRecipe(recipe)
+            return startRecipe(recipe, accs)
         }
 
-        private fun startRecipe(recipe: SimpleCraftingRecipe): RunningRecipe {
+        private fun startRecipe(recipe: SimpleCraftingRecipe, accs: LazyAccumulatorMap): RunningRecipe {
             recipe.inputTable.useInputs(accs, modState.consumeFactors, MatcherConsumer.Initial)
             val job = RunningRecipe(recipe, 0, modState.modTable)
             currentRecipe = job
