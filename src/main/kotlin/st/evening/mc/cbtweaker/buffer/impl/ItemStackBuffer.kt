@@ -549,7 +549,7 @@ class ItemStackBuffer private constructor(
             context(_: JsonPath)
             override fun loadMatcher(dto: TJson.Object): ItemMatcher = ItemMatcher(
                 ItemKey.Serializer.deserializeFromJson(dto),
-                dto.expectInt("count") ?: 0,
+                dto.expectInt("count") ?: 1,
                 dto.useString("consume") {
                     ItemConsumeType.serializer.deserializeFromJson(it)
                 } ?: ItemConsumeType.CONSUME
