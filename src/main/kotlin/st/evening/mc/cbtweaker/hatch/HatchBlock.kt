@@ -18,6 +18,7 @@ import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.CbtConsts
 import st.evening.mc.cbtweaker.common.CbtCustomBlock
 import st.evening.mc.cbtweaker.common.CustomBlockType
+import st.evening.mc.cbtweaker.compat.cofh.CoFHCoreCompat
 import st.evening.mc.prelude.api.block.CustomItemBlock
 import st.evening.mc.prelude.api.block.TileEntityBlock
 import st.evening.mc.prelude.api.registration.TileEntityType
@@ -73,6 +74,7 @@ class HatchBlock private constructor(val hatchType: HatchType<*>) :
         world: World, pos: BlockPos, state: IBlockState, player: EntityPlayer, hand: EnumHand,
         facing: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
     ): Boolean {
+        if (CoFHCoreCompat.tryWrenchDismantle(world, pos, state, player, hand)) return true
         world.useTileEntity<HatchTileEntity>(pos) {
             if (it.handleInteraction(state, player, hand, facing, hitX, hitY, hitZ)) return true
             world.onServer {

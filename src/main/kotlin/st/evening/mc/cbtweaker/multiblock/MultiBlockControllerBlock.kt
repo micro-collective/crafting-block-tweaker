@@ -11,6 +11,7 @@ import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.CbtConsts
 import st.evening.mc.cbtweaker.common.CustomBlockType
 import st.evening.mc.cbtweaker.common.OrientableMachineBlock
+import st.evening.mc.cbtweaker.compat.cofh.CoFHCoreCompat
 import st.evening.mc.prelude.api.block.TileEntityBlock
 import st.evening.mc.prelude.api.registration.TileEntityType
 import st.evening.mc.prelude.api.registration.openContainer
@@ -36,6 +37,7 @@ class MultiBlockControllerBlock private constructor(val mbType: MultiBlockType<*
         world: World, pos: BlockPos, state: IBlockState, player: EntityPlayer, hand: EnumHand,
         facing: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
     ): Boolean {
+        if (CoFHCoreCompat.tryWrenchDismantle(world, pos, state, player, hand)) return true
         world.useTileEntity<MultiBlockControllerTileEntity>(pos) {
             if (it.handleInteraction(state, player, hand, facing, hitX, hitY, hitZ)) return true
             world.onServer {
