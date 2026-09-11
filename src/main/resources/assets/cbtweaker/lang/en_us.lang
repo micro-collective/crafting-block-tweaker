@@ -22,6 +22,8 @@ cbtweaker.tooltip.multiblock_visualize=Click to visualize structure
 
 cbtweaker.tooltip.tank_interact_insert=Left-click to insert
 cbtweaker.tooltip.tank_interact_extract=Right-click to extract
+cbtweaker.tooltip.empty_fluid=No Fluid
+cbtweaker.tooltip.empty_gas=No Gas
 
 cbtweaker.tooltip.vis_controls=Controls
 cbtweaker.tooltip.vis_horizontal_pan=LClick: Horizontal Pan

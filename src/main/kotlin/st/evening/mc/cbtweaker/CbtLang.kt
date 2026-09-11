@@ -24,6 +24,8 @@ object CbtLang {
 
     const val TOOLTIP_TANK_INTERACT_INSERT: String = "$KEY_TOOLTIP.tank_interact_insert"
     const val TOOLTIP_TANK_INTERACT_EXTRACT: String = "$KEY_TOOLTIP.tank_interact_extract"
+    const val TOOLTIP_EMPTY_FLUID: String = "$KEY_TOOLTIP.empty_fluid"
+    const val TOOLTIP_EMPTY_GAS: String = "$KEY_TOOLTIP.empty_gas"
 
     const val TOOLTIP_VIS_CONTROLS: String = "$KEY_TOOLTIP.vis_controls"
     const val TOOLTIP_VIS_HORZ_PAN: String = "$KEY_TOOLTIP.vis_horizontal_pan"

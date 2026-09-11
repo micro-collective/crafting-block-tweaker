@@ -1,6 +1,8 @@
 package st.evening.mc.cbtweaker.compat.mekanism.gui
 
 import mekanism.api.gas.GasStack
+import net.minecraft.client.resources.I18n
+import st.evening.mc.cbtweaker.CbtLang
 import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
 import st.evening.mc.cbtweaker.compat.mekanism.gas.SingleGasTank
 import st.evening.mc.cbtweaker.gui.element.TankControl
@@ -32,4 +34,6 @@ class GasTankControl(
     override fun createBarRenderer(): SpriteBarRenderer<GasStack> = GasBarRenderer()
 
     override fun getLocalizedName(contents: GasStack): String = contents.gas.localizedName
+
+    override fun getLocalizedEmptyText(): String = I18n.format(CbtLang.TOOLTIP_EMPTY_GAS)
 }

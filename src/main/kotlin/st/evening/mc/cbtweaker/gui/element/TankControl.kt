@@ -51,6 +51,8 @@ abstract class TankControl<T, C>(
 
     protected abstract fun getLocalizedName(contents: C): String
 
+    protected open fun getLocalizedEmptyText(): String = I18n.format(CbtLang.TOOLTIP_EMPTY)
+
     private inner class Part(posX: Int, posY: Int) : AbstractGuiPart(posX, posY) {
         override val width: Int
             get() = contentWidth
@@ -92,7 +94,7 @@ abstract class TankControl<T, C>(
             } else {
                 context.gui.drawHoveringText(
                     listOf(
-                        I18n.format(CbtLang.TOOLTIP_EMPTY),
+                        getLocalizedEmptyText(),
                         "${TextFormatting.GRAY}0 / %,d mB".format(getCapacity(tank)),
                         "",
                         "${TextFormatting.GRAY}${I18n.format(CbtLang.TOOLTIP_TANK_INTERACT_INSERT)}",
@@ -145,4 +147,6 @@ class FluidTankControl(
     override fun createBarRenderer(): SpriteBarRenderer<FluidStack> = FluidBarRenderer()
 
     override fun getLocalizedName(contents: FluidStack): String = contents.localizedName
+
+    override fun getLocalizedEmptyText(): String = I18n.format(CbtLang.TOOLTIP_EMPTY_FLUID)
 }
