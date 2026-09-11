@@ -1,6 +1,5 @@
 package st.evening.mc.cbtweaker.common
 
-import net.minecraft.block.material.Material
 import net.minecraft.block.properties.PropertyBool
 import net.minecraft.block.state.BlockStateContainer
 import net.minecraft.block.state.IBlockState
@@ -13,8 +12,8 @@ import st.evening.mc.prelude.api.util.world.findTileEntity
 
 @Suppress("DELEGATED_MEMBER_HIDES_SUPERTYPE_OVERRIDE")
 @Magic.Use
-abstract class OrientableMachineBlock(material: Material) :
-    CbtCustomBlock(material), BlockSidedIfc by BlockSidedIfc.Delegate(Magic.getThis()) {
+abstract class OrientableMachineBlock(blockConfig: BlockConfig) :
+    CbtCustomBlock(blockConfig), BlockSidedIfc by BlockSidedIfc.Delegate(Magic.getThis()) {
     companion object {
         val PROP_ACTIVE: PropertyBool = PropertyBool.create("active")
     }

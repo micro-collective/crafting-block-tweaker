@@ -20,7 +20,7 @@ import st.evening.mc.prelude.api.util.world.onServer
 import st.evening.mc.prelude.api.util.world.useTileEntity
 
 class SingleBlockMachineBlock private constructor(val sbType: SingleBlockType<*>) :
-    OrientableMachineBlock(sbType.blockConfig.material), TileEntityBlock {
+    OrientableMachineBlock(sbType.blockConfig), TileEntityBlock {
     companion object {
         fun construct(sbType: SingleBlockType<*>): SingleBlockMachineBlock =
             SingleBlockMachineBlock(sbType).also { it.init() }

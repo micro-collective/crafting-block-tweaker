@@ -29,7 +29,7 @@ import st.evening.mc.prelude.api.util.world.onServer
 import st.evening.mc.prelude.api.util.world.useTileEntity
 
 class HatchBlock private constructor(val hatchType: HatchType<*>) :
-    CbtCustomBlock(hatchType.blockConfig.material), TileEntityBlock, CustomItemBlock {
+    CbtCustomBlock(hatchType.blockConfig), TileEntityBlock, CustomItemBlock {
     companion object {
         private var ctorTierProp: IProperty<Int>? = null
 
