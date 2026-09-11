@@ -8,6 +8,8 @@ import net.minecraft.block.material.Material
 import net.minecraft.block.state.BlockFaceShape
 import net.minecraft.block.state.IBlockState
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.item.EnumRarity
+import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
 import net.minecraft.util.BlockRenderLayer
 import net.minecraft.util.EnumFacing
@@ -15,10 +17,12 @@ import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.IBlockAccess
 import net.minecraft.world.World
+import net.minecraftforge.common.IRarity
 import net.minecraftforge.fml.common.Optional
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.compat.cofh.CoFHCoreCompat
 import st.evening.mc.cbtweaker.util.BlockConfigData
+import st.evening.mc.prelude.api.block.CustomItemBlock
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
@@ -46,7 +50,11 @@ class BlockConfig(
     val boundingBox: AxisAlignedBB,
     val fullCube: Boolean,
     val renderLayer: BlockRenderLayer,
-    val canWrenchDismantle: Boolean
+    val canWrenchDismantle: Boolean,
+
+    val maxStackSize: Int,
+    val rarity: EnumRarity,
+    val enchantedEffect: Boolean,
 ) {
     companion object {
         val DEFAULT: BlockConfig = BlockConfig(
@@ -61,7 +69,11 @@ class BlockConfig(
             boundingBox = Block.FULL_BLOCK_AABB,
             fullCube = true,
             renderLayer = BlockRenderLayer.SOLID,
-            canWrenchDismantle = true
+            canWrenchDismantle = true,
+
+            maxStackSize = 64,
+            rarity = EnumRarity.COMMON,
+            enchantedEffect = false
         )
 
         context(_: JsonPath)
@@ -100,7 +112,13 @@ class BlockConfig(
                 dto.useString("render_layer") {
                     BlockConfigData.renderLayerSerializer.deserializeFromJson(it)
                 } ?: DEFAULT.renderLayer,
-                dto.expectBool("can_wrench_dismantle") ?: DEFAULT.canWrenchDismantle
+                dto.expectBool("can_wrench_dismantle") ?: DEFAULT.canWrenchDismantle,
+
+                dto.expectInt("max_stack_size") ?: DEFAULT.maxStackSize,
+                dto.useString("rarity") {
+                    BlockConfigData.raritySerializer.deserializeFromJson(it)
+                } ?: DEFAULT.rarity,
+                dto.expectBool("enchanted_effect") ?: DEFAULT.enchantedEffect
             )
         }
     }
@@ -112,7 +130,8 @@ interface CustomBlockType {
 
 @Optional.Interface(iface = "cofh.api.block.IDismantleable", modid = CoFHCoreCompat.MOD_ID)
 abstract class CbtCustomBlock(blockConfig: BlockConfig) :
-    Block(blockConfig.material.also { Hoist.push(blockConfig) }, blockConfig.mapColour), IDismantleable {
+    Block(blockConfig.material.also { Hoist.push(blockConfig) }, blockConfig.mapColour),
+    CustomItemBlock, IDismantleable {
 
     abstract val blockType: CustomBlockType
 
@@ -127,6 +146,8 @@ abstract class CbtCustomBlock(blockConfig: BlockConfig) :
         lightValue = config.lightValue
         creativeTab = CbTweaker.defns.creativeTab
     }
+
+    override fun createBlockItem(): ItemBlock = CbtCustomBlockItem(this)
 
     @Suppress("OVERRIDE_DEPRECATION")
     override fun getBoundingBox(state: IBlockState, source: IBlockAccess, pos: BlockPos): AxisAlignedBB =
@@ -170,4 +191,23 @@ abstract class CbtCustomBlock(blockConfig: BlockConfig) :
         }
         return arrayListOf(drop)
     }
+}
+
+open class CbtCustomBlockItem(block: CbtCustomBlock) : ItemBlock(block) {
+    private val blockConfig: BlockConfig = block.blockType.blockConfig
+
+    init {
+        setMaxStackSize(blockConfig.maxStackSize)
+    }
+
+    override fun getForgeRarity(stack: ItemStack): IRarity {
+        val rarity = blockConfig.rarity
+        if (rarity == EnumRarity.COMMON && stack.isItemEnchanted) {
+            return EnumRarity.RARE
+        }
+        return rarity
+    }
+
+    @ClientSide.Physical
+    override fun hasEffect(stack: ItemStack): Boolean = blockConfig.enchantedEffect || super.hasEffect(stack)
 }
