@@ -14,7 +14,7 @@ object CbtLang {
 
     fun tooltipEnabledDisabled(condition: Boolean): String = if (condition) TOOLTIP_ENABLED else TOOLTIP_DISABLED
 
-    const val TOOLTIP_CONFIGURE_SIDES: String = "$KEY_TOOLTIP.configure_sides"
+    const val TOOLTIP_CONFIGURE_IO: String = "$KEY_TOOLTIP.configure_io"
     const val TOOLTIP_REDSTONE_BEHAVIOUR: String = "$KEY_TOOLTIP.redstone_behaviour"
     const val TOOLTIP_AUTO_EXPORT: String = "$KEY_TOOLTIP.auto_export"
 

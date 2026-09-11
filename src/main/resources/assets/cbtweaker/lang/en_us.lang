@@ -12,7 +12,7 @@ cbtweaker.tooltip.buffer_group=Buffer Group: %s
 cbtweaker.tooltip.vis_tool=Visualizes multi-block structures
 cbtweaker.tooltip.bind_to_block=Sneak+use to bind to a block
 
-cbtweaker.tooltip.configure_sides=Configure sides
+cbtweaker.tooltip.configure_io=Configure I/O
 cbtweaker.tooltip.redstone_behaviour=Redstone Behaviour
 cbtweaker.tooltip.auto_export=Auto Export
 

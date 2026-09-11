@@ -57,7 +57,7 @@ class IoConfigModeControl(private val configState: MutableBoolean) : AbstractGui
 
         override fun drawTooltip(context: GuiContext, partialTicks: Float, mouseX: Int, mouseY: Int): Boolean {
             if (!containsPoint(mouseX, mouseY)) return false
-            context.gui.drawHoveringText(I18n.format(CbtLang.TOOLTIP_CONFIGURE_SIDES), mouseX, mouseY)
+            context.gui.drawHoveringText(I18n.format(CbtLang.TOOLTIP_CONFIGURE_IO), mouseX, mouseY)
             return true
         }
 
