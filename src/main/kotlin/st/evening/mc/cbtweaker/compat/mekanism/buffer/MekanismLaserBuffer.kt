@@ -325,7 +325,7 @@ class MekanismLaserBuffer(
     class EnergyMatcher(private val amount: Double, private val doConsume: Boolean) :
         IngredientMatcher<Accumulator, JeiAccumulator> {
 
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean {
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean {
             val scaledAmount = amount * consumeFactor
             return scaledAmount <= 0.0 || acc.value.extract(scaledAmount, !doConsume) >= scaledAmount
         }
@@ -347,15 +347,15 @@ class MekanismLaserBuffer(
     }
 
     class PowerMatcher(private val rate: Double) : IngredientMatcher<Accumulator, JeiAccumulator> {
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean =
-            consume(acc, consumeFactor, false) // make sure there's enough energy to start
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
+            !checkMode || consume(acc, consumeFactor) // make sure there's enough energy to start
 
-        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float): Boolean =
-            consume(acc, consumeFactor, true)
+        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
+            consume(acc, consumeFactor)
 
-        private fun consume(acc: Lazy<Accumulator>, consumeFactor: Float, commit: Boolean): Boolean {
+        private fun consume(acc: Lazy<Accumulator>, consumeFactor: Float): Boolean {
             val scaledAmount = rate * consumeFactor
-            return scaledAmount <= 0 || acc.value.extract(scaledAmount, commit) >= scaledAmount
+            return scaledAmount <= 0 || acc.value.extract(scaledAmount, true) >= scaledAmount
         }
 
         private val jeiIngredient: JeiMekanismJoulesIngredient =

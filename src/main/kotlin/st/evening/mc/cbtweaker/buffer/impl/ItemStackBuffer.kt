@@ -518,8 +518,8 @@ class ItemStackBuffer private constructor(
     class ItemMatcher(private val item: ItemKey, private val count: Int, private val consumeType: ItemConsumeType) :
         IngredientMatcher<Accumulator, JeiAccumulator> {
 
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean {
-            val scaledCount = CbtMathHelper.scaleConsumeInt(count, consumeFactor, determMode)
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean {
+            val scaledCount = CbtMathHelper.scaleConsumeInt(count, consumeFactor, checkMode)
             if (scaledCount <= 0) return true
             when (consumeType) {
                 ItemConsumeType.CONSUME ->
@@ -564,8 +564,8 @@ class ItemStackBuffer private constructor(
         private val count: Int,
         private val consumeType: ItemConsumeType
     ) : IngredientMatcher<Accumulator, JeiAccumulator> {
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean {
-            var scaledCount = CbtMathHelper.scaleConsumeInt(count, consumeFactor, determMode)
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean {
+            var scaledCount = CbtMathHelper.scaleConsumeInt(count, consumeFactor, checkMode)
             if (scaledCount <= 0) return true
             when (consumeType) {
                 ItemConsumeType.CONSUME -> {

@@ -17,11 +17,11 @@ import java.util.Random
 object CbtMathHelper {
     val cbtRandom: Random = Random()
 
-    fun scaleConsumeInt(amount: Int, scaleFactor: Float, determMode: Boolean, random: Random = cbtRandom): Int {
+    fun scaleConsumeInt(amount: Int, scaleFactor: Float, checkMode: Boolean, random: Random = cbtRandom): Int {
         val f = amount * scaleFactor
         if (f >= 1) return MathHelper.ceil(f)
         if (f <= 0) return 0
-        return if (determMode || random.nextFloat() < f) 1 else 0
+        return if (checkMode || random.nextFloat() < f) 1 else 0
     }
 
     // automatically figure out how to lay out slots in a variable-size group!

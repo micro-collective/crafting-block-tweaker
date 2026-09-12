@@ -579,8 +579,8 @@ class MekanismGasBuffer(
     class GasMatcher(private val gas: Gas, private val amount: Int, private val doConsume: Boolean) :
         IngredientMatcher<Accumulator, JeiAccumulator> {
 
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean {
-            val scaledAmount = CbtMathHelper.scaleConsumeInt(amount, consumeFactor, determMode)
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean {
+            val scaledAmount = CbtMathHelper.scaleConsumeInt(amount, consumeFactor, checkMode)
             if (scaledAmount <= 0) return true
             val drained = acc.value.getTank(gas).drawGas(null, scaledAmount, doConsume)
             return drained != null && drained.amount >= scaledAmount
@@ -608,16 +608,16 @@ class MekanismGasBuffer(
     class GasRateMatcher(private val gas: Gas, private val rate: Int) :
         IngredientMatcher<Accumulator, JeiAccumulator> {
 
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean =
-            consume(acc, consumeFactor, true) // make sure there's enough gas to start
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
+            !checkMode || consume(acc, consumeFactor, true) // make sure there's enough gas to start
 
-        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float): Boolean =
-            consume(acc, consumeFactor, false)
+        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
+            consume(acc, consumeFactor, checkMode)
 
-        private fun consume(acc: Lazy<Accumulator>, consumeFactor: Float, simulate: Boolean): Boolean {
-            val scaledAmount = CbtMathHelper.scaleConsumeInt(rate, consumeFactor, simulate)
+        private fun consume(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean {
+            val scaledAmount = CbtMathHelper.scaleConsumeInt(rate, consumeFactor, checkMode)
             if (scaledAmount <= 0) return true
-            val drained = acc.value.getTank(gas).drawGas(null, scaledAmount, !simulate)
+            val drained = acc.value.getTank(gas).drawGas(null, scaledAmount, true)
             return drained != null && drained.amount >= scaledAmount
         }
 

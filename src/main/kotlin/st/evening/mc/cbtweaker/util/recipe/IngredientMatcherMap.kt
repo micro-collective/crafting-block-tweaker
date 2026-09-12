@@ -90,7 +90,7 @@ interface MatcherChecker {
             consumeFactor: Float,
             acc: Lazy<A>,
             matchers: List<IngredientMatcher<A, JA>>
-        ): Boolean = matchers.all { it.consumePeriodic(acc, consumeFactor) }
+        ): Boolean = matchers.all { it.consumePeriodic(acc, consumeFactor, true) }
     }
 }
 
@@ -149,7 +149,7 @@ interface MatcherConsumer {
             matchers: List<IngredientMatcher<A, JA>>
         ) {
             matchers.forEach {
-                it.consumePeriodic(acc, consumeFactor)
+                it.consumePeriodic(acc, consumeFactor, false)
             }
         }
     }

@@ -363,10 +363,10 @@ class MekanismHeatBuffer(
         private val metric: StatMetric,
         private val initialOnly: Boolean
     ) : IngredientMatcher<Accumulator, JeiAccumulator> {
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean =
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
             checkTemp(acc)
 
-        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float): Boolean =
+        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
             initialOnly || checkTemp(acc)
 
         private fun checkTemp(acc: Lazy<Accumulator>): Boolean = acc.value.getTemp(metric) >= temp
@@ -393,7 +393,7 @@ class MekanismHeatBuffer(
     class HeatMatcher(private val amount: Double, private val doConsume: Boolean) :
         IngredientMatcher<Accumulator, JeiAccumulator> {
 
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean {
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean {
             val scaledAmount = amount * consumeFactor
             if (scaledAmount <= 0) return true
             val accum = acc.value
@@ -421,20 +421,18 @@ class MekanismHeatBuffer(
     }
 
     class HeatRateMatcher(private val rate: Double) : IngredientMatcher<Accumulator, JeiAccumulator> {
-        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, determMode: Boolean): Boolean =
-            consume(acc, consumeFactor, false) // make sure there's enough heat to start
+        override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
+            !checkMode || consume(acc, consumeFactor) // make sure there's enough heat to start
 
-        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float): Boolean =
-            consume(acc, consumeFactor, true)
+        override fun consumePeriodic(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean =
+            consume(acc, consumeFactor)
 
-        private fun consume(acc: Lazy<Accumulator>, consumeFactor: Float, commit: Boolean): Boolean {
+        private fun consume(acc: Lazy<Accumulator>, consumeFactor: Float): Boolean {
             val scaledAmount = rate * consumeFactor
             if (scaledAmount <= 0) return true
             val accum = acc.value
             if (accum.getTotalHeat() < scaledAmount) return false
-            if (commit) {
-                accum.removeHeat(scaledAmount)
-            }
+            accum.removeHeat(scaledAmount)
             return true
         }
 
