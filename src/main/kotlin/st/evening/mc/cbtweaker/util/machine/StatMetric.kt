@@ -1,4 +1,4 @@
-package st.evening.mc.cbtweaker.util
+package st.evening.mc.cbtweaker.util.machine
 
 import st.evening.mc.prelude.api.data.ser.EnumSerializer
 import st.evening.mc.prelude.api.util.data.orNull

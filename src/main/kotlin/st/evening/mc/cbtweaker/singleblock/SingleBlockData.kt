@@ -12,7 +12,7 @@ import st.evening.mc.cbtweaker.behaviour.MachineHost
 import st.evening.mc.cbtweaker.buffer.BufferObserver
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
-import st.evening.mc.cbtweaker.util.CbtSyncHelper
+import st.evening.mc.cbtweaker.util.sync.CbtSyncHelper
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
 import st.evening.mc.cbtweaker.util.component.UiElementTable

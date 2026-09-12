@@ -11,7 +11,7 @@ import net.minecraftforge.common.capabilities.Capability
 import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.common.MachineTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
-import st.evening.mc.cbtweaker.util.TileEntitySyncProxy
+import st.evening.mc.cbtweaker.util.sync.TileEntitySyncProxy
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
 import st.evening.mc.cbtweaker.util.component.UiElementTable

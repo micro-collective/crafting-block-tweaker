@@ -15,7 +15,7 @@ import st.evening.mc.cbtweaker.structure.StructureMatcher
 import st.evening.mc.cbtweaker.structure.StructureMatcherType
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
 import st.evening.mc.cbtweaker.structure.block.impl.MultiBlockControllerStructureBlockMatcher
-import st.evening.mc.cbtweaker.util.BlockArrayHelper
+import st.evening.mc.cbtweaker.util.config.BlockArrayHelper
 import st.evening.mc.cbtweaker.util.getRotationFromNorth
 import st.evening.mc.cbtweaker.util.rotate
 import st.evening.mc.prelude.api.data.ser.SerializationException

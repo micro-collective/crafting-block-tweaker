@@ -1,4 +1,4 @@
-package st.evening.mc.cbtweaker.util
+package st.evening.mc.cbtweaker.util.sync
 
 import st.evening.mc.prelude.api.data.state.ListStateComposite
 import st.evening.mc.prelude.api.data.state.Piecewise

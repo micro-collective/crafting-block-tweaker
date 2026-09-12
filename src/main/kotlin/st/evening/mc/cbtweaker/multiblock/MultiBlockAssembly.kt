@@ -18,7 +18,7 @@ import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.hatch.HatchTileEntity
 import st.evening.mc.cbtweaker.structure.StructureMatch
-import st.evening.mc.cbtweaker.util.CbtSyncHelper
+import st.evening.mc.cbtweaker.util.sync.CbtSyncHelper
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet

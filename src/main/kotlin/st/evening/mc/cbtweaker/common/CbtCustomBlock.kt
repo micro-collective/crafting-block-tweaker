@@ -21,7 +21,7 @@ import net.minecraftforge.common.IRarity
 import net.minecraftforge.fml.common.Optional
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.compat.cofh.CoFHCoreCompat
-import st.evening.mc.cbtweaker.util.BlockConfigData
+import st.evening.mc.cbtweaker.util.config.BlockConfigData
 import st.evening.mc.prelude.api.block.CustomItemBlock
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath

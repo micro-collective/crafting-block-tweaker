@@ -12,7 +12,7 @@ import st.evening.mc.cbtweaker.buffer.BufferGroup
 import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
-import st.evening.mc.cbtweaker.util.TileEntitySyncProxy
+import st.evening.mc.cbtweaker.util.sync.TileEntitySyncProxy
 import st.evening.mc.prelude.api.util.collection.CapabilityMap
 import st.evening.mc.prelude.api.util.game.ServerSide
 

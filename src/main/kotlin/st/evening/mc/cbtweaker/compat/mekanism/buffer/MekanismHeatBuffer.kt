@@ -28,7 +28,7 @@ import st.evening.mc.cbtweaker.gui.inventory.SyncedUiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.util.CbtMathHelper
-import st.evening.mc.cbtweaker.util.StatMetric
+import st.evening.mc.cbtweaker.util.machine.StatMetric
 import st.evening.mc.cbtweaker.util.component.SidedBufferConfig
 import st.evening.mc.cbtweaker.util.gui.DrawableData
 import st.evening.mc.cbtweaker.util.gui.SamplableData

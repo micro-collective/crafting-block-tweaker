@@ -1,4 +1,4 @@
-package st.evening.mc.cbtweaker.util
+package st.evening.mc.cbtweaker.util.config
 
 import net.minecraft.block.SoundType
 import net.minecraft.block.material.MapColor

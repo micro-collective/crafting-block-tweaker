@@ -1,4 +1,4 @@
-package st.evening.mc.cbtweaker.util
+package st.evening.mc.cbtweaker.util.config
 
 import it.unimi.dsi.fastutil.chars.Char2ObjectMap
 import it.unimi.dsi.fastutil.chars.Char2ObjectOpenHashMap
