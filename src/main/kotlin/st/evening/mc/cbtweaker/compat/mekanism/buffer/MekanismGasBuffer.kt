@@ -56,6 +56,7 @@ import st.evening.mc.prelude.api.data.state.ValueStateAtom
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
+import st.evening.mc.prelude.api.data.tjson.expectFloat
 import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectIntValue
 import st.evening.mc.prelude.api.data.tjson.useAny
@@ -637,9 +638,11 @@ class MekanismGasBuffer(
         }
     }
 
-    class GasProvider(private val gas: Gas, private val amount: Int) : IngredientProvider<Accumulator, JeiAccumulator> {
+    class GasProvider(private val gas: Gas, private val amount: Int, private val chance: Float) :
+        IngredientProvider<Accumulator, JeiAccumulator> {
+
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
-            acc.value.insert(GasStack(gas, amount), true) >= amount
+            !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(GasStack(gas, amount), true) >= amount
 
         private val jeiIngredient: JeiMekanismGasIngredient =
             JeiMekanismGasIngredient(GasStack(gas, amount), false, JeiIngredient.Role.OUTPUT)
@@ -652,8 +655,11 @@ class MekanismGasBuffer(
             override val id: ResourceLocation = CbTweaker.resource("gas")
 
             context(_: JsonPath)
-            override fun loadProvider(dto: TJson.Object): GasProvider =
-                GasProvider(dto.useStringValue("gas") { GasHelper.loadGas(it) }, dto.expectIntValue("amount"))
+            override fun loadProvider(dto: TJson.Object): GasProvider = GasProvider(
+                dto.useStringValue("gas") { GasHelper.loadGas(it) },
+                dto.expectIntValue("amount"),
+                dto.expectFloat("chance") ?: 1F
+            )
         }
     }
 

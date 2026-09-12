@@ -55,6 +55,7 @@ import st.evening.mc.prelude.api.data.state.ValueStateAtom
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
+import st.evening.mc.prelude.api.data.tjson.expectFloat
 import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectIntValue
 import st.evening.mc.prelude.api.data.tjson.useAny
@@ -610,11 +611,11 @@ class FluidBuffer(
         }
     }
 
-    class FluidProvider(private val fluid: FluidKey, private val amount: Int) :
+    class FluidProvider(private val fluid: FluidKey, private val amount: Int, private val chance: Float) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
-            acc.value.insert(fluid.newStack(amount), true) >= amount
+            !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(fluid.newStack(amount), true) >= amount
 
         private val jeiIngredient: JeiFluidIngredient =
             JeiFluidIngredient(fluid.newStack(amount)!!, false, JeiIngredient.Role.OUTPUT)
@@ -627,8 +628,11 @@ class FluidBuffer(
             override val id: ResourceLocation = CbTweaker.resource("fluid")
 
             context(_: JsonPath)
-            override fun loadProvider(dto: TJson.Object): FluidProvider =
-                FluidProvider(FluidKey.Serializer.deserializeFromJson(dto), dto.expectIntValue("amount"))
+            override fun loadProvider(dto: TJson.Object): FluidProvider = FluidProvider(
+                FluidKey.Serializer.deserializeFromJson(dto),
+                dto.expectIntValue("amount"),
+                dto.expectFloat("chance") ?: 0F
+            )
         }
     }
 

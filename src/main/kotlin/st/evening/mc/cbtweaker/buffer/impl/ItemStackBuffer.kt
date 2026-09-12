@@ -44,6 +44,7 @@ import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
+import st.evening.mc.prelude.api.data.tjson.expectFloat
 import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectStringValue
 import st.evening.mc.prelude.api.data.tjson.useAny
@@ -614,11 +615,11 @@ class ItemStackBuffer private constructor(
         }
     }
 
-    class ItemProvider(private val item: ItemKey, private val count: Int) :
+    class ItemProvider(private val item: ItemKey, private val count: Int, private val chance: Float) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
-            acc.value.insert(item.newStack(count), false).isEmpty
+            !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(item.newStack(count), false).isEmpty
 
         private val jeiIngredient: JeiItemIngredient =
             JeiItemIngredient(item.newStack(count), JeiIngredient.Role.OUTPUT)
@@ -633,7 +634,8 @@ class ItemStackBuffer private constructor(
             context(_: JsonPath)
             override fun loadProvider(dto: TJson.Object): ItemProvider = ItemProvider(
                 ItemKey.Serializer.deserializeFromJson(dto),
-                dto.expectInt("count") ?: 1
+                dto.expectInt("count") ?: 1,
+                dto.expectFloat("chance") ?: 1F
             )
         }
     }

@@ -24,6 +24,12 @@ object CbtMathHelper {
         return if (checkMode || random.nextFloat() < f) 1 else 0
     }
 
+    fun rollProduce(probability: Float, checkMode: Boolean, random: Random = cbtRandom): Boolean = when {
+        probability <= 0 -> false
+        checkMode || probability >= 1 -> true
+        else -> random.nextFloat() <= probability
+    }
+
     // automatically figure out how to lay out slots in a variable-size group!
     // first, we compute the smallest square number that is >= the slot count; this will be the square size
     // next, we want to minimize the number of rows used, then minimize the difference in count between rows

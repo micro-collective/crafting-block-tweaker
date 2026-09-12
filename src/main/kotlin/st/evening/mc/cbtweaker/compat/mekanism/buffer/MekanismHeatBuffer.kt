@@ -27,6 +27,7 @@ import st.evening.mc.cbtweaker.gui.CbtGuiData
 import st.evening.mc.cbtweaker.gui.inventory.SyncedUiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
+import st.evening.mc.cbtweaker.util.CbtMathHelper
 import st.evening.mc.cbtweaker.util.StatMetric
 import st.evening.mc.cbtweaker.util.component.SidedBufferConfig
 import st.evening.mc.cbtweaker.util.gui.DrawableData
@@ -41,6 +42,7 @@ import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
 import st.evening.mc.prelude.api.data.tjson.expectDouble
 import st.evening.mc.prelude.api.data.tjson.expectDoubleValue
+import st.evening.mc.prelude.api.data.tjson.expectFloat
 import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.useAny
 import st.evening.mc.prelude.api.data.tjson.useString
@@ -452,9 +454,13 @@ class MekanismHeatBuffer(
         }
     }
 
-    class HeatProvider(private val amount: Double) : IngredientProvider<Accumulator, JeiAccumulator> {
+    class HeatProvider(private val amount: Double, private val chance: Float) :
+        IngredientProvider<Accumulator, JeiAccumulator> {
+
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean {
-            acc.value.addHeat(amount)
+            if (CbtMathHelper.rollProduce(chance, checkMode)) {
+                acc.value.addHeat(amount)
+            }
             return true
         }
 
@@ -469,7 +475,8 @@ class MekanismHeatBuffer(
             override val id: ResourceLocation = CbTweaker.resource("heat")
 
             context(_: JsonPath)
-            override fun loadProvider(dto: TJson.Object): HeatProvider = HeatProvider(dto.expectDoubleValue("amount"))
+            override fun loadProvider(dto: TJson.Object): HeatProvider =
+                HeatProvider(dto.expectDoubleValue("amount"), dto.expectFloat("chance") ?: 1F)
         }
     }
 

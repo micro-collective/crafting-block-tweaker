@@ -41,6 +41,7 @@ import st.evening.mc.prelude.api.data.state.ValueStateAtom
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
+import st.evening.mc.prelude.api.data.tjson.expectFloat
 import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectIntValue
 import st.evening.mc.prelude.api.data.tjson.expectString
@@ -434,10 +435,11 @@ class ForgeEnergyBuffer(
         }
     }
 
-    class EnergyProvider(private val amount: Int) :
+    class EnergyProvider(private val amount: Int, private val chance: Float) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
-        override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean = acc.value.insert(amount, false) >= amount
+        override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
+            !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(amount, false) >= amount
 
         private val jeiIngredient: JeiForgeEnergyIngredient =
             JeiForgeEnergyIngredient(amount, DEFAULT_ENERGY_UNIT, JeiIngredient.Role.OUTPUT)
@@ -451,7 +453,8 @@ class ForgeEnergyBuffer(
             override val id: ResourceLocation = CbTweaker.resource("energy")
 
             context(_: JsonPath)
-            override fun loadProvider(dto: TJson.Object): EnergyProvider = EnergyProvider(dto.expectIntValue("amount"))
+            override fun loadProvider(dto: TJson.Object): EnergyProvider =
+                EnergyProvider(dto.expectIntValue("amount"), dto.expectFloat("chance") ?: 1F)
         }
     }
 
