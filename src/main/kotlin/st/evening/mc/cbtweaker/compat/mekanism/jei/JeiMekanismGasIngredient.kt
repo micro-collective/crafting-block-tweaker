@@ -12,15 +12,17 @@ import st.evening.mc.prelude.api.util.game.RequireMod
 import st.evening.mc.prelude.api.util.render.RenderingHelper
 import st.evening.mc.prelude.api.util.render.TextureResource
 import st.evening.mc.prelude.api.util.render.gui.GuiRenderHelper
+import st.evening.mc.prelude.api.util.text.toStringPercentage
 
 @RequireMod(MekanismCompat.MOD_ID)
 class JeiMekanismGasIngredient(
     val gasStack: GasStack,
     val unitName: String,
-    override val role: JeiIngredient.Role
+    override val role: JeiIngredient.Role,
+    val chance: Float = 1F
 ) : JeiIngredient<GasStack> {
-    constructor(gasStack: GasStack, isRate: Boolean, role: JeiIngredient.Role) :
-        this(gasStack, if (isRate) "mB/t" else "mB", role)
+    constructor(gasStack: GasStack, isRate: Boolean, role: JeiIngredient.Role, chance: Float = 1F) :
+        this(gasStack, if (isRate) "mB/t" else "mB", role, chance)
 
     override val jeiIngredientType: IIngredientType<GasStack>?
         get() = MekanismJEI.TYPE_GAS
@@ -40,5 +42,8 @@ class JeiMekanismGasIngredient(
     override fun getTooltip(ingredient: GasStack, tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
         tooltip += ingredient.gas.localizedName
         tooltip += "${TextFormatting.GRAY}${"%,d %s".format(ingredient.amount, unitName)}"
+        if (chance < 1F) {
+            tooltip += "${TextFormatting.GOLD}(${chance.toStringPercentage()})"
+        }
     }
 }

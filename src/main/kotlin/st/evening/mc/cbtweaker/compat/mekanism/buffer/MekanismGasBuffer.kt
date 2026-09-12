@@ -645,7 +645,7 @@ class MekanismGasBuffer(
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(GasStack(gas, amount), true) >= amount
 
         private val jeiIngredient: JeiMekanismGasIngredient =
-            JeiMekanismGasIngredient(GasStack(gas, amount), false, JeiIngredient.Role.OUTPUT)
+            JeiMekanismGasIngredient(GasStack(gas, amount), false, JeiIngredient.Role.OUTPUT, chance)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

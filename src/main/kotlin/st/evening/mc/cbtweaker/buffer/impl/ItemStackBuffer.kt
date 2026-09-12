@@ -622,7 +622,7 @@ class ItemStackBuffer private constructor(
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(item.newStack(count), false).isEmpty
 
         private val jeiIngredient: JeiItemIngredient =
-            JeiItemIngredient(item.newStack(count), JeiIngredient.Role.OUTPUT)
+            JeiItemIngredient(item.newStack(count), JeiIngredient.Role.OUTPUT, chance)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

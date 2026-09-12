@@ -442,7 +442,7 @@ class ForgeEnergyBuffer(
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(amount, false) >= amount
 
         private val jeiIngredient: JeiForgeEnergyIngredient =
-            JeiForgeEnergyIngredient(amount, DEFAULT_ENERGY_UNIT, JeiIngredient.Role.OUTPUT)
+            JeiForgeEnergyIngredient(amount, DEFAULT_ENERGY_UNIT, JeiIngredient.Role.OUTPUT, chance)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

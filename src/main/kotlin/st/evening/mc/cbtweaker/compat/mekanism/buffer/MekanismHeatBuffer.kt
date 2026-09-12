@@ -465,7 +465,7 @@ class MekanismHeatBuffer(
         }
 
         private val jeiIngredient: JeiMekanismHeatIngredient =
-            JeiMekanismHeatIngredient(amount, false, JeiIngredient.Role.OUTPUT)
+            JeiMekanismHeatIngredient(amount, false, JeiIngredient.Role.OUTPUT, chance)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

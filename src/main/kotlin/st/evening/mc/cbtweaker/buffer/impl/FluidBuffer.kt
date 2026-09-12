@@ -618,7 +618,7 @@ class FluidBuffer(
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(fluid.newStack(amount), true) >= amount
 
         private val jeiIngredient: JeiFluidIngredient =
-            JeiFluidIngredient(fluid.newStack(amount)!!, false, JeiIngredient.Role.OUTPUT)
+            JeiFluidIngredient(fluid.newStack(amount)!!, false, JeiIngredient.Role.OUTPUT, chance)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
