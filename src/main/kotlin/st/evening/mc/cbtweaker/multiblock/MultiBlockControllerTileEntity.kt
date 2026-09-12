@@ -49,21 +49,24 @@ class MultiBlockControllerTileEntity : LazyTileEntity<MultiBlockData<*>>(), Mach
 
     fun onAssemblyChanged(assembly: MultiBlockAssembly<*>?) {
         if (assembly != null) {
-            initSync(assembly)
-            world.onServer {
-                val syncMgr = assembly.syncManager.getServer()
-                assembly.dispatchSync(
-                    CbTweaker.defns.s2cBindMultiBlockAssembly,
-                    S2CBindMultiBlockAssembly(
-                        pos,
-                        syncMgr.hostId,
-                        PacketBuffer(Unpooled.buffer()).also { syncMgr.writeFullState(it) }
+            val syncProxy = assembly.syncProxy
+            if (syncProxy != null) {
+                initSync(syncProxy)
+                world.onServer {
+                    val syncMgr = syncProxy.syncManager.getServer()
+                    syncProxy.dispatchSync(
+                        CbTweaker.defns.s2cBindMultiBlockAssembly,
+                        S2CBindMultiBlockAssembly(
+                            pos,
+                            syncMgr.hostId,
+                            PacketBuffer(Unpooled.buffer()).also { syncMgr.writeFullState(it) }
+                        )
                     )
-                )
+                }
+                return
             }
-        } else {
-            initSync(null)
         }
+        initSync(null)
     }
 
     override fun update() {

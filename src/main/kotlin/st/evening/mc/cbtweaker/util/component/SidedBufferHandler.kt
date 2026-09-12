@@ -23,7 +23,7 @@ import st.evening.mc.cbtweaker.util.capability.CapabilityMerger
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
 import st.evening.mc.cbtweaker.util.world.AllFaces
 import st.evening.mc.prelude.api.PreludeInternal
-import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
+import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.data.state.Observer
 import st.evening.mc.prelude.api.data.state.Piecewise
 import st.evening.mc.prelude.api.data.state.onObservableUpdate
@@ -38,7 +38,7 @@ import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
 import kotlin.experimental.and
 
-interface BufferConfig<B> : NbtCompoundSerializable {
+interface BufferConfig<B> : ServerSideSerializable {
     val bufType: BufferType<B, *, *, *>
     val buffer: B
 
@@ -146,7 +146,8 @@ class SidedBufferConfig<B>(
         _exportHandler?.tick()
     }
 
-    override fun writeToNbt(dto: NBTTagCompound) {
+    @ServerSide
+    override fun writeToNbtServerSide(dto: NBTTagCompound) {
         dto.runAction {
             SER_BUFFER tag NBTTagCompound().also { bufType.serializeBufferToNbt(buffer, it) }
             SER_SIDES stringList enabledFaces.map { it.name }
@@ -156,7 +157,8 @@ class SidedBufferConfig<B>(
         }
     }
 
-    override fun readFromNbt(dto: NBTTagCompound) {
+    @ServerSide
+    override fun readFromNbtServerSide(dto: NBTTagCompound) {
         enabledFaces.clear()
         bufType.deserializeBufferFromNbt(buffer, dto.getCompoundTag(SER_BUFFER))
         dto.getTagList(SER_SIDES, Constants.NBT.TAG_STRING).forEachString {
@@ -224,14 +226,15 @@ inline fun <T> ConfigTable<T>.forEachConfig(action: (T) -> Unit) {
     }
 }
 
-private fun <T : NbtCompoundSerializable> ConfigTable<T>.writeConfigsToNbt(dto: NBTTagCompound) {
+@ServerSide
+private fun <T : BufferConfig<*>> ConfigTable<T>.writeConfigsToNbt(dto: NBTTagCompound) {
     dto.runAction {
         forEach { (bufGroupId, subTable) ->
             bufGroupId compound {
                 subTable.forEach { (bufType, configs) ->
                     bufType.id.toString() compound {
                         configs.forEach { (name, config) ->
-                            name tag config.writeToNbt()
+                            name tag NBTTagCompound().also { config.writeToNbtServerSide(it) }
                         }
                     }
                 }
@@ -240,13 +243,14 @@ private fun <T : NbtCompoundSerializable> ConfigTable<T>.writeConfigsToNbt(dto: 
     }
 }
 
-private fun <T : NbtCompoundSerializable> ConfigTable<T>.readConfigsFromNbt(dto: NBTTagCompound) {
+@ServerSide
+private fun <T : BufferConfig<*>> ConfigTable<T>.readConfigsFromNbt(dto: NBTTagCompound) {
     forEach { (bufGroupId, subTable) ->
         val subTableDto = dto.getCompoundTag(bufGroupId)
         subTable.forEach { (bufType, configs) ->
             val configsDto = subTableDto.getCompoundTag(bufType.id.toString())
             configs.forEach { (name, config) ->
-                config.readFromNbt(configsDto.getCompoundTag(name))
+                config.readFromNbtServerSide(configsDto.getCompoundTag(name))
             }
         }
     }
@@ -257,13 +261,10 @@ typealias UiElementTable = Map<String, Map<BufferType<*, *, *, *>, Map<String, U
 class SidedBufferHandler(
     val getFront: () -> BlockSide,
     bufGroups: BufferGroups
-) : ICapabilityProvider, NbtCompoundSerializable {
+) : ICapabilityProvider {
     private val sideConfigTable: ConfigTable<SidedBufferConfig<*>>
     private val unsidedConfigTable: ConfigTable<UnsidedConfig<*>>
     private val unsidedCapabilities: CapabilityMultimap = CapabilityMultimap()
-
-    val bufferSyncState: List<Piecewise>
-    val configSyncState: List<Piecewise>
 
     init {
         // insertion-ordered maps do NOT inherently maintain the correct order; we MUST replicate the order in bufGroups
@@ -283,22 +284,6 @@ class SidedBufferHandler(
         }
         this.sideConfigTable = sideConfigTable
         this.unsidedConfigTable = unsidedConfigTable
-        this.bufferSyncState = buildList {
-            sideConfigTable.forEachConfig { config ->
-                config.getBufferSyncState()?.let { add(it) }
-            }
-            unsidedConfigTable.forEachConfig { config ->
-                config.getBufferSyncState()?.let { add(it) }
-            }
-        }
-        this.configSyncState = buildList {
-            sideConfigTable.forEachConfig {
-                add(it.configSyncState)
-            }
-            unsidedConfigTable.forEachConfig { config ->
-                config.configSyncState?.let { add(it) }
-            }
-        }
     }
 
     @PreludeInternal
@@ -369,13 +354,33 @@ class SidedBufferHandler(
         unsidedConfigTable.forEachConfig { it.tick() }
     }
 
-    override fun writeToNbt(dto: NBTTagCompound) {
+    fun getBufferSyncState(dest: MutableList<Piecewise>) {
+        sideConfigTable.forEachConfig { config ->
+            config.getBufferSyncState()?.let { dest += it }
+        }
+        unsidedConfigTable.forEachConfig { config ->
+            config.getBufferSyncState()?.let { dest += it }
+        }
+    }
+
+    fun getConfigSyncState(dest: MutableList<Piecewise>) {
+        sideConfigTable.forEachConfig {
+            dest += it.configSyncState
+        }
+        unsidedConfigTable.forEachConfig { config ->
+            config.configSyncState?.let { dest += it }
+        }
+    }
+
+    @ServerSide
+    fun writeToNbt(dto: NBTTagCompound) {
         // sided/unsided configs partition the original bufGroups, so sharing the same table shouldn't be a problem
         sideConfigTable.writeConfigsToNbt(dto)
         unsidedConfigTable.writeConfigsToNbt(dto)
     }
 
-    override fun readFromNbt(dto: NBTTagCompound) {
+    @ServerSide
+    fun readFromNbt(dto: NBTTagCompound) {
         sideConfigTable.readConfigsFromNbt(dto)
         unsidedConfigTable.readConfigsFromNbt(dto)
     }
@@ -474,7 +479,8 @@ class SidedBufferHandler(
             _exportHandler?.tick()
         }
 
-        override fun writeToNbt(dto: NBTTagCompound) {
+        @ServerSide
+        override fun writeToNbtServerSide(dto: NBTTagCompound) {
             dto.runAction {
                 SER_BUFFER tag NBTTagCompound().also { bufType.serializeBufferToNbt(buffer, it) }
                 _exportHandler?.let {
@@ -483,7 +489,8 @@ class SidedBufferHandler(
             }
         }
 
-        override fun readFromNbt(dto: NBTTagCompound) {
+        @ServerSide
+        override fun readFromNbtServerSide(dto: NBTTagCompound) {
             bufType.deserializeBufferFromNbt(buffer, dto.getCompoundTag(SER_BUFFER))
             _exportHandler?.setStateFromSync(dto.getBoolean(SER_EXPORT))
         }

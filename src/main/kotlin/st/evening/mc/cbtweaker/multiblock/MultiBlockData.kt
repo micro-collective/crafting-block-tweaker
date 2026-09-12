@@ -17,7 +17,7 @@ import st.evening.mc.cbtweaker.util.machine.RefreshState
 import st.evening.mc.cbtweaker.world.RoiHost
 import st.evening.mc.cbtweaker.world.RoiTicket
 import st.evening.mc.prelude.api.block.prefab.BlockSidedIfc
-import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
+import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.onClient
@@ -26,10 +26,12 @@ import st.evening.mc.prelude.api.util.world.onServer
 class MultiBlockData<S>(
     val mbCtrl: MultiBlockControllerTileEntity,
     val mbType: MultiBlockType<S>
-) : RoiHost, BufferedSyncHolder, NbtCompoundSerializable {
+) : RoiHost, BufferedSyncHolder, ServerSideSerializable {
     private var mbRoiTicket: RoiTicket? = null
     private var assembly: MultiBlockAssembly<S>? = null
+    @ServerSide
     private var bufferedAssemblyDeser: NBTTagCompound? = null
+    @ClientSide
     private var bufferedAssemblyBind: BindData? = null
     var assemblyStateClock: Int = 0
         private set
@@ -128,9 +130,11 @@ class MultiBlockData<S>(
                     )
                 }
                 assembly.associateHatches(mbCtrl)
-                bufferedAssemblyDeser?.let {
-                    assembly.readFromNbt(it)
-                    bufferedAssemblyDeser = null
+                mbCtrl.world.onServer {
+                    bufferedAssemblyDeser?.let {
+                        assembly.readFromNbtServerSide(it)
+                        bufferedAssemblyDeser = null
+                    }
                 }
                 // recheck recipe immediately once assembled
                 // don't need to hard-refresh because the executor state will be fresh anyways
@@ -194,15 +198,17 @@ class MultiBlockData<S>(
         bufferedAssemblyBind = BindData(hostId, syncData)
     }
 
-    override fun writeToNbt(dto: NBTTagCompound) {
-        assembly?.writeToNbt(dto)
+    @ServerSide
+    override fun writeToNbtServerSide(dto: NBTTagCompound) {
+        assembly?.writeToNbtServerSide(dto)
     }
 
-    override fun readFromNbt(dto: NBTTagCompound) {
+    @ServerSide
+    override fun readFromNbtServerSide(dto: NBTTagCompound) {
         if (!dto.isEmpty) {
             val assembly = this.assembly
             if (assembly != null) {
-                assembly.readFromNbt(dto)
+                assembly.readFromNbtServerSide(dto)
             } else {
                 bufferedAssemblyDeser = dto
             }

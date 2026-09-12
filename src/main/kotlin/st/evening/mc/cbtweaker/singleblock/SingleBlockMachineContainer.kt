@@ -29,7 +29,7 @@ class SingleBlockMachineContainer(
     playerInv,
     machine.sbType.windowConfig,
     buildList {
-        addAll(machine.bufHandler.configSyncState)
+        machine.bufHandler.getConfigSyncState(this)
         machine.rsHandler?.let { add(it) }
     },
     buildList {

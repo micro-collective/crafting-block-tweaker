@@ -59,8 +59,10 @@ interface BufferType<B, A, JB, JA> : Identifiable, BlockBehaviour<B> {
 
     fun copyAccumulator(acc: A): A
 
+    @ServerSide
     fun serializeBufferToNbt(buffer: B, dto: NBTTagCompound)
 
+    @ServerSide
     fun deserializeBufferFromNbt(buffer: B, dto: NBTTagCompound)
 
     fun getBufferSyncState(buffer: B): Piecewise? = null

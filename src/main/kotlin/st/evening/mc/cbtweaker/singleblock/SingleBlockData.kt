@@ -12,6 +12,7 @@ import st.evening.mc.cbtweaker.behaviour.MachineHost
 import st.evening.mc.cbtweaker.buffer.BufferObserver
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
+import st.evening.mc.cbtweaker.util.CbtSyncHelper
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
 import st.evening.mc.cbtweaker.util.component.UiElementTable
@@ -24,19 +25,18 @@ import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
 import st.evening.mc.cbtweaker.util.machine.RefreshState
 import st.evening.mc.cbtweaker.util.machine.TickModulator
 import st.evening.mc.cbtweaker.util.world.FrontGetter
-import st.evening.mc.prelude.api.data.ser.BoolSerializer
-import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
-import st.evening.mc.prelude.api.data.state.ListStateComposite
+import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.data.state.Observer
 import st.evening.mc.prelude.api.data.state.Piecewise
-import st.evening.mc.prelude.api.data.state.ValueStateAtom
+import st.evening.mc.prelude.api.util.collection.WeakValidity
 import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ServerSide
+import st.evening.mc.prelude.api.util.game.getTileEntityWeakValidity
 import st.evening.mc.prelude.api.util.world.onServer
 
 class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType: SingleBlockType<S>) :
-    MachineHost, BufferObserver, NbtCompoundSerializable {
+    MachineHost, BufferObserver, Observer.Simple, Observer.Indexed, ServerSideSerializable {
     companion object {
         private const val SER_BUFFERS: String = "buffers"
         private const val SER_MACHINE: String = "machine"
@@ -47,8 +47,10 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
 
     private val behaviour: MachineBehaviour<S> = sbType.behaviour
     private val machineState: S
-    private val activeState: ValueStateAtom<Boolean> = ValueStateAtom(false, BoolSerializer)
     private val ticker: TickModulator = TickModulator(true)
+
+    override val weakValidity: WeakValidity
+        get() = sbMachine.getTileEntityWeakValidity()
 
     init {
         val world = sbMachine.world
@@ -56,29 +58,21 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
         val bufGroups = sbType.createBufferGroups(world, pos, this)
         this.bufHandler = SidedBufferHandler(FrontGetter(sbMachine), bufGroups)
         this.machineState = sbType.stateFactory.createState(world, pos, bufGroups, collectComponents(), this, null)
-
-        activeState.observeSync(Observer.Simple.fixed {
-            val pos = sbMachine.pos
-            sbMachine.world.markBlockRangeForRenderUpdate(pos, pos)
-        })
+        when (val activeState = behaviour.getActiveState(machineState)) {
+            null -> {}
+            is Piecewise.Atom -> activeState.observeSync(this)
+            is Piecewise.Composite -> activeState.observeSync(this)
+        }
     }
 
     override val machineType: CraftingBlockType<*>
         get() = sbType
 
     val isActive: Boolean
-        get() = activeState.value
+        get() = behaviour.isActive(machineState)
 
     val rsHandler: RedstoneControlHandler?
         get() = behaviour.getRedstoneControlHandler(machineState)
-
-    val syncState: Piecewise.Composite = ListStateComposite.fromStates(
-        buildList {
-            add(activeState)
-            addAll(bufHandler.bufferSyncState)
-            behaviour.getMachineSyncState(machineState)?.let { add(it) }
-        }
-    )
 
     private fun collectComponents(): ComponentSet {
         val components = MutableComponentSet()
@@ -86,6 +80,15 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
             it.collectComponents(components)
         }
         return components
+    }
+
+    override fun onObservableUpdate() { // observing the active state
+        val pos = sbMachine.pos
+        sbMachine.world.markBlockRangeForRenderUpdate(pos, pos)
+    }
+
+    override fun onObservableUpdate(index: Int) {
+        onObservableUpdate()
     }
 
     override fun onIngredientsChanged() {
@@ -98,13 +101,9 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
         sbMachine.markDirty()
     }
 
-    override fun onMachineStateChanged(sync: Boolean, save: Boolean) {
-        if (sync) {
-            activeState.update(behaviour.isActive(machineState))
-        }
-        if (save) {
-            sbMachine.markDirty()
-        }
+    @ServerSide
+    override fun onMachineStateChanged() {
+        sbMachine.markDirty()
     }
 
     fun tick() {
@@ -148,14 +147,22 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
         }
     }
 
-    override fun writeToNbt(dto: NBTTagCompound) {
+    fun getSyncState(): Piecewise? = CbtSyncHelper.buildSyncState {
+        bufHandler.getBufferSyncState(this)
+        behaviour.getActiveState(machineState)?.let { add(it) }
+        behaviour.getMachineSyncState(machineState)?.let { add(it) }
+    }
+
+    @ServerSide
+    override fun writeToNbtServerSide(dto: NBTTagCompound) {
         dto.runAction {
-            SER_BUFFERS tag bufHandler.writeToNbt()
+            SER_BUFFERS tag NBTTagCompound().also { bufHandler.writeToNbt(it) }
             SER_MACHINE tag NBTTagCompound().also { behaviour.serializeMachineToNbt(machineState, it) }
         }
     }
 
-    override fun readFromNbt(dto: NBTTagCompound) {
+    @ServerSide
+    override fun readFromNbtServerSide(dto: NBTTagCompound) {
         bufHandler.readFromNbt(dto.getCompoundTag(SER_BUFFERS))
         behaviour.deserializeMachineFromNbt(machineState, dto.getCompoundTag(SER_MACHINE))
     }

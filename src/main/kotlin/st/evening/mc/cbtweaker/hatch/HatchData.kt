@@ -18,7 +18,7 @@ import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
 import st.evening.mc.cbtweaker.util.component.AutoExportHandler
 import st.evening.mc.cbtweaker.util.machine.RefreshState
 import st.evening.mc.cbtweaker.util.world.AllFaces
-import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
+import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.data.state.Observer
 import st.evening.mc.prelude.api.data.state.Piecewise
 import st.evening.mc.prelude.api.data.state.onObservableUpdate
@@ -32,7 +32,7 @@ import st.evening.mc.prelude.api.util.world.RelativeFace
 import st.evening.mc.prelude.api.util.world.onServer
 
 class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<B>, val hatchTier: Int) :
-    BufferObserver, NbtCompoundSerializable {
+    BufferObserver, ServerSideSerializable {
     companion object {
         private const val SER_BUFFER: String = "buffer"
         private const val SER_EXPORT: String = "export"
@@ -115,7 +115,8 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
 
     fun getSyncState(): Piecewise? = hatchType.bufferType.getBufferSyncState(buffer)
 
-    override fun writeToNbt(dto: NBTTagCompound) {
+    @ServerSide
+    override fun writeToNbtServerSide(dto: NBTTagCompound) {
         dto.runAction {
             SER_BUFFER tag NBTTagCompound().also { hatchType.bufferType.serializeBufferToNbt(buffer, it) }
             exportHandler?.let {
@@ -124,7 +125,8 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
         }
     }
 
-    override fun readFromNbt(dto: NBTTagCompound) {
+    @ServerSide
+    override fun readFromNbtServerSide(dto: NBTTagCompound) {
         hatchType.bufferType.deserializeBufferFromNbt(buffer, dto.getCompoundTag(SER_BUFFER))
         exportHandler?.setStateFromSync(dto.getBoolean(SER_EXPORT))
     }

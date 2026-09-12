@@ -48,6 +48,7 @@ import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.CapabilityVisitor
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.RequireMod
+import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.render.gui.DrawOrientation
@@ -295,10 +296,12 @@ class MekanismLaserBuffer(
 
         override fun copyAccumulator(acc: Accumulator): Accumulator = acc.copy()
 
+        @ServerSide
         override fun serializeBufferToNbt(buffer: MekanismLaserBuffer, dto: NBTTagCompound) {
             buffer.writeToNbt(dto)
         }
 
+        @ServerSide
         override fun deserializeBufferFromNbt(buffer: MekanismLaserBuffer, dto: NBTTagCompound) {
             buffer.readFromNbt(dto)
         }

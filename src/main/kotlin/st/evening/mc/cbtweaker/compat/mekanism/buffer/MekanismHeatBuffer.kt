@@ -52,6 +52,7 @@ import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.CapabilityVisitor
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.RequireMod
+import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.math.DoubleArithmetic
 import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.math.Rect2i
@@ -333,10 +334,12 @@ class MekanismHeatBuffer(
 
         override fun createUiElement(buffer: MekanismHeatBuffer): UiElement = buffer.createUiElement()
 
+        @ServerSide
         override fun serializeBufferToNbt(buffer: MekanismHeatBuffer, dto: NBTTagCompound) {
             buffer.writeToNbt(dto)
         }
 
+        @ServerSide
         override fun deserializeBufferFromNbt(buffer: MekanismHeatBuffer, dto: NBTTagCompound) {
             buffer.readFromNbt(dto)
         }

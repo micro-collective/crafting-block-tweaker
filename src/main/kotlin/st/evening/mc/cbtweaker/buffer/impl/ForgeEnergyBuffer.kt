@@ -356,10 +356,12 @@ class ForgeEnergyBuffer(
 
         override fun copyAccumulator(acc: Accumulator): Accumulator = acc.copy()
 
+        @ServerSide
         override fun serializeBufferToNbt(buffer: ForgeEnergyBuffer, dto: NBTTagCompound) {
             buffer.writeToNbt(dto)
         }
 
+        @ServerSide
         override fun deserializeBufferFromNbt(buffer: ForgeEnergyBuffer, dto: NBTTagCompound) {
             buffer.readFromNbt(dto)
         }

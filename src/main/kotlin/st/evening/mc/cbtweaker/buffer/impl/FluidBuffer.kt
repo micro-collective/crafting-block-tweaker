@@ -519,10 +519,12 @@ class FluidBuffer(
 
         override fun copyAccumulator(acc: Accumulator): Accumulator = acc.copy()
 
+        @ServerSide
         override fun serializeBufferToNbt(buffer: FluidBuffer, dto: NBTTagCompound) {
             buffer.writeToNbt(dto)
         }
 
+        @ServerSide
         override fun deserializeBufferFromNbt(buffer: FluidBuffer, dto: NBTTagCompound) {
             buffer.readFromNbt(dto)
         }

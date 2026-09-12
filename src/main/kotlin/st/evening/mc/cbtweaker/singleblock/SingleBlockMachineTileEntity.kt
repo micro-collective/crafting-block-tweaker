@@ -20,7 +20,9 @@ import st.evening.mc.prelude.api.util.game.ServerSide
 class SingleBlockMachineTileEntity : LazyTileEntity<SingleBlockData<*>>(), MachineTileEntity, ITickable {
     override fun initData(): SingleBlockData<*> {
         val data = SingleBlockData(this, (world.getBlockState(pos).block as SingleBlockMachineBlock).sbType)
-        initSync(TileEntitySyncProxy(this, data.syncState))
+        data.getSyncState()?.let {
+            initSync(TileEntitySyncProxy(this, it))
+        }
         return data
     }
 

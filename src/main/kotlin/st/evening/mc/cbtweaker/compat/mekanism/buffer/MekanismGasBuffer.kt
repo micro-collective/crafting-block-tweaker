@@ -550,10 +550,12 @@ class MekanismGasBuffer(
 
         override fun copyAccumulator(acc: Accumulator): Accumulator = acc.copy()
 
+        @ServerSide
         override fun serializeBufferToNbt(buffer: MekanismGasBuffer, dto: NBTTagCompound) {
             buffer.writeToNbt(dto)
         }
 
+        @ServerSide
         override fun deserializeBufferFromNbt(buffer: MekanismGasBuffer, dto: NBTTagCompound) {
             buffer.readFromNbt(dto)
         }
