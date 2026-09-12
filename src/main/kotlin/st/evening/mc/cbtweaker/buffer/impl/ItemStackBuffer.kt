@@ -617,7 +617,7 @@ class ItemStackBuffer private constructor(
     class ItemProvider(private val item: ItemKey, private val count: Int) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
-        override fun insertFinal(acc: Lazy<Accumulator>): Boolean =
+        override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
             acc.value.insert(item.newStack(count), false).isEmpty
 
         private val jeiIngredient: JeiItemIngredient =

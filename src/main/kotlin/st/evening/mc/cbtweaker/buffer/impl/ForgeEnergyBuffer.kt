@@ -437,7 +437,7 @@ class ForgeEnergyBuffer(
     class EnergyProvider(private val amount: Int) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
-        override fun insertFinal(acc: Lazy<Accumulator>): Boolean = acc.value.insert(amount, false) >= amount
+        override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean = acc.value.insert(amount, false) >= amount
 
         private val jeiIngredient: JeiForgeEnergyIngredient =
             JeiForgeEnergyIngredient(amount, DEFAULT_ENERGY_UNIT, JeiIngredient.Role.OUTPUT)
@@ -456,7 +456,7 @@ class ForgeEnergyBuffer(
     }
 
     class PowerProvider(private val rate: Int) : IngredientProvider<Accumulator, JeiAccumulator> {
-        override fun insertPeriodic(acc: Lazy<Accumulator>): Boolean {
+        override fun insertPeriodic(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean {
             acc.value.insert(rate, false)
             return true
         }

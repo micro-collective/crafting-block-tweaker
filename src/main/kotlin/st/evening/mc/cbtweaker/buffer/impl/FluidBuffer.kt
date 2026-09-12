@@ -613,7 +613,7 @@ class FluidBuffer(
     class FluidProvider(private val fluid: FluidKey, private val amount: Int) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
-        override fun insertFinal(acc: Lazy<Accumulator>): Boolean =
+        override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
             acc.value.insert(fluid.newStack(amount), true) >= amount
 
         private val jeiIngredient: JeiFluidIngredient =
@@ -635,7 +635,7 @@ class FluidBuffer(
     class FluidRateProvider(private val fluid: FluidKey, private val rate: Int) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
-        override fun insertPeriodic(acc: Lazy<Accumulator>): Boolean {
+        override fun insertPeriodic(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean {
             acc.value.insert(fluid.newStack(rate), true)
             return true
         }

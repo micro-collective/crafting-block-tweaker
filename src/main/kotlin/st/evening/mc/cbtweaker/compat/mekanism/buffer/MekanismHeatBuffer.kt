@@ -453,7 +453,7 @@ class MekanismHeatBuffer(
     }
 
     class HeatProvider(private val amount: Double) : IngredientProvider<Accumulator, JeiAccumulator> {
-        override fun insertFinal(acc: Lazy<Accumulator>): Boolean {
+        override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean {
             acc.value.addHeat(amount)
             return true
         }
@@ -474,7 +474,7 @@ class MekanismHeatBuffer(
     }
 
     class HeatRateProvider(private val rate: Double) : IngredientProvider<Accumulator, JeiAccumulator> {
-        override fun insertPeriodic(acc: Lazy<Accumulator>): Boolean {
+        override fun insertPeriodic(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean {
             acc.value.addHeat(rate)
             return true
         }

@@ -72,7 +72,7 @@ interface ProviderChecker {
             bufType: BufferType<B, A, JB, JA>,
             acc: Lazy<A>,
             providers: List<IngredientProvider<A, JA>>
-        ): Boolean = providers.all { it.insertFinal(acc) }
+        ): Boolean = providers.all { it.insertFinal(acc, true) }
     }
 
     object Periodic : ProviderChecker {
@@ -80,7 +80,7 @@ interface ProviderChecker {
             bufType: BufferType<B, A, JB, JA>,
             acc: Lazy<A>,
             providers: List<IngredientProvider<A, JA>>
-        ): Boolean = providers.all { it.insertPeriodic(acc) }
+        ): Boolean = providers.all { it.insertPeriodic(acc, true) }
     }
 }
 
@@ -118,7 +118,7 @@ interface ProviderConsumer {
             providers: List<IngredientProvider<A, JA>>
         ) {
             providers.forEach {
-                it.insertFinal(acc)
+                it.insertFinal(acc, false)
             }
         }
     }
@@ -130,7 +130,7 @@ interface ProviderConsumer {
             providers: List<IngredientProvider<A, JA>>
         ) {
             providers.forEach {
-                it.insertPeriodic(acc)
+                it.insertPeriodic(acc, false)
             }
         }
     }

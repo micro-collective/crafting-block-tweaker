@@ -638,7 +638,7 @@ class MekanismGasBuffer(
     }
 
     class GasProvider(private val gas: Gas, private val amount: Int) : IngredientProvider<Accumulator, JeiAccumulator> {
-        override fun insertFinal(acc: Lazy<Accumulator>): Boolean =
+        override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
             acc.value.insert(GasStack(gas, amount), true) >= amount
 
         private val jeiIngredient: JeiMekanismGasIngredient =
@@ -660,7 +660,7 @@ class MekanismGasBuffer(
     class GasRateProvider(private val gas: Gas, private val rate: Int) :
         IngredientProvider<Accumulator, JeiAccumulator> {
 
-        override fun insertPeriodic(acc: Lazy<Accumulator>): Boolean {
+        override fun insertPeriodic(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean {
             acc.value.insert(GasStack(gas, rate), true)
             return true
         }
