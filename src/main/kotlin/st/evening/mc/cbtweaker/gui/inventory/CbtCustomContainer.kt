@@ -18,6 +18,7 @@ import st.evening.mc.prelude.api.network.PacketType
 import st.evening.mc.prelude.api.util.collection.WeakValidity
 import st.evening.mc.prelude.api.util.game.InvHelper
 import st.evening.mc.prelude.api.util.game.ServerSide
+import st.evening.mc.prelude.api.util.game.mergeStacksSafe
 import st.evening.mc.prelude.api.util.game.onServer
 import st.evening.mc.prelude.mod.network.S2CBindSyncedContainer
 
@@ -67,14 +68,14 @@ abstract class CbtCustomContainer(
             val totalSlotCount = inventorySlots.size
             return@transferStacks if (totalSlotCount > 36) {
                 if (index < 36) {
-                    mergeItemStack(stack, 36, totalSlotCount, false)
+                    mergeStacksSafe(stack, 36, totalSlotCount, false)
                 } else {
-                    mergeItemStack(stack, 0, 36, false)
+                    mergeStacksSafe(stack, 0, 36, false)
                 }
             } else if (index < 27) { // no machine slots; transfer within the player inventory only
-                mergeItemStack(stack, 27, 36, false)
+                mergeStacksSafe(stack, 27, 36, false)
             } else {
-                mergeItemStack(stack, 0, 27, false)
+                mergeStacksSafe(stack, 0, 27, false)
             }
         }
 
