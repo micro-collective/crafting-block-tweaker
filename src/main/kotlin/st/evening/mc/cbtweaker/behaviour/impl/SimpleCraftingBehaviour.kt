@@ -437,14 +437,18 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 val accs = LazyAccumulatorMap.Impl(bufGroups)
                 val consumeFactors = modState.consumeFactors
                 cachedRecipe?.let {
-                    if (it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)) {
+                    if (
+                        it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial) &&
+                        it.outputTable.checkOutputs(accs, ProviderChecker.Final)
+                    ) {
                         ticker.interval = 1
                         return startRecipe(it, accs)
                     }
                     cachedRecipe = null
                 }
                 val recipe = recipeDb.recipes.values.firstOrNull {
-                    it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)
+                    it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial) &&
+                        it.outputTable.checkOutputs(accs, ProviderChecker.Final)
                 }
                 if (recipe == null) {
                     working = false
