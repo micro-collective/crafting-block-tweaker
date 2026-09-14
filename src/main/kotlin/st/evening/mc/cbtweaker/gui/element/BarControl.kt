@@ -2,6 +2,7 @@ package st.evening.mc.cbtweaker.gui.element
 
 import net.minecraft.client.resources.I18n
 import st.evening.mc.cbtweaker.CbtLang
+import st.evening.mc.cbtweaker.util.gui.BarDrawData
 import st.evening.mc.prelude.api.gui.drawable.GuiDrawable
 import st.evening.mc.prelude.api.gui.drawable.GuiSamplable
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
@@ -21,9 +22,12 @@ abstract class BarControl(
     private val barBackground: GuiDrawable,
     private val barForeground: GuiSamplable,
     private val orientation: DrawOrientation,
-    private val barOffsetX: Int,
-    private val barOffsetY: Int
+    private val fgOffsetX: Int,
+    private val fgOffsetY: Int
 ) : AbstractGuiElement() {
+    constructor(bar: BarDrawData) :
+        this(bar.bgTexture.drawable, bar.fgTexture.drawable, bar.orientation, bar.fgOffsetX, bar.fgOffsetY)
+
     override val contentWidth: Int
         get() = barBackground.width
     override val contentHeight: Int
@@ -35,15 +39,7 @@ abstract class BarControl(
 
     override fun bakeDimensioned(posX: Int, posY: Int, width: Int, height: Int): GuiPart = Part(posX, posY)
 
-    class Progress(
-        barBackground: GuiDrawable,
-        barForeground: GuiSamplable,
-        private val getValue: () -> Int,
-        private val getMax: () -> Int,
-        orientation: DrawOrientation,
-        barOffsetX: Int,
-        barOffsetY: Int
-    ) : BarControl(barBackground, barForeground, orientation, barOffsetX, barOffsetY) {
+    class Progress(bar: BarDrawData, private val getValue: () -> Int, private val getMax: () -> Int) : BarControl(bar) {
         override fun getFillFraction(): Float {
             val max = getMax()
             return if (max <= 0) 0F else (getValue() / max.toFloat())
@@ -56,15 +52,11 @@ abstract class BarControl(
     }
 
     class IntTank(
-        barBackground: GuiDrawable,
-        barForeground: GuiSamplable,
+        bar: BarDrawData,
         private val getAmount: () -> Int,
         capacity: Int,
-        private val unitName: String,
-        orientation: DrawOrientation,
-        barOffsetX: Int,
-        barOffsetY: Int
-    ) : BarControl(barBackground, barForeground, orientation, barOffsetX, barOffsetY) {
+        private val unitName: String
+    ) : BarControl(bar) {
         private val capacityString: String = capacity.toStringSI(unitName)
         private val capacityFloat: Float = capacity.toFloat()
 
@@ -74,15 +66,11 @@ abstract class BarControl(
     }
 
     class LongTank(
-        barBackground: GuiDrawable,
-        barForeground: GuiSamplable,
+        bar: BarDrawData,
         private val getAmount: () -> Long,
         capacity: Long,
-        private val unitName: String,
-        orientation: DrawOrientation,
-        barOffsetX: Int,
-        barOffsetY: Int
-    ) : BarControl(barBackground, barForeground, orientation, barOffsetX, barOffsetY) {
+        private val unitName: String
+    ) : BarControl(bar) {
         private val capacityString: String = capacity.toStringSI(unitName)
         private val capacityFloat: Float = capacity.toFloat()
 
@@ -92,15 +80,11 @@ abstract class BarControl(
     }
 
     class FloatTank(
-        barBackground: GuiDrawable,
-        barForeground: GuiSamplable,
+        bar: BarDrawData,
         private val getAmount: () -> Float,
         private val capacity: Float,
-        private val unitName: String,
-        orientation: DrawOrientation,
-        barOffsetX: Int,
-        barOffsetY: Int
-    ) : BarControl(barBackground, barForeground, orientation, barOffsetX, barOffsetY) {
+        private val unitName: String
+    ) : BarControl(bar) {
         private val capacityString: String = capacity.toStringSI(unitName)
 
         override fun getFillFraction(): Float = getAmount() / capacity
@@ -109,15 +93,11 @@ abstract class BarControl(
     }
 
     class DoubleTank(
-        barBackground: GuiDrawable,
-        barForeground: GuiSamplable,
+        bar: BarDrawData,
         private val getAmount: () -> Double,
         private val capacity: Double,
-        private val unitName: String,
-        orientation: DrawOrientation,
-        barOffsetX: Int,
-        barOffsetY: Int
-    ) : BarControl(barBackground, barForeground, orientation, barOffsetX, barOffsetY) {
+        private val unitName: String
+    ) : BarControl(bar) {
         private val capacityString: String = capacity.toStringSI(unitName)
 
         override fun getFillFraction(): Float = (getAmount() / capacity).toFloat()
@@ -138,8 +118,8 @@ abstract class BarControl(
         override fun drawForeground(context: GuiContext, partialTicks: Float, mouseX: Int, mouseY: Int) {
             barForeground.drawFullSizeAsProgress(
                 partialTicks,
-                posX + barOffsetX,
-                posY + barOffsetY,
+                posX + fgOffsetX,
+                posY + fgOffsetY,
                 orientation,
                 getFillFraction()
             )

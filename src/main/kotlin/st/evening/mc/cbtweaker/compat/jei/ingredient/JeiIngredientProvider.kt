@@ -14,8 +14,8 @@ interface JeiIngredientProvider<JA> {
 }
 
 class MutableJeiIngredientPartitionVisitor(
-    private val inputIngs: MutableList<Pair<JeiIngredient<*>, String?>>,
-    private val outputIngs: MutableList<Pair<JeiIngredient<*>, String?>>,
+    private val inputIngs: MutableList<Pair<JeiIngredient<*>, String?>>?,
+    private val outputIngs: MutableList<Pair<JeiIngredient<*>, String?>>?,
 ) : IngredientMatcherMap.Visitor, IngredientProviderMap.Visitor {
     lateinit var bufGroupId: String
 
@@ -37,11 +37,13 @@ class MutableJeiIngredientPartitionVisitor(
 
     private fun addIngredients(providers: List<JeiIngredientProvider<*>>) {
         providers.forEach { provider ->
-            provider.getJeiIngredients().forEach {
-                when (it.role) {
+            provider.getJeiIngredients().forEach { ingredient ->
+                when (ingredient.role) {
                     JeiIngredient.Role.INPUT -> inputIngs
                     JeiIngredient.Role.OUTPUT -> outputIngs
-                } += it to bufGroupId
+                }?.let {
+                    it += ingredient to bufGroupId
+                }
             }
         }
     }

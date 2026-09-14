@@ -1,5 +1,6 @@
 package st.evening.mc.cbtweaker.util.machine
 
+import net.minecraft.util.math.MathHelper
 import st.evening.mc.prelude.api.data.ser.EnumSerializer
 import st.evening.mc.prelude.api.data.ser.JsonSerializer
 import st.evening.mc.prelude.api.data.tjson.JsonPath
@@ -32,6 +33,10 @@ class NumberModifier {
 
     fun modify(value: Double): Double = value * modMultiply * (1.0 + modAddMultiply) + modAddFlat
 
+    fun modifyIntCeil(value: Int): Int = MathHelper.ceil(modify(value.toDouble()))
+
+    fun modifyIntFloor(value: Int): Int = MathHelper.floor(modify(value.toDouble()))
+
     data class Modifier(val operation: Operation, val modifierValue: Double) {
         object Serializer : JsonSerializer<Modifier, TJson.Object> {
             override fun serializeToJson(x: Modifier): TJson.Object = TJsonDsl.obj {
@@ -57,3 +62,9 @@ class NumberModifier {
         }
     }
 }
+
+fun <T> Map<T, NumberModifier>.tryModify(key: T, value: Double): Double = this[key]?.modify(value) ?: value
+
+fun <T> Map<T, NumberModifier>.tryModifyIntCeil(key: T, value: Int): Int = this[key]?.modifyIntCeil(value) ?: value
+
+fun <T> Map<T, NumberModifier>.tryModifyIntFloor(key: T, value: Int): Int = this[key]?.modifyIntFloor(value) ?: value

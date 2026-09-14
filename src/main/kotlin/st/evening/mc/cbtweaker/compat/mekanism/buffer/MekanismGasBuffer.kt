@@ -44,7 +44,8 @@ import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.network.C2SInteractTankTransfer
 import st.evening.mc.cbtweaker.util.CbtMathHelper
-import st.evening.mc.cbtweaker.util.gui.DrawableData
+import st.evening.mc.cbtweaker.util.gui.Positioned
+import st.evening.mc.cbtweaker.util.gui.TankDrawData
 import st.evening.mc.cbtweaker.util.gui.UiPosition
 import st.evening.mc.cbtweaker.util.machine.TickModulator
 import st.evening.mc.cbtweaker.util.machine.TransferType
@@ -59,8 +60,8 @@ import st.evening.mc.prelude.api.data.tjson.expectBool
 import st.evening.mc.prelude.api.data.tjson.expectFloat
 import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectIntValue
-import st.evening.mc.prelude.api.data.tjson.useAny
 import st.evening.mc.prelude.api.data.tjson.useIntValue
+import st.evening.mc.prelude.api.data.tjson.useObject
 import st.evening.mc.prelude.api.data.tjson.useString
 import st.evening.mc.prelude.api.data.tjson.useStringValue
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
@@ -161,18 +162,9 @@ class MekanismGasBuffer(
 
         @ClientSide.Strong
         override fun addToGuiScreen(uiIndex: Int, layout: StackLayout, baseSlotIndex: Int, wrapper: UiElementWrapper) {
-            config.uiPosition.placeElement(
+            config.uiTank.uiPosition.placeElement(
                 uiIndex, layout, wrapper,
-                GasTankControl(
-                    uiIndex,
-                    this@MekanismGasBuffer,
-                    config.barBg.drawable,
-                    config.barOffsetX,
-                    config.barOffsetY,
-                    config.barWidth,
-                    config.barHeight,
-                    config.allowUiInteraction
-                )
+                GasTankControl(uiIndex, this@MekanismGasBuffer, config.uiTank.data, config.allowUiInteraction)
             )
         }
 
@@ -214,12 +206,7 @@ class MekanismGasBuffer(
         val gasFilter: Lazy<Gas>?, // must be lazy because the registry can be mutated after buffers are loaded
         val allowAutoExport: Boolean,
         val allowBlockInteraction: Boolean,
-        val uiPosition: UiPosition,
-        val barBg: DrawableData,
-        val barOffsetX: Int,
-        val barOffsetY: Int,
-        val barWidth: Int,
-        val barHeight: Int,
+        val uiTank: Positioned<TankDrawData>,
         val allowUiInteraction: Boolean
     )
 
@@ -354,14 +341,10 @@ class MekanismGasBuffer(
 
         @ClientSide.Physical
         fun createJeiUiElement(contRegion: IntRectangle): JeiUiElement<*> {
-            val barBg = config.barBg.drawable
-            val pos = config.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
-            val barRegion = Rect2i(
-                pos.x + config.barOffsetX,
-                pos.y + config.barOffsetY,
-                config.barWidth,
-                config.barHeight
-            )
+            val uiTank = config.uiTank.data
+            val barBg = uiTank.bgTexture.drawable
+            val pos = config.uiTank.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
+            val barRegion = Rect2i(pos.x + uiTank.fgOffsetX, pos.y + uiTank.fgOffsetY, uiTank.fgWidth, uiTank.fgHeight)
             val barRenderer = GasBarRenderer()
             return object : JeiUiElement<GasStack> {
                 override val jeiIngredient: JeiIngredient<GasStack>?
@@ -371,7 +354,7 @@ class MekanismGasBuffer(
                     get() = barRegion
 
                 override fun drawElement(ingredient: GasStack?, partialTicks: Float) {
-                    config.barBg.drawable.drawFullSize(partialTicks, pos.x, pos.y)
+                    config.uiTank.data.bgTexture.drawable.drawFullSize(partialTicks, pos.x, pos.y)
                     if (ingredient == null) return
                     val amount = ingredient.amount
                     if (amount <= 0) return
@@ -411,6 +394,9 @@ class MekanismGasBuffer(
     object Type : AutoExportingBufferType<MekanismGasBuffer, Accumulator, JeiBuffer, JeiAccumulator>,
         SidedBufferType<MekanismGasBuffer, Accumulator, JeiBuffer, JeiAccumulator> {
 
+        val DEFAULT_UI_TANK: Positioned<TankDrawData> =
+            Positioned(UiPosition.CENTER, TankDrawData(CbtGuiData.FLUID_SLOT, 1, 1, 16, 16))
+
         override val id: ResourceLocation = CbTweaker.resource("mekanism_gas")
 
         override val bufferClass: Class<MekanismGasBuffer>
@@ -431,12 +417,7 @@ class MekanismGasBuffer(
                 dto.useString("gas_filter") { lazy { GasRegistry.getGas(it) } },
                 dto.expectBool("allow_auto_export") ?: false,
                 dto.expectBool("allow_block_interaction") ?: true,
-                dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
-                dto.useAny("bar_bg") { DrawableData.loadSliceOrBlank(it, 18, 18) } ?: CbtGuiData.FLUID_SLOT,
-                dto.expectInt("bar_offset_x") ?: 1,
-                dto.expectInt("bar_offset_y") ?: 1,
-                dto.expectInt("bar_width") ?: 16,
-                dto.expectInt("bar_height") ?: 16,
+                dto.useObject("ui_tank") { TankDrawData.loadPositioned(it, DEFAULT_UI_TANK) } ?: DEFAULT_UI_TANK,
                 dto.expectBool("allow_ui_interaction") ?: true
             )
             return object : BufferFactory<MekanismGasBuffer, JeiBuffer> {

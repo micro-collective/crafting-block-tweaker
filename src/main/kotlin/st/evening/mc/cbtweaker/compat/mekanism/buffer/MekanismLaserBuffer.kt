@@ -24,8 +24,8 @@ import st.evening.mc.cbtweaker.gui.element.BarControl
 import st.evening.mc.cbtweaker.gui.inventory.SyncedUiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
-import st.evening.mc.cbtweaker.util.gui.DrawableData
-import st.evening.mc.cbtweaker.util.gui.SamplableData
+import st.evening.mc.cbtweaker.util.gui.BarDrawData
+import st.evening.mc.cbtweaker.util.gui.Positioned
 import st.evening.mc.cbtweaker.util.gui.UiPosition
 import st.evening.mc.prelude.api.data.ser.DoubleSerializer
 import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
@@ -36,10 +36,8 @@ import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
 import st.evening.mc.prelude.api.data.tjson.expectDoubleValue
-import st.evening.mc.prelude.api.data.tjson.expectInt
-import st.evening.mc.prelude.api.data.tjson.useAny
 import st.evening.mc.prelude.api.data.tjson.useDoubleValue
-import st.evening.mc.prelude.api.data.tjson.useString
+import st.evening.mc.prelude.api.data.tjson.useObject
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
 import st.evening.mc.prelude.api.gui.drawable.drawFullSizeAsProgress
 import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
@@ -124,31 +122,14 @@ class MekanismLaserBuffer(
 
         @ClientSide.Strong
         override fun addToGuiScreen(uiIndex: Int, layout: StackLayout, baseSlotIndex: Int, wrapper: UiElementWrapper) {
-            config.uiPosition.placeElement(
+            config.energyBar.uiPosition.placeElement(
                 uiIndex, layout, wrapper,
-                BarControl.DoubleTank(
-                    config.barBg.drawable,
-                    config.barFg.drawable,
-                    { energyStored },
-                    config.capacity,
-                    "J",
-                    config.barOrientation,
-                    config.barOffsetX,
-                    config.barOffsetY
-                )
+                BarControl.DoubleTank(config.energyBar.data, { energyStored }, config.capacity, "J")
             )
         }
     }
 
-    class Config(
-        val capacity: Double,
-        val uiPosition: UiPosition,
-        val barBg: DrawableData,
-        val barFg: SamplableData,
-        val barOffsetX: Int,
-        val barOffsetY: Int,
-        val barOrientation: DrawOrientation
-    )
+    class Config(val capacity: Double, val energyBar: Positioned<BarDrawData>)
 
     class Accumulator {
         private val buffers: MutableList<MekanismLaserBuffer> = mutableListOf()
@@ -199,10 +180,11 @@ class MekanismLaserBuffer(
 
         @ClientSide.Physical
         fun createJeiUiElement(contRegion: IntRectangle, guiHelper: IGuiHelper): JeiUiElement<*> {
-            val barBg = config.barBg.drawable
-            val barFg = config.barFg.drawable
-            val pos = config.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
-            val barRegion = Rect2i(pos.x + config.barOffsetX, pos.y + config.barOffsetY, barFg.width, barFg.height)
+            val bar = config.energyBar.data
+            val barBg = bar.bgTexture.drawable
+            val barFg = bar.fgTexture.drawable
+            val pos = config.energyBar.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
+            val barRegion = Rect2i(pos.x + bar.fgOffsetX, pos.y + bar.fgOffsetY, barFg.width, barFg.height)
             val ticker = guiHelper.createTickTimer(32, 32, false)
             return object : JeiUiElement<Double> {
                 override val jeiIngredient: JeiIngredient<Double>?
@@ -212,13 +194,14 @@ class MekanismLaserBuffer(
                     get() = barRegion
 
                 override fun drawElement(ingredient: Double?, partialTicks: Float) {
-                    config.barBg.drawable.drawFullSize(partialTicks, pos.x, pos.y)
+                    val bar = config.energyBar.data
+                    bar.bgTexture.drawable.drawFullSize(partialTicks, pos.x, pos.y)
                     if (ingredient != null) {
-                        config.barFg.drawable.drawFullSizeAsProgress(
+                        bar.fgTexture.drawable.drawFullSizeAsProgress(
                             partialTicks,
                             barRegion.posX,
                             barRegion.posY,
-                            config.barOrientation,
+                            bar.orientation,
                             if (contents?.role == JeiIngredient.Role.OUTPUT) {
                                 ticker.value / ticker.maxValue.toFloat()
                             } else {
@@ -253,6 +236,16 @@ class MekanismLaserBuffer(
     }
 
     object Type : BufferType<MekanismLaserBuffer, Accumulator, JeiBuffer, JeiAccumulator> {
+        val DEFAULT_ENERGY_BAR: Positioned<BarDrawData> = Positioned(
+            UiPosition.CENTER,
+            BarDrawData(
+                CbtGuiData.MEKANISM_ENERGY_BAR_BG,
+                CbtGuiData.MEKANISM_ENERGY_BAR_FG,
+                1, 1,
+                DrawOrientation.BOTTOM_TO_TOP
+            )
+        )
+
         override val id: ResourceLocation = CbTweaker.resource("mekanism_laser")
 
         override val bufferClass: Class<MekanismLaserBuffer>
@@ -268,13 +261,8 @@ class MekanismLaserBuffer(
             }
             val config = Config(
                 capacity,
-                dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
-                dto.useAny("bar_bg") { DrawableData.loadSliceOrBlank(it, 6, 36) } ?: CbtGuiData.MEKANISM_ENERGY_BAR_BG,
-                dto.useAny("bar_fg") { DrawableData.loadSliceOrBlank(it, 4, 34) } ?: CbtGuiData.MEKANISM_ENERGY_BAR_FG,
-                dto.expectInt("bar_offset_x") ?: 1,
-                dto.expectInt("bar_offset_y") ?: 1,
-                dto.useString("bar_orientation") { DrawOrientation.serializer.deserializeFromJson(it) }
-                    ?: DrawOrientation.BOTTOM_TO_TOP
+                dto.useObject("energy_bar") { BarDrawData.loadPositioned(dto, DEFAULT_ENERGY_BAR) }
+                    ?: DEFAULT_ENERGY_BAR
             )
             return object : BufferFactory<MekanismLaserBuffer, JeiBuffer> {
                 override fun createBuffer(world: World, pos: BlockPos, observer: BufferObserver): MekanismLaserBuffer =

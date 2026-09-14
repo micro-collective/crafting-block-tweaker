@@ -7,24 +7,15 @@ import st.evening.mc.cbtweaker.compat.mekanism.MekanismCompat
 import st.evening.mc.cbtweaker.compat.mekanism.gas.SingleGasTank
 import st.evening.mc.cbtweaker.gui.element.TankControl
 import st.evening.mc.cbtweaker.util.gui.SpriteBarRenderer
-import st.evening.mc.prelude.api.gui.drawable.GuiDrawable
+import st.evening.mc.cbtweaker.util.gui.TankDrawData
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.RequireMod
 
 @RequireMod(MekanismCompat.MOD_ID)
 @ClientSide.Strong
-class GasTankControl(
-    uiIndex: Int,
-    tank: SingleGasTank,
-    bgTexture: GuiDrawable,
-    fgOffsetX: Int,
-    fgOffsetY: Int,
-    fgWidth: Int,
-    fgHeight: Int,
-    interactive: Boolean
-) : TankControl<SingleGasTank, GasStack>(
-    uiIndex, tank, bgTexture, fgOffsetX, fgOffsetY, fgWidth, fgHeight, interactive
-) {
+class GasTankControl(uiIndex: Int, tank: SingleGasTank, uiTank: TankDrawData, interactive: Boolean) :
+    TankControl<SingleGasTank, GasStack>(uiIndex, tank, uiTank, interactive) {
+
     override fun getContents(tank: SingleGasTank): GasStack? = tank.gas
 
     override fun getCapacity(tank: SingleGasTank): Int = tank.maxGas

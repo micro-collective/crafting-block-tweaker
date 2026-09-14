@@ -10,6 +10,7 @@ import st.evening.mc.cbtweaker.gui.inventory.assertWindowId
 import st.evening.mc.cbtweaker.network.C2SInteractTankTransfer
 import st.evening.mc.cbtweaker.util.gui.FluidBarRenderer
 import st.evening.mc.cbtweaker.util.gui.SpriteBarRenderer
+import st.evening.mc.cbtweaker.util.gui.TankDrawData
 import st.evening.mc.cbtweaker.util.machine.TransferType
 import st.evening.mc.prelude.api.gui.drawable.GuiDrawable
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
@@ -33,6 +34,17 @@ abstract class TankControl<T, C>(
     private val fgHeight: Int,
     private val interactive: Boolean
 ) : AbstractGuiElement() {
+    constructor(uiIndex: Int, tank: T, uiTank: TankDrawData, interactive: Boolean) : this(
+        uiIndex,
+        tank,
+        uiTank.bgTexture.drawable,
+        uiTank.fgOffsetX,
+        uiTank.fgOffsetY,
+        uiTank.fgWidth,
+        uiTank.fgHeight,
+        interactive
+    )
+
     override val contentWidth: Int
         get() = bgTexture.width
     override val contentHeight: Int
@@ -125,18 +137,9 @@ abstract class TankControl<T, C>(
 }
 
 @ClientSide.Strong
-class FluidTankControl(
-    uiIndex: Int,
-    tank: IFluidTank,
-    bgTexture: GuiDrawable,
-    fgOffsetX: Int,
-    fgOffsetY: Int,
-    fgWidth: Int,
-    fgHeight: Int,
-    interactive: Boolean
-) : TankControl<IFluidTank, FluidStack>(
-    uiIndex, tank, bgTexture, fgOffsetX, fgOffsetY, fgWidth, fgHeight, interactive
-) {
+class FluidTankControl(uiIndex: Int, tank: IFluidTank, uiTank: TankDrawData, interactive: Boolean) :
+    TankControl<IFluidTank, FluidStack>(uiIndex, tank, uiTank, interactive) {
+
     override fun getContents(tank: IFluidTank): FluidStack? = tank.fluid
 
     override fun getCapacity(tank: IFluidTank): Int = tank.capacity

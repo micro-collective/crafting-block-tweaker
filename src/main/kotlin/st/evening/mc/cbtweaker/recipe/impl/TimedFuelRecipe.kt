@@ -18,7 +18,6 @@ import st.evening.mc.cbtweaker.recipe.HashRecipeSetType
 import st.evening.mc.cbtweaker.util.gui.BarDrawData
 import st.evening.mc.cbtweaker.util.recipe.IngredientLoader
 import st.evening.mc.cbtweaker.util.recipe.IngredientMatcherMap
-import st.evening.mc.cbtweaker.util.recipe.IngredientProviderMap
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
@@ -35,36 +34,31 @@ import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.render.gui.DrawAlignment
 import st.evening.mc.prelude.api.util.render.gui.DrawOrientation
 
-class SimpleCraftingRecipe(
+class TimedFuelRecipe(
     val id: String,
     val inputTable: Map<String, IngredientMatcherMap>,
-    val outputTable: Map<String, IngredientProviderMap>,
     val duration: Int
 ) {
-    fun populateJei(recipe: SimpleCraftingRecipe, bufGroups: Map<String, JeiBufferGroup>) {
+    fun populateJei(recipe: TimedFuelRecipe, bufGroups: Map<String, JeiBufferGroup>) {
         val accs = JeiAccumulatorMap(bufGroups)
         val visitor = MutableJeiIngredientAccumulateVisitor()
         recipe.inputTable.forEach { (bufGroupId, inputMap) ->
             visitor.jeiAccumulators = accs[bufGroupId]!!
             inputMap.forEach(visitor)
         }
-        recipe.outputTable.forEach { (bufGroupId, outputMap) ->
-            visitor.jeiAccumulators = accs[bufGroupId]!!
-            outputMap.forEach(visitor)
-        }
     }
 
-    class JeiConfig(val visible: Boolean, val progressBar: BarDrawData) {
+    class JeiConfig(val visible: Boolean, val fuelBar: BarDrawData) {
         companion object {
             val DEFAULT: JeiConfig = JeiConfig(
                 true,
-                BarDrawData(CbtGuiData.PROGRESS_BAR_BG, CbtGuiData.PROGRESS_BAR_FG, 0, 0, DrawOrientation.LEFT_TO_RIGHT)
+                BarDrawData(CbtGuiData.FUEL_BAR_BG, CbtGuiData.FUEL_BAR_FG, 0, 0, DrawOrientation.BOTTOM_TO_TOP)
             )
         }
     }
 
-    class Database(val id: String, private val jeiConfig: JeiConfig) : HashRecipeDatabase<SimpleCraftingRecipe>() {
-        fun getJeiRecipeAdaptor(): JeiRecipeSetAdaptor<SimpleCraftingRecipe>? =
+    class Database(val id: String, private val jeiConfig: JeiConfig) : HashRecipeDatabase<TimedFuelRecipe>() {
+        fun getJeiRecipeAdaptor(): JeiRecipeSetAdaptor<TimedFuelRecipe>? =
             if (jeiConfig.visible) JeiIconAdaptor(id, null, jeiConfig) else null
     }
 
@@ -72,58 +66,53 @@ class SimpleCraftingRecipe(
         private val id: String,
         override val jeiDiscriminator: String?,
         private val config: JeiConfig
-    ) : JeiRecipeSetAdaptor<SimpleCraftingRecipe> {
+    ) : JeiRecipeSetAdaptor<TimedFuelRecipe> {
         @ClientSide.Physical
         override fun getJeiCategoryName(): String = CbtJeiPlugin.getRecipeSetCategoryName(id, jeiDiscriminator)
 
         @ClientSide.Physical
-        override fun getJeiBackground(): GuiDrawable = DrawableBlank(162, 55)
+        override fun getJeiBackground(): GuiDrawable = DrawableBlank(61 + config.fuelBar.bgTexture.drawable.width, 55)
 
         @ClientSide.Physical
         override fun addJeiUiElements(
-            recipe: SimpleCraftingRecipe,
+            recipe: TimedFuelRecipe,
             container: JeiUi,
             region: IntRectangle,
             jeiHelpers: IJeiHelpers
         ) {
-            val progressBar = config.progressBar
-            val barBg = progressBar.bgTexture.drawable
+            val fuelBar = config.fuelBar
+            val barBg = fuelBar.bgTexture.drawable
             val barElem = JeiProgressBarElement(
-                region.posX + DrawAlignment.CENTER.computeOffset(IntArithmetic, barBg.width, region.width),
+                region.posX + DrawAlignment.END.computeOffset(IntArithmetic, barBg.width, region.width) - 3,
                 region.posY + DrawAlignment.CENTER.computeOffset(IntArithmetic, barBg.height, region.height),
-                progressBar,
+                fuelBar,
                 recipe.duration,
-                jeiHelpers.guiHelper
+                jeiHelpers.guiHelper,
+                reverse = true
             )
             container.addJeiUiElement(barElem)
 
-            val inputIngs = mutableListOf<Pair<JeiIngredient<*>, String?>>()
-            val outputIngs = mutableListOf<Pair<JeiIngredient<*>, String?>>()
-            val visitor = MutableJeiIngredientPartitionVisitor(inputIngs, outputIngs)
+            val ings = mutableListOf<Pair<JeiIngredient<*>, String?>>()
+            val visitor = MutableJeiIngredientPartitionVisitor(ings, null)
             recipe.inputTable.forEach { (bufGroupId, matchers) ->
                 visitor.bufGroupId = bufGroupId
                 matchers.forEach(visitor)
             }
-            recipe.outputTable.forEach { (bufGroupId, providers) ->
-                visitor.bufGroupId = bufGroupId
-                providers.forEach(visitor)
-            }
 
-            val barRegion = barElem.ingredientRegion
-            val inRegion = Rect2i(region.posX, region.posY, barRegion.posX - region.posX - 4, region.height)
-            container.addJeiUiElement(JeiBackgroundBoxElement(inRegion, 0))
-            val outputsX = barRegion.posX + barRegion.width + 4
-            val outRegion = Rect2i(outputsX, region.posY, region.posX + region.width - outputsX, region.height)
-            container.addJeiUiElement(JeiBackgroundBoxElement(outRegion, 0))
-
-            JeiIconElement.layOutIconGroup(container, inRegion, DrawAlignment.CENTER, DrawAlignment.CENTER, inputIngs)
-            JeiIconElement.layOutIconGroup(container, outRegion, DrawAlignment.CENTER, DrawAlignment.CENTER, outputIngs)
+            val ingRegion = Rect2i(
+                region.posX,
+                region.posY,
+                region.width - barElem.ingredientRegion.width - 6,
+                region.height
+            )
+            container.addJeiUiElement(JeiBackgroundBoxElement(ingRegion, 0))
+            JeiIconElement.layOutIconGroup(container, ingRegion, DrawAlignment.CENTER, DrawAlignment.CENTER, ings)
         }
     }
 
-    object Type : HashRecipeSetType<SimpleCraftingRecipe, Database>() {
+    object Type : HashRecipeSetType<TimedFuelRecipe, Database>() {
         override val debugName: String
-            get() = "simple_crafting_recipe"
+            get() = "timed_fuel_recipe"
 
         context(_: JsonPath)
         override fun loadDatabase(id: String, dto: TJson.Object): Database = Database(
@@ -131,27 +120,26 @@ class SimpleCraftingRecipe(
             dto.useObject("jei") { jeiDto ->
                 JeiConfig(
                     jeiDto.expectBool("visible") ?: JeiConfig.DEFAULT.visible,
-                    jeiDto.useObject("progress_bar") {
-                        BarDrawData.load(it, JeiConfig.DEFAULT.progressBar)
-                    } ?: JeiConfig.DEFAULT.progressBar
+                    jeiDto.useObject("fuel_bar") {
+                        BarDrawData.load(it, JeiConfig.DEFAULT.fuelBar)
+                    } ?: JeiConfig.DEFAULT.fuelBar
                 )
             } ?: JeiConfig.DEFAULT
         )
 
         context(_: JsonPath)
-        override fun loadRecipe(id: String, dto: TJson.Object): SimpleCraftingRecipe = SimpleCraftingRecipe(
+        override fun loadRecipe(id: String, dto: TJson.Object): TimedFuelRecipe = TimedFuelRecipe(
             id,
             dto.useObjectValue("inputs") { IngredientLoader.loadMatcherGroups(it) },
-            dto.useObjectValue("outputs") { IngredientLoader.loadProviderGroups(it) },
             dto.useIntValue("duration") {
                 if (it <= 0) throw SerializationException.withPath("Duration must be positive!")
                 return@useIntValue it
             }
         )
 
-        override fun getRecipeId(database: Database, recipe: SimpleCraftingRecipe): String = recipe.id
+        override fun getRecipeId(database: Database, recipe: TimedFuelRecipe): String = recipe.id
 
-        override fun getJeiRecipeAdaptor(database: Database): JeiRecipeSetAdaptor<SimpleCraftingRecipe>? =
+        override fun getJeiRecipeAdaptor(database: Database): JeiRecipeSetAdaptor<TimedFuelRecipe>? =
             database.getJeiRecipeAdaptor()
     }
 }

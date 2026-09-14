@@ -27,8 +27,8 @@ import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.util.CbtMathHelper
 import st.evening.mc.cbtweaker.util.component.SidedBufferConfig
-import st.evening.mc.cbtweaker.util.gui.DrawableData
-import st.evening.mc.cbtweaker.util.gui.SamplableData
+import st.evening.mc.cbtweaker.util.gui.BarDrawData
+import st.evening.mc.cbtweaker.util.gui.Positioned
 import st.evening.mc.cbtweaker.util.gui.UiPosition
 import st.evening.mc.cbtweaker.util.machine.TickModulator
 import st.evening.mc.prelude.api.component.energy.ConcatEnergyStorage
@@ -45,9 +45,8 @@ import st.evening.mc.prelude.api.data.tjson.expectFloat
 import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectIntValue
 import st.evening.mc.prelude.api.data.tjson.expectString
-import st.evening.mc.prelude.api.data.tjson.useAny
 import st.evening.mc.prelude.api.data.tjson.useIntValue
-import st.evening.mc.prelude.api.data.tjson.useString
+import st.evening.mc.prelude.api.data.tjson.useObject
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
 import st.evening.mc.prelude.api.gui.drawable.drawFullSizeAsProgress
 import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
@@ -141,18 +140,9 @@ class ForgeEnergyBuffer(
 
         @ClientSide.Strong
         override fun addToGuiScreen(uiIndex: Int, layout: StackLayout, baseSlotIndex: Int, wrapper: UiElementWrapper) {
-            config.uiPosition.placeElement(
+            config.energyBar.uiPosition.placeElement(
                 uiIndex, layout, wrapper,
-                BarControl.IntTank(
-                    config.barBg.drawable,
-                    config.barFg.drawable,
-                    { energyStored },
-                    config.capacity,
-                    config.energyUnitName,
-                    config.barOrientation,
-                    config.barOffsetX,
-                    config.barOffsetY
-                )
+                BarControl.IntTank(config.energyBar.data, { energyStored }, config.capacity, config.energyUnitName)
             )
         }
     }
@@ -162,12 +152,7 @@ class ForgeEnergyBuffer(
         val insertRate: Int,
         val extractRate: Int,
         val allowAutoExport: Boolean,
-        val uiPosition: UiPosition,
-        val barBg: DrawableData,
-        val barFg: SamplableData,
-        val barOffsetX: Int,
-        val barOffsetY: Int,
-        val barOrientation: DrawOrientation,
+        val energyBar: Positioned<BarDrawData>,
         val energyUnitName: String
     )
 
@@ -211,10 +196,11 @@ class ForgeEnergyBuffer(
 
         @ClientSide.Physical
         fun createJeiUiElement(contRegion: IntRectangle, guiHelper: IGuiHelper): JeiUiElement<*> {
-            val barBg = config.barBg.drawable
-            val barFg = config.barFg.drawable
-            val pos = config.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
-            val barRegion = Rect2i(pos.x + config.barOffsetX, pos.y + config.barOffsetY, barFg.width, barFg.height)
+            val bar = config.energyBar.data
+            val barBg = bar.bgTexture.drawable
+            val barFg = bar.fgTexture.drawable
+            val pos = config.energyBar.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
+            val barRegion = Rect2i(pos.x + bar.fgOffsetX, pos.y + bar.fgOffsetY, barFg.width, barFg.height)
             val ticker = guiHelper.createTickTimer(32, 32, false)
             return object : JeiUiElement<Int> {
                 override val jeiIngredient: JeiIngredient<Int>?
@@ -224,13 +210,14 @@ class ForgeEnergyBuffer(
                     get() = barRegion
 
                 override fun drawElement(ingredient: Int?, partialTicks: Float) {
-                    config.barBg.drawable.drawFullSize(partialTicks, pos.x, pos.y)
+                    val bar = config.energyBar.data
+                    bar.bgTexture.drawable.drawFullSize(partialTicks, pos.x, pos.y)
                     if (ingredient != null) {
-                        config.barFg.drawable.drawFullSizeAsProgress(
+                        bar.fgTexture.drawable.drawFullSizeAsProgress(
                             partialTicks,
                             barRegion.posX,
                             barRegion.posY,
-                            config.barOrientation,
+                            bar.orientation,
                             if (contents?.role == JeiIngredient.Role.OUTPUT) {
                                 ticker.value / ticker.maxValue.toFloat()
                             } else {
@@ -267,6 +254,11 @@ class ForgeEnergyBuffer(
     object Type : AutoExportingBufferType<ForgeEnergyBuffer, Accumulator, JeiBuffer, JeiAccumulator>,
         SidedBufferType<ForgeEnergyBuffer, Accumulator, JeiBuffer, JeiAccumulator> {
 
+        val DEFAULT_ENERGY_BAR: Positioned<BarDrawData> = Positioned(
+            UiPosition.CENTER,
+            BarDrawData(CbtGuiData.ENERGY_BAR_BG, CbtGuiData.ENERGY_BAR_FG, 1, 1, DrawOrientation.BOTTOM_TO_TOP)
+        )
+
         override val id: ResourceLocation = CbTweaker.resource("forge_energy")
 
         override val bufferClass: Class<ForgeEnergyBuffer>
@@ -286,13 +278,8 @@ class ForgeEnergyBuffer(
                 dto.expectInt("insert_rate") ?: (capacity ceilDivPos 100),
                 extractRate,
                 dto.expectBool("allow_auto_export") ?: (extractRate > 0),
-                dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
-                dto.useAny("bar_bg") { DrawableData.loadSliceOrBlank(it, 6, 36) } ?: CbtGuiData.ENERGY_BAR_BG,
-                dto.useAny("bar_fg") { DrawableData.loadSliceOrBlank(it, 4, 34) } ?: CbtGuiData.ENERGY_BAR_FG,
-                dto.expectInt("bar_offset_x") ?: 1,
-                dto.expectInt("bar_offset_y") ?: 1,
-                dto.useString("bar_orientation") { DrawOrientation.serializer.deserializeFromJson(it) }
-                    ?: DrawOrientation.BOTTOM_TO_TOP,
+                dto.useObject("energy_bar") { BarDrawData.loadPositioned(it, DEFAULT_ENERGY_BAR) }
+                    ?: DEFAULT_ENERGY_BAR,
                 dto.expectString("energy_unit_name") ?: DEFAULT_ENERGY_UNIT
             )
             return object : BufferFactory<ForgeEnergyBuffer, JeiBuffer> {

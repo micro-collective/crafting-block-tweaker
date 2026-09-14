@@ -28,11 +28,11 @@ import st.evening.mc.cbtweaker.gui.inventory.SyncedUiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.util.CbtMathHelper
-import st.evening.mc.cbtweaker.util.machine.StatMetric
 import st.evening.mc.cbtweaker.util.component.SidedBufferConfig
-import st.evening.mc.cbtweaker.util.gui.DrawableData
-import st.evening.mc.cbtweaker.util.gui.SamplableData
+import st.evening.mc.cbtweaker.util.gui.BarDrawData
+import st.evening.mc.cbtweaker.util.gui.Positioned
 import st.evening.mc.cbtweaker.util.gui.UiPosition
+import st.evening.mc.cbtweaker.util.machine.StatMetric
 import st.evening.mc.prelude.api.data.ser.DoubleSerializer
 import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
 import st.evening.mc.prelude.api.data.state.Piecewise
@@ -43,8 +43,7 @@ import st.evening.mc.prelude.api.data.tjson.expectBool
 import st.evening.mc.prelude.api.data.tjson.expectDouble
 import st.evening.mc.prelude.api.data.tjson.expectDoubleValue
 import st.evening.mc.prelude.api.data.tjson.expectFloat
-import st.evening.mc.prelude.api.data.tjson.expectInt
-import st.evening.mc.prelude.api.data.tjson.useAny
+import st.evening.mc.prelude.api.data.tjson.useObject
 import st.evening.mc.prelude.api.data.tjson.useString
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
 import st.evening.mc.prelude.api.gui.drawable.drawFullSizeAsProgress
@@ -136,17 +135,9 @@ class MekanismHeatBuffer(
 
         @ClientSide.Strong
         override fun addToGuiScreen(uiIndex: Int, layout: StackLayout, baseSlotIndex: Int, wrapper: UiElementWrapper) {
-            config.uiPosition.placeElement(
+            config.heatBar.uiPosition.placeElement(
                 uiIndex, layout, wrapper,
-                HeatBarControl(
-                    config.barBg.drawable,
-                    config.barFg.drawable,
-                    { temp },
-                    config.barMaxTemp,
-                    config.barOrientation,
-                    config.barOffsetX,
-                    config.barOffsetY
-                )
+                HeatBarControl(config.heatBar.data, { temp }, config.heatBarMaxTemp)
             )
         }
     }
@@ -156,13 +147,8 @@ class MekanismHeatBuffer(
         val invConductanceCoeff: Double,
         val insulationCoeff: Double,
         val spreadHeat: Boolean,
-        val uiPosition: UiPosition,
-        val barBg: DrawableData,
-        val barFg: SamplableData,
-        val barOffsetX: Int,
-        val barOffsetY: Int,
-        val barOrientation: DrawOrientation,
-        val barMaxTemp: Double
+        val heatBar: Positioned<BarDrawData>,
+        val heatBarMaxTemp: Double
     )
 
     class Accumulator : Iterable<Double> {
@@ -234,10 +220,11 @@ class MekanismHeatBuffer(
 
         @ClientSide.Physical
         fun createJeiUiElement(contRegion: IntRectangle): JeiUiElement<*> {
-            val barBg = config.barBg.drawable
-            val barFg = config.barFg.drawable
-            val pos = config.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
-            val barRegion = Rect2i(pos.x + config.barOffsetX, pos.y + config.barOffsetY, barFg.width, barFg.height)
+            val bar = config.heatBar.data
+            val barBg = bar.bgTexture.drawable
+            val barFg = bar.fgTexture.drawable
+            val pos = config.heatBar.uiPosition.computePosition(contRegion, barBg.width, barBg.height)
+            val barRegion = Rect2i(pos.x + bar.fgOffsetX, pos.y + bar.fgOffsetY, barFg.width, barFg.height)
             return object : JeiUiElement<Double> {
                 override val jeiIngredient: JeiIngredient<Double>?
                     get() = contents
@@ -246,14 +233,15 @@ class MekanismHeatBuffer(
                     get() = barRegion
 
                 override fun drawElement(ingredient: Double?, partialTicks: Float) {
-                    config.barBg.drawable.drawFullSize(partialTicks, pos.x, pos.y)
+                    val bar = config.heatBar.data
+                    bar.bgTexture.drawable.drawFullSize(partialTicks, pos.x, pos.y)
                     if (ingredient != null) {
-                        config.barFg.drawable.drawFullSizeAsProgress(
+                        bar.fgTexture.drawable.drawFullSizeAsProgress(
                             partialTicks,
                             barRegion.posX,
                             barRegion.posY,
-                            config.barOrientation,
-                            (ingredient / config.barMaxTemp).toFloat()
+                            bar.orientation,
+                            (ingredient / config.heatBarMaxTemp).toFloat()
                         )
                     }
                 }
@@ -283,6 +271,16 @@ class MekanismHeatBuffer(
     }
 
     object Type : SidedBufferType<MekanismHeatBuffer, Accumulator, JeiBuffer, JeiAccumulator> {
+        val DEFAULT_HEAT_BAR: Positioned<BarDrawData> = Positioned(
+            UiPosition.CENTER,
+            BarDrawData(
+                CbtGuiData.MEKANISM_HEAT_BAR_BG,
+                CbtGuiData.MEKANISM_HEAT_BAR_FG,
+                1, 1,
+                DrawOrientation.BOTTOM_TO_TOP
+            )
+        )
+
         override val id: ResourceLocation = CbTweaker.resource("mekanism_heat")
 
         override val bufferClass: Class<MekanismHeatBuffer>
@@ -292,19 +290,17 @@ class MekanismHeatBuffer(
 
         context(_: JsonPath)
         override fun loadBufferFactory(dto: TJson.Object): BufferFactory<MekanismHeatBuffer, JeiBuffer> {
+            var barMaxTemp = 3000.0
             val config = Config(
                 dto.expectDouble("heat_capacity") ?: 1.0,
                 dto.expectDouble("inverse_conduction_coeff") ?: 1.0,
                 dto.expectDouble("insulation_coeff") ?: 1.0,
                 dto.expectBool("spread_heat") ?: true,
-                dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
-                dto.useAny("bar_bg") { DrawableData.loadSliceOrBlank(it, 6, 36) } ?: CbtGuiData.MEKANISM_HEAT_BAR_BG,
-                dto.useAny("bar_fg") { DrawableData.loadSliceOrBlank(it, 4, 34) } ?: CbtGuiData.MEKANISM_HEAT_BAR_FG,
-                dto.expectInt("bar_offset_x") ?: 1,
-                dto.expectInt("bar_offset_y") ?: 1,
-                dto.useString("bar_orientation") { DrawOrientation.serializer.deserializeFromJson(it) }
-                    ?: DrawOrientation.BOTTOM_TO_TOP,
-                dto.expectDouble("bar_max_temp") ?: 3000.0
+                dto.useObject("heat_bar") { barDto ->
+                    barDto.expectDouble("max_temp")?.let { barMaxTemp = it }
+                    return@useObject BarDrawData.loadPositioned(barDto, DEFAULT_HEAT_BAR)
+                } ?: DEFAULT_HEAT_BAR,
+                barMaxTemp
             )
             return object : BufferFactory<MekanismHeatBuffer, JeiBuffer> {
                 override fun createBuffer(world: World, pos: BlockPos, observer: BufferObserver): MekanismHeatBuffer =

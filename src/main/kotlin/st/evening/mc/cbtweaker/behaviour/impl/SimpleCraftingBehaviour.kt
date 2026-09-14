@@ -32,12 +32,13 @@ import st.evening.mc.cbtweaker.singleblock.SingleBlockType
 import st.evening.mc.cbtweaker.util.MachineSoundWrapper
 import st.evening.mc.cbtweaker.util.SoundData
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
-import st.evening.mc.cbtweaker.util.gui.DrawableData
-import st.evening.mc.cbtweaker.util.gui.SamplableData
+import st.evening.mc.cbtweaker.util.gui.BarDrawData
+import st.evening.mc.cbtweaker.util.gui.Positioned
 import st.evening.mc.cbtweaker.util.gui.UiPosition
 import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.NumberModifier
 import st.evening.mc.cbtweaker.util.machine.TickModulator
+import st.evening.mc.cbtweaker.util.machine.tryModifyIntCeil
 import st.evening.mc.cbtweaker.util.recipe.LazyAccumulatorMap
 import st.evening.mc.cbtweaker.util.recipe.MatcherChecker
 import st.evening.mc.cbtweaker.util.recipe.MatcherConsumer
@@ -58,7 +59,6 @@ import st.evening.mc.prelude.api.data.state.ValueStateAtom
 import st.evening.mc.prelude.api.data.state.observeAll
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
-import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectString
 import st.evening.mc.prelude.api.data.tjson.forEachObject
 import st.evening.mc.prelude.api.data.tjson.useAny
@@ -79,6 +79,11 @@ import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.render.gui.DrawOrientation
 
 object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State> {
+    val DEFAULT_PROGRESS_BAR: Positioned<BarDrawData> = Positioned(
+        UiPosition.CENTER,
+        BarDrawData(CbtGuiData.PROGRESS_BAR_BG, CbtGuiData.PROGRESS_BAR_FG, 0, 0, DrawOrientation.LEFT_TO_RIGHT)
+    )
+
     override val id: ResourceLocation = CbTweaker.resource("crafting")
 
     context(_: JsonPath)
@@ -95,13 +100,8 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                     }
                 }
             } ?: emptyMap(),
-            dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
-            dto.useAny("bar_bg") { DrawableData.loadSlice(it) } ?: CbtGuiData.PROGRESS_BAR_BG,
-            dto.useAny("bar_fg") { DrawableData.loadSlice(it) } ?: CbtGuiData.PROGRESS_BAR_FG,
-            dto.expectInt("bar_offset_x") ?: 0,
-            dto.expectInt("bar_offset_y") ?: 0,
-            dto.useString("bar_orientation") { DrawOrientation.serializer.deserializeFromJson(it) }
-                ?: DrawOrientation.LEFT_TO_RIGHT,
+            dto.useObject("progress_bar") { BarDrawData.loadPositioned(it, DEFAULT_PROGRESS_BAR) }
+                ?: DEFAULT_PROGRESS_BAR,
             dto.useAny("working_sound") { SoundData.load(it) }
         )
         val recipeSetEntry = CbTweaker.defns.recipeSets.getOrCreateRecipeSet(
@@ -118,14 +118,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                     SimpleCraftingRecipe.JeiIconAdaptor(
                         recipeSetEntry.id,
                         machine.id,
-                        SimpleCraftingRecipe.JeiConfig(
-                            true,
-                            config.progressBarBg,
-                            config.progressBarFg,
-                            config.barOffsetX,
-                            config.barOffsetY,
-                            config.barOrientation
-                        )
+                        SimpleCraftingRecipe.JeiConfig(true, config.progressBar.data)
                     )
                 )
 
@@ -205,12 +198,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
     class Config(
         private val modTable: Map<String, Map<String, NumberModifier.Modifier>>,
-        val uiPosition: UiPosition,
-        val progressBarBg: DrawableData,
-        val progressBarFg: SamplableData,
-        val barOffsetX: Int,
-        val barOffsetY: Int,
-        val barOrientation: DrawOrientation,
+        val progressBar: Positioned<BarDrawData>,
         val workingSound: SoundData?
     ) {
         fun computeModifierState(components: ComponentSet): ModState {
@@ -241,6 +229,10 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         protected var world: World,
         protected var pos: BlockPos
     ) : WeaklyValid {
+        companion object {
+            private const val MOD_DURATION: String = "duration"
+        }
+
         val rsHandler: RedstoneControlHandler = RedstoneControlHandler(world, pos)
 
         val activeState: ValueStateAtom<Boolean> = ValueStateAtom(false, BoolSerializer)
@@ -277,7 +269,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             var workDone: Int,
             modTable: Map<String, NumberModifier>
         ) {
-            var workNeeded: Int = recipe.computeModifiedDuration(modTable)
+            var workNeeded: Int = modTable.tryModifyIntCeil(MOD_DURATION, recipe.duration)
         }
 
         protected class UiState(state: ListStateComposite.Builder = ListStateComposite.Builder()) :
@@ -297,17 +289,9 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 baseSlotIndex: Int,
                 wrapper: UiElementWrapper
             ) {
-                config.uiPosition.placeElement(
+                config.progressBar.uiPosition.placeElement(
                     uiIndex, layout, wrapper,
-                    BarControl.Progress(
-                        config.progressBarBg.drawable,
-                        config.progressBarFg.drawable,
-                        { uiState.work.value },
-                        { uiState.maxWork.value },
-                        config.barOrientation,
-                        config.barOffsetX,
-                        config.barOffsetY
-                    )
+                    BarControl.Progress(config.progressBar.data, { uiState.work.value }, { uiState.maxWork.value })
                 )
             }
         }
@@ -390,7 +374,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
             private fun updateCurrentRecipeWorkNeeded() {
                 currentRecipe?.let {
-                    val workNeeded = it.recipe.computeModifiedDuration(modState.modTable)
+                    val workNeeded = modState.modTable.tryModifyIntCeil(MOD_DURATION, it.recipe.duration)
                     it.workNeeded = workNeeded
                     uiState.maxWork.update(workNeeded)
                 }
@@ -456,7 +440,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                     }
                     cachedRecipe = null
                 }
-                val recipe = recipeDb.recipes.values.firstOrNull {
+                val recipe = recipeDb.recipeMap.values.firstOrNull {
                     it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial) &&
                         it.outputTable.checkOutputs(accs, ProviderChecker.Final)
                 }
@@ -506,7 +490,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             override fun readFromNbt(dto: NBTTagCompound) {
                 run {
                     dto.getStringOrNull(SER_RECIPE)?.let { recipeId ->
-                        val recipe = recipeDb.recipes[recipeId]
+                        val recipe = recipeDb.recipeMap[recipeId]
                         if (recipe != null) {
                             val job = RunningRecipe(recipe, dto.getInteger(SER_WORK), modState.modTable)
                             currentRecipe = job
@@ -583,18 +567,14 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             region: IntRectangle,
             jeiHelpers: IJeiHelpers
         ) {
-            val barBg = config.progressBarBg.drawable
-            val barPos = config.uiPosition.computePosition(region, barBg.width, barBg.height)
+            val barBg = config.progressBar.data.bgTexture.drawable
+            val barPos = config.progressBar.uiPosition.computePosition(region, barBg.width, barBg.height)
             container.addJeiUiElement(
                 JeiProgressBarElement(
                     barPos.x,
                     barPos.y,
+                    config.progressBar.data,
                     recipe.duration,
-                    barBg,
-                    config.progressBarFg.drawable,
-                    config.barOffsetX,
-                    config.barOffsetY,
-                    config.barOrientation,
                     jeiHelpers.guiHelper
                 )
             )
