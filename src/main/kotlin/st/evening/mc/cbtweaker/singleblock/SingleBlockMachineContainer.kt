@@ -17,14 +17,15 @@ import st.evening.mc.prelude.api.gui.engine.GuiElementDslContext
 import st.evening.mc.prelude.api.gui.engine.addChild
 import st.evening.mc.prelude.api.gui.engine.prefab.AbsoluteLayout
 import st.evening.mc.prelude.api.registration.ContainerFactory
+import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.findTileEntity
 
-class SingleBlockMachineContainer(
+class SingleBlockMachineContainer private constructor(
     override val machine: SingleBlockMachineTileEntity,
     playerInv: InventoryPlayer,
-    val ioConfigState: MutableBoolean = MutableBoolean(false)
+    val ioConfigState: MutableBoolean?
 ) : CbtCustomContainer(
     playerInv,
     machine.sbType.windowConfig,
@@ -35,21 +36,32 @@ class SingleBlockMachineContainer(
     buildList {
         machine.createMachineUiElement()?.let { add(it) }
         val bufHandler = machine.bufHandler
-        machine.createBufferUiElements().forEach { (bufGroupId, subTable) ->
-            subTable.forEach { (bufType, uiElems) ->
-                uiElems.forEach { (bufName, uiElem) ->
-                    add(
-                        IoConfigControlElement(
-                            ioConfigState,
-                            uiElem,
-                            bufHandler.getConfig(bufGroupId, bufType, bufName)!!
+        if (ioConfigState != null) {
+            bufHandler.createBufferUiElements().forEach { (bufGroupId, subTable) ->
+                subTable.forEach { (bufType, uiElems) ->
+                    uiElems.forEach { (bufName, uiElem) ->
+                        add(
+                            IoConfigControlElement(
+                                ioConfigState,
+                                uiElem,
+                                bufHandler.getConfig(bufGroupId, bufType, bufName)!!
+                            )
                         )
-                    )
+                    }
+                }
+            }
+        } else {
+            bufHandler.createBufferUiElements().values.forEach { subTable ->
+                subTable.values.forEach { uiElems ->
+                    uiElems.values.forEach { add(it) }
                 }
             }
         }
     }
 ), MachineContainer {
+    constructor(machine: SingleBlockMachineTileEntity, playerInv: InventoryPlayer) :
+        this(machine, playerInv, orNull(machine.bufHandler.hasIoConfig) { MutableBoolean(false) })
+
     override fun canInteractWith(player: EntityPlayer): Boolean = machine.isInInteractionRange(player)
 
     override fun getTranslationKey(): String = machine.sbType.translationKey
@@ -78,14 +90,23 @@ class SingleBlockMachineGui(container: SingleBlockMachineContainer) :
         val region = container.windowConfig.machineInvRegion
         val x = region.posX + region.width - 11
         val y = region.posY - 11
-        addChild(x, y, IoConfigModeControl(container.ioConfigState))
-        sbMachine.rsHandler?.let {
-            addChild(x - 13, y, RedstoneBehaviourControl(it))
+        val ioConfigState = container.ioConfigState
+        if (ioConfigState != null) {
+            container.ioConfigState?.let {
+                addChild(x, y, IoConfigModeControl(it))
+            }
+            sbMachine.rsHandler?.let {
+                addChild(x - 13, y, RedstoneBehaviourControl(it))
+            }
+        } else {
+            sbMachine.rsHandler?.let {
+                addChild(x, y, RedstoneBehaviourControl(it))
+            }
         }
     }
 
     override fun isPointInRegion( // only used to check whether the mouse is over a slot or not
         rectX: Int, rectY: Int, rectWidth: Int, rectHeight: Int, pointX: Int, pointY: Int
-    ): Boolean = !container.ioConfigState.booleanValue() &&
+    ): Boolean = container.ioConfigState?.booleanValue() != true &&
         super.isPointInRegion(rectX, rectY, rectWidth, rectHeight, pointX, pointY)
 }

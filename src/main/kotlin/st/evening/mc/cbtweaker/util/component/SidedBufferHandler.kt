@@ -358,6 +358,14 @@ class SidedBufferHandler(
         this.unsidedConfigTable = unsidedConfigTable
     }
 
+    val hasIoConfig: Boolean = run {
+        if (sideConfigTable.isNotEmpty()) return@run true
+        unsidedConfigTable.forEachConfig {
+            if (it.exportHandler != null) return@run true
+        }
+        return@run false
+    }
+
     @PreludeInternal
     fun getSideConfigTable(): ConfigTable<SidedBufferConfig<*>> = sideConfigTable
 

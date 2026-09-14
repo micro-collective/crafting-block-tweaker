@@ -15,7 +15,6 @@ import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
-import st.evening.mc.cbtweaker.util.component.UiElementTable
 import st.evening.mc.cbtweaker.util.sync.TileEntitySyncProxy
 import st.evening.mc.prelude.api.util.game.ServerSide
 
@@ -78,8 +77,6 @@ class SingleBlockMachineTileEntity :
     override fun readConfig(dto: NBTTagCompound) {
         data.readConfig(dto)
     }
-
-    fun createBufferUiElements(): UiElementTable = data.createBufferUiElements()
 
     fun createMachineUiElement(): UiElement? = data.createMachineUiElement()
 }

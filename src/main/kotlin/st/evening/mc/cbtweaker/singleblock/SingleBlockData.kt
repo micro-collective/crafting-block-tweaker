@@ -15,7 +15,6 @@ import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
-import st.evening.mc.cbtweaker.util.component.UiElementTable
 import st.evening.mc.cbtweaker.util.component.collectComponents
 import st.evening.mc.cbtweaker.util.component.handleBlockUpdate
 import st.evening.mc.cbtweaker.util.component.handleDestruction
@@ -187,8 +186,6 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
         bufHandler.readFromNbtServerSide(dto.getCompoundTag(SER_BUFFERS))
         behaviour.deserializeMachineFromNbt(machineState, dto.getCompoundTag(SER_MACHINE))
     }
-
-    fun createBufferUiElements(): UiElementTable = bufHandler.createBufferUiElements()
 
     fun createMachineUiElement(): UiElement? = behaviour.createUiElement(machineState)
 }
