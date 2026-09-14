@@ -17,7 +17,6 @@ import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.network.S2CBindMultiBlockAssembly
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
-import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.onServer

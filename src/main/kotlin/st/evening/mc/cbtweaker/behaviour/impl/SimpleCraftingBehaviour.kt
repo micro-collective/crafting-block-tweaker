@@ -321,7 +321,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             protected var bufGroups: BufferGroups,
             components: ComponentSet,
             protected var host: MachineHost
-        ) : State(config, recipeDb, world, pos), Observer.Simple, CopiableConfigHost, NbtCompoundSerializable {
+        ) : State(config, recipeDb, world, pos), CopiableConfigHost, NbtCompoundSerializable {
             companion object {
                 private const val SER_RECIPE: String = "recipe"
                 private const val SER_WORK: String = "work"
@@ -343,7 +343,10 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             private var stateDirty: Boolean = true
 
             init {
-                rsHandler.observeState(this)
+                rsHandler.observeState(Observer.Simple.fixed {
+                    updateActiveState()
+                    stateDirty = true
+                })
             }
 
             override fun reinit(
@@ -366,10 +369,6 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
             @ClientSide.Strong
             override fun getClient(): Client = absurdLogicalSide()
-
-            override fun onObservableUpdate() { // observing redstone handler
-                stateDirty = true
-            }
 
             protected fun updateActiveState() {
                 activeState.update(working && rsHandler.canWork())
@@ -531,14 +530,16 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             recipeDb: SimpleCraftingRecipe.Database,
             world: World,
             pos: BlockPos,
-        ) : State(config, recipeDb, world, pos), Observer.Simple {
+        ) : State(config, recipeDb, world, pos) {
             private val workingSound: MachineSoundWrapper?
 
             init {
                 val soundData = config.workingSound
                 if (soundData != null) {
                     workingSound = MachineSoundWrapper(this, pos, soundData)
-                    activeState.observeAll(this)
+                    activeState.observeAll(Observer.Simple.fixed {
+                        workingSound.setActive(activeState.value)
+                    })
                 } else {
                     workingSound = null
                 }
@@ -560,10 +561,6 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
             @ClientSide.Strong
             override fun getClient(): Client = this
-
-            override fun onObservableUpdate() { // observing active state
-                workingSound?.setActive(activeState.value)
-            }
         }
     }
 

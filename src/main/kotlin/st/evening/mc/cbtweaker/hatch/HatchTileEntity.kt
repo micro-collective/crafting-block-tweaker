@@ -9,7 +9,6 @@ import net.minecraft.util.EnumHand
 import net.minecraft.util.ITickable
 import net.minecraft.util.math.BlockPos
 import net.minecraftforge.common.capabilities.Capability
-import net.minecraftforge.common.util.Constants
 import st.evening.mc.cbtweaker.buffer.BufferGroup
 import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
@@ -17,7 +16,6 @@ import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.sync.TileEntitySyncProxy
 import st.evening.mc.prelude.api.util.collection.CapabilityMap
-import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ServerSide
 
 class HatchTileEntity : LazyTileEntity<HatchData<*>>(), CopiableConfigHost, ITickable {
