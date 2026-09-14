@@ -1,8 +1,6 @@
 package st.evening.mc.cbtweaker.gui.element
 
-import net.minecraft.client.audio.PositionedSoundRecord
 import net.minecraft.client.resources.I18n
-import net.minecraft.init.SoundEvents
 import net.minecraft.util.text.TextFormatting
 import net.minecraftforge.fluids.FluidStack
 import net.minecraftforge.fluids.IFluidTank
@@ -21,6 +19,7 @@ import st.evening.mc.prelude.api.gui.engine.GuiPart
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiElement
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiPart
 import st.evening.mc.prelude.api.util.game.ClientSide
+import st.evening.mc.prelude.api.util.game.playUiClick
 import st.evening.mc.prelude.api.util.math.containsPoint
 
 @ClientSide.Strong
@@ -119,7 +118,7 @@ abstract class TankControl<T, C>(
                     if (mouseButton == 0) TransferType.INSERT else TransferType.EXTRACT
                 )
             )
-            mc.soundHandler.playSound(PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F))
+            mc.soundHandler.playUiClick()
             return ClickResult.Consume
         }
     }

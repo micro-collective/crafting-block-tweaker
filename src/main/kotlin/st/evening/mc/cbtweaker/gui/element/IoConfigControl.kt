@@ -1,10 +1,8 @@
 package st.evening.mc.cbtweaker.gui.element
 
-import net.minecraft.client.audio.PositionedSoundRecord
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.resources.I18n
-import net.minecraft.init.SoundEvents
 import net.minecraft.util.text.TextFormatting
 import org.apache.commons.lang3.mutable.MutableBoolean
 import st.evening.mc.cbtweaker.CbTweaker
@@ -28,6 +26,7 @@ import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiElement
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiPart
 import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
 import st.evening.mc.prelude.api.util.game.ClientSide
+import st.evening.mc.prelude.api.util.game.playUiClick
 import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.math.Vec2i
 import st.evening.mc.prelude.api.util.math.containsPoint
@@ -64,9 +63,7 @@ class IoConfigModeControl(private val configState: MutableBoolean) : AbstractGui
         override fun onMouseClick(context: GuiContext, mouseX: Int, mouseY: Int, mouseButton: Int): ClickResult {
             if ((mouseButton != 0 && mouseButton != 1) || !containsPoint(mouseX, mouseY)) return ClickResult.Ignore
             configState.value = !configState.booleanValue()
-            context.gui.mc.soundHandler.playSound(
-                PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F)
-            )
+            context.gui.mc.soundHandler.playUiClick()
             return ClickResult.Consume
         }
     }
@@ -152,9 +149,7 @@ abstract class IoConfigControl(
             if (!configState.booleanValue()) return part.onMouseClick(context, mouseX, mouseY, mouseButton)
             if (mouseButton != 0 && mouseButton != 1) return ClickResult.Ignore
             if (handleConfigClick(context, mouseX, mouseY)) {
-                context.gui.mc.soundHandler.playSound(
-                    PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F)
-                )
+                context.gui.mc.soundHandler.playUiClick()
                 return ClickResult.Consume
             }
             return ClickResult.Ignore

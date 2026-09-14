@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 import net.minecraft.block.state.IBlockState
 import net.minecraft.client.Minecraft
-import net.minecraft.client.audio.PositionedSoundRecord
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.renderer.GlStateManager
@@ -13,7 +12,6 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats
 import net.minecraft.client.resources.I18n
 import net.minecraft.client.util.ITooltipFlag
 import net.minecraft.init.Blocks
-import net.minecraft.init.SoundEvents
 import net.minecraft.util.BlockRenderLayer
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.MathHelper
@@ -36,6 +34,7 @@ import st.evening.mc.cbtweaker.util.rotate
 import st.evening.mc.cbtweaker.util.world.DummyBlockAccessor
 import st.evening.mc.prelude.api.util.collection.getOrPut
 import st.evening.mc.prelude.api.util.game.ClientSide
+import st.evening.mc.prelude.api.util.game.playUiClick
 import st.evening.mc.prelude.api.util.math.MathsHelper
 import st.evening.mc.prelude.api.util.render.RenderingHelper
 import st.evening.mc.prelude.api.util.render.TextureResource
@@ -76,15 +75,11 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
             0 -> {
                 if (isOverLayerUp(mouseX, mouseY)) {
                     visWorld.incrementLevel()
-                    Minecraft.getMinecraft().soundHandler.playSound(
-                        PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F)
-                    )
+                    Minecraft.getMinecraft().soundHandler.playUiClick()
                     return true
                 } else if (isOverLayerDown(mouseX, mouseY)) {
                     visWorld.decrementLevel()
-                    Minecraft.getMinecraft().soundHandler.playSound(
-                        PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F)
-                    )
+                    Minecraft.getMinecraft().soundHandler.playUiClick()
                     return true
                 }
             }

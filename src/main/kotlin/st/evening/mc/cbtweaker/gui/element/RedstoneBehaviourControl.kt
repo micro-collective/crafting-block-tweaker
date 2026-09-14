@@ -1,8 +1,6 @@
 package st.evening.mc.cbtweaker.gui.element
 
-import net.minecraft.client.audio.PositionedSoundRecord
 import net.minecraft.client.resources.I18n
-import net.minecraft.init.SoundEvents
 import net.minecraft.util.text.TextFormatting
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.CbtLang
@@ -18,6 +16,7 @@ import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiElement
 import st.evening.mc.prelude.api.gui.engine.prefab.AbstractGuiPart
 import st.evening.mc.prelude.api.util.data.cycleEnum
 import st.evening.mc.prelude.api.util.game.ClientSide
+import st.evening.mc.prelude.api.util.game.playUiClick
 import st.evening.mc.prelude.api.util.math.containsPoint
 
 @ClientSide.Strong
@@ -58,18 +57,14 @@ class RedstoneBehaviourControl(private val rsHandler: RedstoneControlHandler) : 
                     CbTweaker.defns.c2sSetRedstoneBehaviour.sendToServer(
                         C2SSetRedstoneBehaviour(context.assertWindowId(), rsHandler.redstoneBehaviour.cycleEnum(1))
                     )
-                    context.gui.mc.soundHandler.playSound(
-                        PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1F)
-                    )
+                    context.gui.mc.soundHandler.playUiClick()
                     return ClickResult.Consume
                 }
                 1 -> {
                     CbTweaker.defns.c2sSetRedstoneBehaviour.sendToServer(
                         C2SSetRedstoneBehaviour(context.assertWindowId(), rsHandler.redstoneBehaviour.cycleEnum(-1))
                     )
-                    context.gui.mc.soundHandler.playSound(
-                        PositionedSoundRecord.getMasterRecord(SoundEvents.UI_BUTTON_CLICK, 1.2F)
-                    )
+                    context.gui.mc.soundHandler.playUiClick(1.2F)
                     return ClickResult.Consume
                 }
                 else -> return ClickResult.Ignore
