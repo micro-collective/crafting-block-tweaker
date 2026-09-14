@@ -24,9 +24,8 @@ abstract class OrientableMachineBlock(blockConfig: BlockConfig) :
             .withProperty(PROP_ACTIVE, false)
     }
 
-    override fun createBlockState(): BlockStateContainer {
-        return BlockStateContainer(this, BlockSidedIfc.PROP_FACING, PROP_ACTIVE)
-    }
+    override fun createBlockState(): BlockStateContainer =
+        BlockStateContainer(this, BlockSidedIfc.PROP_FACING, PROP_ACTIVE)
 
     @Suppress("OVERRIDE_DEPRECATION")
     override fun getActualState(state: IBlockState, world: IBlockAccess, pos: BlockPos): IBlockState =

@@ -69,9 +69,7 @@ interface LazyAccumulatorMap {
                 }
             }
 
-            override fun copyAccumulators(): LazyAccumulatorMap {
-                return CopyingMap(this)
-            }
+            override fun copyAccumulators(): LazyAccumulatorMap = CopyingMap(this)
 
             private class CopyingGroup(private val baseGroup: Group) : Group {
                 private val accumCache: MutableMap<BufferType<*, *, *, *>, Lazy<*>> = mutableMapOf()

@@ -322,9 +322,7 @@ class ItemStackBuffer private constructor(
         private val contents: Array<JeiIngredient<ItemStack>?> = arrayOfNulls(config.slotCount)
         private var nextEmptyIndex: Int = 0
 
-        fun hasRemainingSlots(): Boolean {
-            return nextEmptyIndex < contents.size
-        }
+        fun hasRemainingSlots(): Boolean = nextEmptyIndex < contents.size
 
         fun setContents(ingredient: JeiIngredient<ItemStack>) {
             contents[nextEmptyIndex++] = ingredient
@@ -486,9 +484,7 @@ class ItemStackBuffer private constructor(
             acc.accumulate(buffer)
         }
 
-        override fun copyAccumulator(acc: Accumulator): Accumulator {
-            return acc.copy()
-        }
+        override fun copyAccumulator(acc: Accumulator): Accumulator = acc.copy()
 
         @ServerSide
         override fun serializeBufferToNbt(buffer: ItemStackBuffer, dto: NBTTagCompound) {
