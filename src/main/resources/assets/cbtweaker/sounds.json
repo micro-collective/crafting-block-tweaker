@@ -1,4 +1,17 @@
 {
+  "notification.config_copy": {
+    "sounds": [
+      {
+        "name": "random/successful_hit",
+        "pitch": 0.45
+      }
+    ]
+  },
+  "notification.config_paste": {
+    "sounds": [
+      "random/successful_hit"
+    ]
+  },
   "material.gas.transfer": {
     "subtitle": "cbtweaker.subtitles.material.gas.transfer",
     "sounds": [

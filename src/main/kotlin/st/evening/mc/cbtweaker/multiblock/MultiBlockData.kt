@@ -11,6 +11,7 @@ import net.minecraft.util.math.BlockPos
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.common.BufferedSyncHolder
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.structure.impl.SimpleStructureMatcher
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.machine.RefreshState
@@ -26,13 +27,15 @@ import st.evening.mc.prelude.api.util.world.onServer
 class MultiBlockData<S>(
     val mbCtrl: MultiBlockControllerTileEntity,
     val mbType: MultiBlockType<S>
-) : RoiHost, BufferedSyncHolder, ServerSideSerializable {
+) : RoiHost, CopiableConfigHost, BufferedSyncHolder, ServerSideSerializable {
     private var mbRoiTicket: RoiTicket? = null
     private var assembly: MultiBlockAssembly<S>? = null
     @ServerSide
     private var bufferedAssemblyDeser: NBTTagCompound? = null
     @ClientSide
     private var bufferedAssemblyBind: BindData? = null
+    @ServerSide
+    private var cachedAssemblyConfig: NBTTagCompound? = null
     var assemblyStateClock: Int = 0
         private set
     private var structDirty: Boolean = false
@@ -57,11 +60,16 @@ class MultiBlockData<S>(
             ticket.invalidateRoi()
             if (invalidateAssembly) {
                 assembly?.let {
-                    it.disassociateHatches(mbCtrl)
-                    it.invalidate()
                     mbCtrl.world.onServer {
+                        val configDto = NBTTagCompound()
+                        it.writeConfig(configDto)
+                        if (!configDto.isEmpty) {
+                            cachedAssemblyConfig = configDto
+                        }
                         it.handleDestruction(mbCtrl.world.getBlockState(mbCtrl.pos))
                     }
+                    it.disassociateHatches(mbCtrl)
+                    it.invalidate()
                     assembly = null
                     assemblyStateClock++
                     mbCtrl.onAssemblyChanged(null)
@@ -135,6 +143,10 @@ class MultiBlockData<S>(
                         assembly.readFromNbtServerSide(it)
                         bufferedAssemblyDeser = null
                     }
+                    cachedAssemblyConfig?.let {
+                        assembly.readConfig(it)
+                        cachedAssemblyConfig = null
+                    }
                 }
                 // recheck recipe immediately once assembled
                 // don't need to hard-refresh because the executor state will be fresh anyways
@@ -179,6 +191,16 @@ class MultiBlockData<S>(
     @ServerSide
     fun handleDestruction(state: IBlockState) {
         assembly?.handleDestruction(state)
+    }
+
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        assembly?.writeConfig(dto)
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        assembly?.readConfig(dto)
     }
 
     @ClientSide

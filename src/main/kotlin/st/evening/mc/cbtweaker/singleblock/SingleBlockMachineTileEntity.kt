@@ -3,6 +3,7 @@ package st.evening.mc.cbtweaker.singleblock
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.EnumHand
 import net.minecraft.util.ITickable
@@ -11,13 +12,19 @@ import net.minecraftforge.common.capabilities.Capability
 import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.common.MachineTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
-import st.evening.mc.cbtweaker.util.sync.TileEntitySyncProxy
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
 import st.evening.mc.cbtweaker.util.component.UiElementTable
+import st.evening.mc.cbtweaker.util.sync.TileEntitySyncProxy
 import st.evening.mc.prelude.api.util.game.ServerSide
 
-class SingleBlockMachineTileEntity : LazyTileEntity<SingleBlockData<*>>(), MachineTileEntity, ITickable {
+class SingleBlockMachineTileEntity :
+    LazyTileEntity<SingleBlockData<*>>(), MachineTileEntity, CopiableConfigHost, ITickable {
+    companion object {
+
+    }
+
     override fun initData(): SingleBlockData<*> {
         val data = SingleBlockData(this, (world.getBlockState(pos).block as SingleBlockMachineBlock).sbType)
         data.getSyncState()?.let {
@@ -60,6 +67,16 @@ class SingleBlockMachineTileEntity : LazyTileEntity<SingleBlockData<*>>(), Machi
     @ServerSide
     fun handleDestruction(blockState: IBlockState) {
         data.handleDestruction(blockState)
+    }
+
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        data.writeConfig(dto)
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        data.readConfig(dto)
     }
 
     fun createBufferUiElements(): UiElementTable = data.createBufferUiElements()

@@ -19,7 +19,10 @@ import st.evening.mc.cbtweaker.buffer.BufferGroups
 import st.evening.mc.cbtweaker.buffer.BufferType
 import st.evening.mc.cbtweaker.buffer.SidedBufferType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.capability.CapabilityMerger
+import st.evening.mc.cbtweaker.util.config.putNonEmpty
+import st.evening.mc.cbtweaker.util.config.runNonEmpty
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
 import st.evening.mc.cbtweaker.util.world.AllFaces
 import st.evening.mc.prelude.api.PreludeInternal
@@ -32,13 +35,16 @@ import st.evening.mc.prelude.api.util.collection.CapabilityMultimap
 import st.evening.mc.prelude.api.util.collection.WeakValidityMap
 import st.evening.mc.prelude.api.util.data.BitVector
 import st.evening.mc.prelude.api.util.data.forEachString
+import st.evening.mc.prelude.api.util.data.getBoolOrNull
+import st.evening.mc.prelude.api.util.data.getCompoundOrNull
+import st.evening.mc.prelude.api.util.data.getListOrNull
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
 import kotlin.experimental.and
 
-interface BufferConfig<B> : ServerSideSerializable {
+interface BufferConfig<B> : CopiableConfigHost, ServerSideSerializable {
     val bufType: BufferType<B, *, *, *>
     val buffer: B
 
@@ -147,6 +153,38 @@ class SidedBufferConfig<B>(
     }
 
     @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        dto.runAction {
+            putNonEmpty(SER_BUFFER) { bufType.writeBufferConfig(buffer, it) }
+            SER_SIDES stringList enabledFaces.map { it.name }
+            _exportHandler?.let {
+                SER_EXPORT bool it.autoExporting
+            }
+        }
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        dto.getCompoundOrNull(SER_BUFFER)?.let {
+            bufType.readBufferConfig(buffer, it)
+        }
+        dto.getListOrNull(SER_SIDES)?.let {
+            enabledFaces.clear()
+            it.forEachString {
+                try {
+                    enabledFaces += enumValueOf<RelativeFace>(it)
+                } catch (_: IllegalArgumentException) {
+                }
+            }
+        }
+        _exportHandler?.let { handler ->
+            dto.getBoolOrNull(SER_EXPORT)?.let {
+                handler.autoExporting = it
+            }
+        }
+    }
+
+    @ServerSide
     override fun writeToNbtServerSide(dto: NBTTagCompound) {
         dto.runAction {
             SER_BUFFER tag NBTTagCompound().also { bufType.serializeBufferToNbt(buffer, it) }
@@ -227,14 +265,14 @@ inline fun <T> ConfigTable<T>.forEachConfig(action: (T) -> Unit) {
 }
 
 @ServerSide
-private fun <T : BufferConfig<*>> ConfigTable<T>.writeConfigsToNbt(dto: NBTTagCompound) {
+private fun <T : BufferConfig<*>> ConfigTable<T>.writeToNbtForConfigCopy(dto: NBTTagCompound) {
     dto.runAction {
         forEach { (bufGroupId, subTable) ->
-            bufGroupId compound {
+            runNonEmpty(bufGroupId) {
                 subTable.forEach { (bufType, configs) ->
-                    bufType.id.toString() compound {
+                    runNonEmpty(bufType.id.toString()) {
                         configs.forEach { (name, config) ->
-                            name tag NBTTagCompound().also { config.writeToNbtServerSide(it) }
+                            putNonEmpty(name) { config.writeConfig(it) }
                         }
                     }
                 }
@@ -244,7 +282,41 @@ private fun <T : BufferConfig<*>> ConfigTable<T>.writeConfigsToNbt(dto: NBTTagCo
 }
 
 @ServerSide
-private fun <T : BufferConfig<*>> ConfigTable<T>.readConfigsFromNbt(dto: NBTTagCompound) {
+private fun <T : BufferConfig<*>> ConfigTable<T>.writeToNbtForSave(dto: NBTTagCompound) {
+    dto.runAction {
+        forEach { (bufGroupId, subTable) ->
+            bufGroupId compound {
+                subTable.forEach { (bufType, configs) ->
+                    bufType.id.toString() compound {
+                        configs.forEach { (name, config) ->
+                            name tag config.writeToNbtServerSide()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@ServerSide
+private fun <T : BufferConfig<*>> ConfigTable<T>.readFromNbtForConfigCopy(dto: NBTTagCompound) {
+    forEach { (bufGroupId, subTable) ->
+        dto.getCompoundOrNull(bufGroupId)?.let { subTableDto ->
+            subTable.forEach { (bufType, configs) ->
+                subTableDto.getCompoundOrNull(bufType.id.toString())?.let { configsDto ->
+                    configs.forEach { (name, config) ->
+                        configsDto.getCompoundOrNull(name)?.let {
+                            config.readConfig(it)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@ServerSide
+private fun <T : BufferConfig<*>> ConfigTable<T>.readFromNbtForSave(dto: NBTTagCompound) {
     forEach { (bufGroupId, subTable) ->
         val subTableDto = dto.getCompoundTag(bufGroupId)
         subTable.forEach { (bufType, configs) ->
@@ -261,7 +333,7 @@ typealias UiElementTable = Map<String, Map<BufferType<*, *, *, *>, Map<String, U
 class SidedBufferHandler(
     val getFront: () -> BlockSide,
     bufGroups: BufferGroups
-) : ICapabilityProvider {
+) : ICapabilityProvider, CopiableConfigHost, ServerSideSerializable {
     private val sideConfigTable: ConfigTable<SidedBufferConfig<*>>
     private val unsidedConfigTable: ConfigTable<UnsidedConfig<*>>
     private val unsidedCapabilities: CapabilityMultimap = CapabilityMultimap()
@@ -354,6 +426,19 @@ class SidedBufferHandler(
         unsidedConfigTable.forEachConfig { it.tick() }
     }
 
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        // sided/unsided configs partition the original bufGroups, so sharing the same table shouldn't be a problem
+        sideConfigTable.writeToNbtForConfigCopy(dto)
+        unsidedConfigTable.writeToNbtForConfigCopy(dto)
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        sideConfigTable.readFromNbtForConfigCopy(dto)
+        unsidedConfigTable.readFromNbtForConfigCopy(dto)
+    }
+
     fun getBufferSyncState(dest: MutableList<Piecewise>) {
         sideConfigTable.forEachConfig { config ->
             config.getBufferSyncState()?.let { dest += it }
@@ -373,16 +458,16 @@ class SidedBufferHandler(
     }
 
     @ServerSide
-    fun writeToNbt(dto: NBTTagCompound) {
+    override fun writeToNbtServerSide(dto: NBTTagCompound) {
         // sided/unsided configs partition the original bufGroups, so sharing the same table shouldn't be a problem
-        sideConfigTable.writeConfigsToNbt(dto)
-        unsidedConfigTable.writeConfigsToNbt(dto)
+        sideConfigTable.writeToNbtForSave(dto)
+        unsidedConfigTable.writeToNbtForSave(dto)
     }
 
     @ServerSide
-    fun readFromNbt(dto: NBTTagCompound) {
-        sideConfigTable.readConfigsFromNbt(dto)
-        unsidedConfigTable.readConfigsFromNbt(dto)
+    override fun readFromNbtServerSide(dto: NBTTagCompound) {
+        sideConfigTable.readFromNbtForSave(dto)
+        unsidedConfigTable.readFromNbtForSave(dto)
     }
 
     fun createBufferUiElements(): UiElementTable {
@@ -477,6 +562,28 @@ class SidedBufferHandler(
         internal fun tick() {
             bufType.tick(buffer)
             _exportHandler?.tick()
+        }
+
+        @ServerSide
+        override fun writeConfig(dto: NBTTagCompound) {
+            dto.runAction {
+                putNonEmpty(SER_BUFFER) { bufType.writeBufferConfig(buffer, it) }
+                _exportHandler?.let {
+                    SER_EXPORT bool it.autoExporting
+                }
+            }
+        }
+
+        @ServerSide
+        override fun readConfig(dto: NBTTagCompound) {
+            dto.getCompoundOrNull(SER_BUFFER)?.let {
+                bufType.readBufferConfig(buffer, it)
+            }
+            _exportHandler?.let { handler ->
+                dto.getBoolOrNull(SER_EXPORT)?.let {
+                    handler.autoExporting = it
+                }
+            }
         }
 
         @ServerSide

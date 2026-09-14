@@ -12,7 +12,7 @@ import st.evening.mc.cbtweaker.behaviour.MachineHost
 import st.evening.mc.cbtweaker.buffer.BufferObserver
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
-import st.evening.mc.cbtweaker.util.sync.CbtSyncHelper
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
 import st.evening.mc.cbtweaker.util.component.UiElementTable
@@ -20,15 +20,18 @@ import st.evening.mc.cbtweaker.util.component.collectComponents
 import st.evening.mc.cbtweaker.util.component.handleBlockUpdate
 import st.evening.mc.cbtweaker.util.component.handleDestruction
 import st.evening.mc.cbtweaker.util.component.handleInteraction
+import st.evening.mc.cbtweaker.util.config.putNonEmpty
 import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
 import st.evening.mc.cbtweaker.util.machine.RefreshState
 import st.evening.mc.cbtweaker.util.machine.TickModulator
+import st.evening.mc.cbtweaker.util.sync.CbtSyncHelper
 import st.evening.mc.cbtweaker.util.world.FrontGetter
 import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.data.state.Observer
 import st.evening.mc.prelude.api.data.state.Piecewise
 import st.evening.mc.prelude.api.util.collection.WeakValidity
+import st.evening.mc.prelude.api.util.data.getCompoundOrNull
 import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ServerSide
@@ -36,7 +39,7 @@ import st.evening.mc.prelude.api.util.game.getTileEntityWeakValidity
 import st.evening.mc.prelude.api.util.world.onServer
 
 class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType: SingleBlockType<S>) :
-    MachineHost, BufferObserver, Observer.Simple, Observer.Indexed, ServerSideSerializable {
+    MachineHost, BufferObserver, Observer.Simple, Observer.Indexed, CopiableConfigHost, ServerSideSerializable {
     companion object {
         private const val SER_BUFFERS: String = "buffers"
         private const val SER_MACHINE: String = "machine"
@@ -147,6 +150,24 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
         }
     }
 
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        dto.runAction {
+            putNonEmpty(SER_BUFFERS) { bufHandler.writeConfig(it) }
+            putNonEmpty(SER_MACHINE) { behaviour.writeMachineConfig(machineState, it) }
+        }
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        dto.getCompoundOrNull(SER_BUFFERS)?.let {
+            bufHandler.readConfig(it)
+        }
+        dto.getCompoundOrNull(SER_MACHINE)?.let {
+            behaviour.readMachineConfig(machineState, it)
+        }
+    }
+
     fun getSyncState(): Piecewise? = CbtSyncHelper.buildSyncState {
         bufHandler.getBufferSyncState(this)
         behaviour.getActiveState(machineState)?.let { add(it) }
@@ -156,14 +177,14 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
     @ServerSide
     override fun writeToNbtServerSide(dto: NBTTagCompound) {
         dto.runAction {
-            SER_BUFFERS tag NBTTagCompound().also { bufHandler.writeToNbt(it) }
+            SER_BUFFERS tag bufHandler.writeToNbtServerSide()
             SER_MACHINE tag NBTTagCompound().also { behaviour.serializeMachineToNbt(machineState, it) }
         }
     }
 
     @ServerSide
     override fun readFromNbtServerSide(dto: NBTTagCompound) {
-        bufHandler.readFromNbt(dto.getCompoundTag(SER_BUFFERS))
+        bufHandler.readFromNbtServerSide(dto.getCompoundTag(SER_BUFFERS))
         behaviour.deserializeMachineFromNbt(machineState, dto.getCompoundTag(SER_MACHINE))
     }
 

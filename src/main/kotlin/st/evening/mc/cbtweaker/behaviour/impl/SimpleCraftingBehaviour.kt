@@ -9,7 +9,6 @@ import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.ResourceLocation
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
-import net.minecraftforge.common.util.Constants
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.behaviour.MachineBehaviour
 import st.evening.mc.cbtweaker.behaviour.MachineHost
@@ -28,6 +27,7 @@ import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.gui.inventory.sliceBackground
 import st.evening.mc.cbtweaker.recipe.impl.SimpleCraftingRecipe
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.singleblock.SingleBlockType
 import st.evening.mc.cbtweaker.util.MachineSoundWrapper
 import st.evening.mc.cbtweaker.util.SoundData
@@ -69,6 +69,7 @@ import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
 import st.evening.mc.prelude.api.resource
 import st.evening.mc.prelude.api.util.collection.WeakValidity
 import st.evening.mc.prelude.api.util.collection.WeaklyValid
+import st.evening.mc.prelude.api.util.data.getStringOrNull
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
@@ -178,6 +179,16 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
     @ServerSide
     override fun handleBlockUpdate(state: State, blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
         state.getServer().handleBlockUpdate()
+    }
+
+    @ServerSide
+    override fun writeMachineConfig(state: State, dto: NBTTagCompound) {
+        state.getServer().writeConfig(dto)
+    }
+
+    @ServerSide
+    override fun readMachineConfig(state: State, dto: NBTTagCompound) {
+        state.getServer().readConfig(dto)
     }
 
     @ServerSide
@@ -310,7 +321,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             protected var bufGroups: BufferGroups,
             components: ComponentSet,
             protected var host: MachineHost
-        ) : State(config, recipeDb, world, pos), Observer.Simple, NbtCompoundSerializable {
+        ) : State(config, recipeDb, world, pos), Observer.Simple, CopiableConfigHost, NbtCompoundSerializable {
             companion object {
                 private const val SER_RECIPE: String = "recipe"
                 private const val SER_WORK: String = "work"
@@ -471,6 +482,18 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 return job
             }
 
+            override fun writeConfig(dto: NBTTagCompound) {
+                dto.runAction {
+                    SER_REDSTONE tag rsHandler.writeToNbt()
+                }
+            }
+
+            override fun readConfig(dto: NBTTagCompound) {
+                dto.getStringOrNull(SER_REDSTONE)?.let {
+                    rsHandler.readFromNbt(it)
+                }
+            }
+
             override fun writeToNbt(dto: NBTTagCompound) {
                 dto.runAction {
                     currentRecipe?.let {
@@ -483,8 +506,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
             override fun readFromNbt(dto: NBTTagCompound) {
                 run {
-                    if (dto.hasKey(SER_RECIPE, Constants.NBT.TAG_STRING)) {
-                        val recipeId = dto.getString(SER_RECIPE)
+                    dto.getStringOrNull(SER_RECIPE)?.let { recipeId ->
                         val recipe = recipeDb.recipes[recipeId]
                         if (recipe != null) {
                             val job = RunningRecipe(recipe, dto.getInteger(SER_WORK), modState.modTable)

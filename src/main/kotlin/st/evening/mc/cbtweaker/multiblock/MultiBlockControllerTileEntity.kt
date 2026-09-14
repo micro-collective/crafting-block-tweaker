@@ -4,6 +4,7 @@ import io.netty.buffer.Unpooled
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.EnumHand
@@ -14,12 +15,16 @@ import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.common.MachineTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.network.S2CBindMultiBlockAssembly
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
+import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.onServer
 
-class MultiBlockControllerTileEntity : LazyTileEntity<MultiBlockData<*>>(), MachineTileEntity, ITickable {
+class MultiBlockControllerTileEntity :
+    LazyTileEntity<MultiBlockData<*>>(), MachineTileEntity, CopiableConfigHost, ITickable {
+
     override fun initData(): MultiBlockData<*> =
         MultiBlockData(this, (world.getBlockState(pos).block as MultiBlockControllerBlock).mbType)
 
@@ -86,6 +91,16 @@ class MultiBlockControllerTileEntity : LazyTileEntity<MultiBlockData<*>>(), Mach
     @ServerSide
     fun handleDestruction(state: IBlockState) {
         data.handleDestruction(state)
+    }
+
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        data.writeConfig(dto)
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        data.readConfig(dto)
     }
 
     @ClientSide

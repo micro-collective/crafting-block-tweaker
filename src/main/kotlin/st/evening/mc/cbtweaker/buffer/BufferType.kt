@@ -60,6 +60,14 @@ interface BufferType<B, A, JB, JA> : Identifiable, BlockBehaviour<B> {
     fun copyAccumulator(acc: A): A
 
     @ServerSide
+    fun writeBufferConfig(buffer: B, dto: NBTTagCompound) {
+    }
+
+    @ServerSide
+    fun readBufferConfig(buffer: B, dto: NBTTagCompound) {
+    }
+
+    @ServerSide
     fun serializeBufferToNbt(buffer: B, dto: NBTTagCompound)
 
     @ServerSide

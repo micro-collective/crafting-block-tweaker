@@ -15,7 +15,9 @@ import st.evening.mc.cbtweaker.buffer.BufferGroup
 import st.evening.mc.cbtweaker.buffer.BufferObserver
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.component.AutoExportHandler
+import st.evening.mc.cbtweaker.util.config.putNonEmpty
 import st.evening.mc.cbtweaker.util.machine.RefreshState
 import st.evening.mc.cbtweaker.util.world.AllFaces
 import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
@@ -24,6 +26,8 @@ import st.evening.mc.prelude.api.data.state.Piecewise
 import st.evening.mc.prelude.api.data.state.onObservableUpdate
 import st.evening.mc.prelude.api.util.collection.IdentityHashStrategy
 import st.evening.mc.prelude.api.util.collection.WeakValidityMap
+import st.evening.mc.prelude.api.util.data.getBoolOrNull
+import st.evening.mc.prelude.api.util.data.getCompoundOrNull
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.CapabilityVisitor
 import st.evening.mc.prelude.api.util.game.ServerSide
@@ -32,7 +36,7 @@ import st.evening.mc.prelude.api.util.world.RelativeFace
 import st.evening.mc.prelude.api.util.world.onServer
 
 class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<B>, val hatchTier: Int) :
-    BufferObserver, ServerSideSerializable {
+    BufferObserver, CopiableConfigHost, ServerSideSerializable {
     companion object {
         private const val SER_BUFFER: String = "buffer"
         private const val SER_EXPORT: String = "export"
@@ -111,6 +115,28 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
     @ServerSide
     fun handleDestruction(state: IBlockState) {
         hatchType.bufferType.handleDestruction(buffer, state)
+    }
+
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        dto.runAction {
+            putNonEmpty(SER_BUFFER) { hatchType.bufferType.writeBufferConfig(buffer, it) }
+            exportHandler?.let {
+                SER_EXPORT bool it.autoExporting
+            }
+        }
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        dto.getCompoundOrNull(SER_BUFFER)?.let {
+            hatchType.bufferType.readBufferConfig(buffer, it)
+        }
+        exportHandler?.let { handler ->
+            dto.getBoolOrNull(SER_EXPORT)?.let {
+                handler.autoExporting = it
+            }
+        }
     }
 
     fun getSyncState(): Piecewise? = hatchType.bufferType.getBufferSyncState(buffer)

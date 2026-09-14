@@ -1,6 +1,14 @@
 itemGroup.cbtweaker=Crafting Block Tweaker
 
 item.cbtweaker.vis_tool.name=The Grand Design
+item.cbtweaker.config_copier.blank.name=Blank Config
+item.cbtweaker.config_copier.hatch.name=Hatch Config
+item.cbtweaker.config_copier.mb_ctrl.name=Multi-Block Config
+item.cbtweaker.config_copier.sb_machine.name=Single-Block Config
+
+cbtweaker.notification.config_copy=Configuration copied.
+cbtweaker.notification.config_copy_empty=No configuration to copy!
+cbtweaker.notification.config_paste=Configuration applied.
 
 cbtweaker.tooltip.enabled=Enabled
 cbtweaker.tooltip.disabled=Disabled
@@ -11,6 +19,9 @@ cbtweaker.tooltip.seconds=%,d second(s)
 cbtweaker.tooltip.buffer_group=Buffer Group: %s
 cbtweaker.tooltip.vis_tool=Visualizes multi-block structures
 cbtweaker.tooltip.bind_to_block=Sneak+use to bind to a block
+cbtweaker.tooltip.config_copier=Stores and applies machine configurations
+cbtweaker.tooltip.config_copy=Sneak+use to copy a configuration
+cbtweaker.tooltip.config_paste=Use to apply stored configuration
 
 cbtweaker.tooltip.configure_io=Configure I/O
 cbtweaker.tooltip.redstone_behaviour=Redstone Behaviour

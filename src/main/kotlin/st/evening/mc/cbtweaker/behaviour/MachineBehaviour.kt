@@ -49,6 +49,14 @@ interface MachineBehaviour<S> : Identifiable, BlockBehaviour<S> {
     fun tick(state: S, ticker: TickModulator)
 
     @ServerSide
+    fun writeMachineConfig(state: S, dto: NBTTagCompound) {
+    }
+
+    @ServerSide
+    fun readMachineConfig(state: S, dto: NBTTagCompound) {
+    }
+
+    @ServerSide
     fun serializeMachineToNbt(state: S, dto: NBTTagCompound)
 
     @ServerSide

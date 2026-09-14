@@ -3,20 +3,24 @@ package st.evening.mc.cbtweaker.hatch
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.EnumHand
 import net.minecraft.util.ITickable
 import net.minecraft.util.math.BlockPos
 import net.minecraftforge.common.capabilities.Capability
+import net.minecraftforge.common.util.Constants
 import st.evening.mc.cbtweaker.buffer.BufferGroup
 import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.util.sync.TileEntitySyncProxy
 import st.evening.mc.prelude.api.util.collection.CapabilityMap
+import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ServerSide
 
-class HatchTileEntity : LazyTileEntity<HatchData<*>>(), ITickable {
+class HatchTileEntity : LazyTileEntity<HatchData<*>>(), CopiableConfigHost, ITickable {
     private val capabilities: CapabilityMap by lazy {
         CapabilityMap().also { data.attachCapabilities(it) }
     }
@@ -73,6 +77,16 @@ class HatchTileEntity : LazyTileEntity<HatchData<*>>(), ITickable {
     @ServerSide
     fun handleDestruction(state: IBlockState) {
         data.handleDestruction(state)
+    }
+
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        data.writeConfig(dto)
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        data.readConfig(dto)
     }
 
     fun createUiElement(): UiElement? = data.createUiElement()

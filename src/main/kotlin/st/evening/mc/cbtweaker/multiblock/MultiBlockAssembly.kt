@@ -17,12 +17,13 @@ import st.evening.mc.cbtweaker.buffer.collectComponents
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.hatch.HatchTileEntity
+import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.structure.StructureMatch
-import st.evening.mc.cbtweaker.util.sync.CbtSyncHelper
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
 import st.evening.mc.cbtweaker.util.machine.TickModulator
+import st.evening.mc.cbtweaker.util.sync.CbtSyncHelper
 import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.data.state.Piecewise
 import st.evening.mc.prelude.api.data.sync.SyncHost
@@ -41,7 +42,7 @@ class MultiBlockAssembly<S>(
     private val hatches: List<HatchTileEntity>,
     private val bufGroups: BufferGroups,
     oldAssembly: MultiBlockAssembly<S>?
-) : MachineHost, ServerSideSerializable {
+) : MachineHost, CopiableConfigHost, ServerSideSerializable {
     companion object {
         fun <S> fromStructure(
             mbData: MultiBlockData<S>,
@@ -134,6 +135,16 @@ class MultiBlockAssembly<S>(
     @ServerSide
     fun handleDestruction(blockState: IBlockState) {
         behaviour.handleDestruction(machineState, blockState)
+    }
+
+    @ServerSide
+    override fun writeConfig(dto: NBTTagCompound) {
+        behaviour.writeMachineConfig(machineState, dto)
+    }
+
+    @ServerSide
+    override fun readConfig(dto: NBTTagCompound) {
+        behaviour.readMachineConfig(machineState, dto)
     }
 
     fun invalidate() {

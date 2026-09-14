@@ -15,8 +15,9 @@ import net.minecraft.util.math.BlockPos
 import net.minecraft.util.text.TextFormatting
 import net.minecraft.world.World
 import net.minecraftforge.common.IRarity
-import net.minecraftforge.common.util.Constants
 import st.evening.mc.cbtweaker.CbtLang
+import st.evening.mc.prelude.api.util.data.getCompoundOrNull
+import st.evening.mc.prelude.api.util.data.getIntOrNull
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.dataTagOrNull
 import st.evening.mc.prelude.api.util.game.getOrCreateDataTag
@@ -81,10 +82,8 @@ class VisualizationToolItem : Item() {
             }
         }
 
-        fun getBoundPos(stack: ItemStack): BlockPos? {
-            val tag = stack.dataTagOrNull ?: return null
-            if (!tag.hasKey(SER_POS, Constants.NBT.TAG_COMPOUND)) return null
-            return BlockPosSerializer.deserializeFromNbt(tag.getCompoundTag(SER_POS))
+        fun getBoundPos(stack: ItemStack): BlockPos? = stack.dataTagOrNull?.getCompoundOrNull(SER_POS)?.let {
+            BlockPosSerializer.deserializeFromNbt(it)
         }
 
         fun setLevel(stack: ItemStack, level: Int?) {
@@ -95,10 +94,6 @@ class VisualizationToolItem : Item() {
             }
         }
 
-        fun getLevel(stack: ItemStack): Int? {
-            val tag = stack.dataTagOrNull ?: return null
-            if (!tag.hasKey(SER_LEVEL, Constants.NBT.TAG_INT)) return null
-            return tag.getInteger(SER_LEVEL)
-        }
+        fun getLevel(stack: ItemStack): Int? = stack.dataTagOrNull?.getIntOrNull(SER_LEVEL)
     }
 }

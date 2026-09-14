@@ -1,6 +1,11 @@
 package st.evening.mc.cbtweaker
 
 object CbtLang {
+    private const val KEY_NOTIF: String = "${CbtConsts.MOD_ID}.notification"
+    const val NOTIF_CONFIG_COPY: String = "${KEY_NOTIF}.config_copy"
+    const val NOTIF_CONFIG_COPY_EMPTY: String = "${KEY_NOTIF}.config_copy_empty"
+    const val NOTIF_CONFIG_PASTE: String = "${KEY_NOTIF}.config_paste"
+    
     private const val KEY_TOOLTIP: String = "${CbtConsts.MOD_ID}.tooltip"
     const val TOOLTIP_ENABLED: String = "$KEY_TOOLTIP.enabled"
     const val TOOLTIP_DISABLED: String = "$KEY_TOOLTIP.disabled"
@@ -11,6 +16,9 @@ object CbtLang {
     const val TOOLTIP_BUFFER_GROUP: String = "$KEY_TOOLTIP.buffer_group"
     const val TOOLTIP_VIS_TOOL: String = "$KEY_TOOLTIP.vis_tool"
     const val TOOLTIP_BIND_TO_BLOCK: String = "$KEY_TOOLTIP.bind_to_block"
+    const val TOOLTIP_CONFIG_COPIER: String = "$KEY_TOOLTIP.config_copier"
+    const val TOOLTIP_CONFIG_COPY: String = "$KEY_TOOLTIP.config_copy"
+    const val TOOLTIP_CONFIG_PASTE: String = "$KEY_TOOLTIP.config_paste"
 
     fun tooltipEnabledDisabled(condition: Boolean): String = if (condition) TOOLTIP_ENABLED else TOOLTIP_DISABLED
 

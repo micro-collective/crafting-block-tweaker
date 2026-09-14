@@ -35,7 +35,9 @@ import st.evening.mc.cbtweaker.network.C2SSetHatchAutoExporting
 import st.evening.mc.cbtweaker.network.C2SSetRedstoneBehaviour
 import st.evening.mc.cbtweaker.network.C2SVisualizationLevel
 import st.evening.mc.cbtweaker.network.S2CBindMultiBlockAssembly
+import st.evening.mc.cbtweaker.network.S2CClientEffect
 import st.evening.mc.cbtweaker.recipe.RecipeSetManager
+import st.evening.mc.cbtweaker.serconfig.ConfigCopierItem
 import st.evening.mc.cbtweaker.singleblock.SingleBlockMachineContainer
 import st.evening.mc.cbtweaker.singleblock.SingleBlockMachineTileEntity
 import st.evening.mc.cbtweaker.singleblock.SingleBlockManager
@@ -180,6 +182,8 @@ class CbtDefinitions(reg: ModRegistrar) {
 
     // REGISTRY OBJECTS ================================================================================================
 
+    val soundConfigCopy: SoundEvent by reg.soundEvent("notification.config_copy")
+    val soundConfigPaste: SoundEvent by reg.soundEvent("notification.config_paste")
     val soundGasTransfer: SoundEvent by reg.soundEvent("material.gas.transfer")
 
     val tileEntityHatch: TileEntityType<HatchTileEntity> by reg.tileEntity("hatch")
@@ -189,6 +193,11 @@ class CbtDefinitions(reg: ModRegistrar) {
     val creativeTab: CreativeTabs = reg.creativeTab { ItemStack(itemVisualizationTool) }
     val itemVisualizationTool: VisualizationToolItem by reg.item("vis_tool") {
         VisualizationToolItem().also {
+            it.creativeTab = creativeTab
+        }
+    }
+    val itemConfigCopier: ConfigCopierItem by reg.item("config_copier") {
+        ConfigCopierItem().also {
             it.creativeTab = creativeTab
         }
     }
@@ -210,6 +219,8 @@ class CbtDefinitions(reg: ModRegistrar) {
     val c2sInteractTankTransfer: PacketType.C2S<C2SInteractTankTransfer>
         by reg.c2sPacket(C2SInteractTankTransfer.Serializer, C2SInteractTankTransfer.Handler)
 
+    val s2cClientEffect: PacketType.S2C<S2CClientEffect>
+        by reg.s2cPacket(S2CClientEffect.Serializer, S2CClientEffect.Handler)
     val s2cBindMultiBlockAssembly: PacketType.S2C<S2CBindMultiBlockAssembly>
         by reg.s2cPacket(S2CBindMultiBlockAssembly.Serializer, S2CBindMultiBlockAssembly.Handler)
 
