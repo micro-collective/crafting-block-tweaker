@@ -22,13 +22,13 @@ abstract class EventRegistry<T : Identifiable, E>(private val objType: Class<T>,
 
     private fun registerObject(obj: T) {
         val objId = obj.id
-        entries[objId]?.let {
+        val clash = entries.put(objId, createEntry(obj))
+        if (clash != null) {
             throw IllegalStateException(
                 "Duplicate $objName registry entry! ID: $objId, " +
-                    "existing: ${it.javaClass.canonicalName}, new: ${obj.javaClass.canonicalName}"
+                    "existing: ${clash.javaClass.canonicalName}, new: ${obj.javaClass.canonicalName}"
             )
         }
-        entries[objId] = createEntry(obj)
         CbTweaker.logger.debug("Registered {} {} ({})", objName, objId, obj.javaClass.getCanonicalName())
     }
 

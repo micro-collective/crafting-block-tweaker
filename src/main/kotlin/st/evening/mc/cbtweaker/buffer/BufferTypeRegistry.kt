@@ -43,13 +43,13 @@ class BufferTypeRegistry :
 
         private fun registerMatcherType(type: IngredientMatcherType<A, JA>) {
             val typeId = type.id
-            matcherTypeTable[typeId]?.let {
+            val clash = matcherTypeTable.put(typeId, type)
+            if (clash != null) {
                 throw IllegalStateException(
                     "Ingredient matcher type ID clash! Buffer type: ${bufferType.id}, ID: $typeId, " +
-                        "existing: ${it.javaClass.canonicalName}, new: ${type.javaClass.canonicalName}"
+                        "existing: ${clash.javaClass.canonicalName}, new: ${type.javaClass.canonicalName}"
                 )
             }
-            matcherTypeTable[typeId] = type
             CbTweaker.logger.debug(
                 "Registered matcher type {}/{} ({})",
                 bufferType.id, typeId, type.javaClass.canonicalName
