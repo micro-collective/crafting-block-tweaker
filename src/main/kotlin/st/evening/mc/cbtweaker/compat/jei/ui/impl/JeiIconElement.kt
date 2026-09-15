@@ -4,8 +4,8 @@ import net.minecraft.client.resources.I18n
 import net.minecraft.client.util.ITooltipFlag
 import net.minecraft.util.text.TextFormatting
 import st.evening.mc.cbtweaker.CbtLang
-import st.evening.mc.cbtweaker.compat.jei.recipe.JeiUi
 import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
+import st.evening.mc.cbtweaker.compat.jei.recipe.JeiUi
 import st.evening.mc.cbtweaker.compat.jei.ui.JeiUiElement
 import st.evening.mc.cbtweaker.util.CbtMathHelper
 import st.evening.mc.prelude.api.util.game.ClientSide

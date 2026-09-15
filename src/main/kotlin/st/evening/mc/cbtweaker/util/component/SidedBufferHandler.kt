@@ -168,9 +168,9 @@ class SidedBufferConfig<B>(
         dto.getCompoundOrNull(SER_BUFFER)?.let {
             bufType.readBufferConfig(buffer, it)
         }
-        dto.getListOrNull(SER_SIDES)?.let {
+        dto.getListOrNull(SER_SIDES)?.let { sidesDto ->
             enabledFaces.clear()
-            it.forEachString {
+            sidesDto.forEachString {
                 try {
                     enabledFaces += enumValueOf<RelativeFace>(it)
                 } catch (_: IllegalArgumentException) {
