@@ -37,6 +37,7 @@ import st.evening.mc.cbtweaker.util.gui.DrawableData
 import st.evening.mc.cbtweaker.util.gui.UiPosition
 import st.evening.mc.cbtweaker.util.machine.ItemConsumeType
 import st.evening.mc.cbtweaker.util.machine.TickModulator
+import st.evening.mc.cbtweaker.util.recipe.IngredientLoader
 import st.evening.mc.prelude.api.PreludeInternal
 import st.evening.mc.prelude.api.capability.ItemStore
 import st.evening.mc.prelude.api.capability.ModifiableItemStore
@@ -74,6 +75,7 @@ import st.evening.mc.prelude.api.util.render.gui.GuiRenderHelper
 import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
 import java.util.LinkedList
+import java.util.function.Predicate
 import kotlin.math.min
 
 class ItemStackBuffer private constructor(
@@ -108,6 +110,9 @@ class ItemStackBuffer private constructor(
 
     override fun insertItem(slot: Int, stack: ItemStack, simulate: Boolean): ItemStack {
         if (stack.isEmpty) return ItemStack.EMPTY
+        config.itemFilter?.let {
+            if (!it.test(stack)) return stack
+        }
         val slotStack = inventory[slot]
         if (!slotStack.isEmpty && !slotStack.stacksWith(stack)) return stack
         val stackCount = stack.count
@@ -133,6 +138,8 @@ class ItemStackBuffer private constructor(
     }
 
     override fun getSlotLimit(slot: Int): Int = config.maxStackSize
+
+    override fun isItemValid(slot: Int, stack: ItemStack): Boolean = config.itemFilter?.test(stack) != false
 
     fun copy(observer: BufferObserver?): ItemStackBuffer =
         ItemStackBuffer(config, world, bufPos, inventory.clone(), observer)
@@ -191,6 +198,7 @@ class ItemStackBuffer private constructor(
     class Config(
         val slotCount: Int,
         val maxStackSize: Int,
+        val itemFilter: Predicate<ItemStack>?,
         val allowInsert: Boolean,
         val allowExtract: Boolean,
         val allowAutoExport: Boolean,
@@ -403,6 +411,7 @@ class ItemStackBuffer private constructor(
             val config = Config(
                 dto.expectInt("slots") ?: 1,
                 dto.expectInt("stack_size") ?: 64,
+                dto.useAny("item_filter") { IngredientLoader.loadItemFilter(it) },
                 dto.expectBool("allow_insert") ?: true,
                 dto.expectBool("allow_extract") ?: true,
                 dto.expectBool("allow_auto_export") ?: false,
