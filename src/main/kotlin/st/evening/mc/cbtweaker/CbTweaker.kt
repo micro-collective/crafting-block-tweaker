@@ -12,6 +12,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import org.apache.logging.log4j.Logger
 import st.evening.mc.cbtweaker.behaviour.MachineBehaviour
+import st.evening.mc.cbtweaker.behaviour.impl.FuelledCraftingBehaviour
 import st.evening.mc.cbtweaker.behaviour.impl.SimpleCraftingBehaviour
 import st.evening.mc.cbtweaker.buffer.BufferType
 import st.evening.mc.cbtweaker.buffer.BufferTypeRegistry
@@ -141,6 +142,7 @@ class CbtDefinitions(reg: ModRegistrar) {
         if (builtInsConfig.loadBuiltInMachineBehaviours) {
             reg.on<CbtRegistrationEvent<MachineBehaviour<*>>> { event ->
                 event.register(SimpleCraftingBehaviour)
+                event.register(FuelledCraftingBehaviour)
             }
         }
         if (builtInsConfig.loadBuiltInStructureBlockMatchers) {
@@ -254,6 +256,9 @@ class CbtDefinitions(reg: ModRegistrar) {
         reg.on<FMLInitializationEvent> {
             CapabilityMerger.init()
             templates.loadInit()
+            if (CbTweaker.config.builtIns.loadBuiltInRecipeSets) {
+                recipeSets.loadBuiltInRecipes()
+            }
             singleBlocks.loadAll()
             multiBlocks.loadAll()
             recipeSets.loadRecipes()

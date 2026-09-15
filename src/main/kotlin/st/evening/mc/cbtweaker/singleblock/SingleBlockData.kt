@@ -51,6 +51,8 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
     private val machineState: S
     private val ticker: TickModulator = TickModulator(true)
 
+    private var knownActiveState: Boolean = false
+
     override val weakValidity: WeakValidity
         get() = sbMachine.getTileEntityWeakValidity()
 
@@ -85,8 +87,12 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
     }
 
     override fun onObservableUpdate() { // observing the active state
-        val pos = sbMachine.pos
-        sbMachine.world.markBlockRangeForRenderUpdate(pos, pos)
+        val active = isActive
+        if (active != knownActiveState) {
+            knownActiveState = active
+            val pos = sbMachine.pos
+            sbMachine.world.markBlockRangeForRenderUpdate(pos, pos)
+        }
     }
 
     override fun onObservableUpdate(index: Int) {

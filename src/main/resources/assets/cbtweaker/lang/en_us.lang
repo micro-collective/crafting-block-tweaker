@@ -49,4 +49,6 @@ cbtweaker.gui.vis_tool.not_bound=Not bound to a multi-block controller!
 
 cbtweaker.jei.category.multiblock_structure=Multi-Block Structure
 
+cbtweaker.jei.category.recipe.furnace_fuel=Furnace Fuel
+
 cbtweaker.subtitles.material.gas.transfer=Gas hisses

@@ -26,6 +26,10 @@ class CbtConfig(config: JsonConfig.ConfigObject) {
             true, "Load built-in window config templates?",
             sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
         )
+        val loadBuiltInRecipeSets: Boolean by config.bool(
+            true, "Load built-in recipe sets?",
+            sync = false, restartRequirement = JsonConfig.RestartRequirement.REQUIRES_MC_RESTART
+        )
     }
 
     val compat: Compat by config.obj(factory = ::Compat)

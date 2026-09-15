@@ -1,17 +1,36 @@
 package st.evening.mc.cbtweaker.recipe
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap
+import net.minecraft.creativetab.CreativeTabs
+import net.minecraft.item.ItemStack
+import net.minecraft.tileentity.TileEntityFurnace
+import net.minecraft.util.NonNullList
+import net.minecraftforge.fml.common.registry.ForgeRegistries
+import net.minecraftforge.oredict.OreDictionary
 import st.evening.mc.cbtweaker.CbTweaker
+import st.evening.mc.cbtweaker.buffer.impl.ItemStackBuffer
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.compat.jei.recipe.JeiRecipeSetAdaptor
+import st.evening.mc.cbtweaker.recipe.impl.TimedFuelRecipe
+import st.evening.mc.cbtweaker.util.machine.ItemConsumeType
+import st.evening.mc.cbtweaker.util.recipe.IngredientMatcherMap
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.TypedJsonParser
+import st.evening.mc.prelude.api.util.game.ItemKey
+import st.evening.mc.prelude.api.util.game.OreDictHelper
+import st.evening.mc.prelude.api.util.game.OreEntry
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.readText
 
 class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetManager.Entry<*, *>> {
+    companion object {
+        const val BUILT_IN_FURNACE_FUEL: String = "furnace_fuel"
+    }
+
     private val recipeSetTable: MutableMap<String, Entry<*, *>> = mutableMapOf()
 
     fun <R, D> getRecipeSet(id: String, type: RecipeSetType<R, D>): Entry<R, D>? {
@@ -23,7 +42,7 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
     fun <R, D> getOrCreateRecipeSet(id: String, type: RecipeSetType<R, D>): Entry<R, D> {
         val entry = recipeSetTable[id]
         if (entry == null) {
-            val newEntry = Entry(id, type, recipeSetsDir.resolve(id))
+            val newEntry = Entry.loadDatabase(id, type, recipeSetsDir.resolve(id))
             recipeSetTable[id] = newEntry
             return newEntry
         }
@@ -34,6 +53,16 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
         }
         @Suppress("UNCHECKED_CAST")
         return entry as Entry<R, D>
+    }
+
+    fun <R, D> createBuiltInRecipeSet(id: String, type: RecipeSetType<R, D>, database: D) {
+        val newEntry = Entry(id, type, null, database)
+        val clash = recipeSetTable.put(id, newEntry)
+        if (clash != null) {
+            throw IllegalStateException(
+                "Duplicate recipe set! ID: $id, existing: ${clash.recipeType.debugName}, new: ${type.debugName}"
+            )
+        }
     }
 
     override fun iterator(): Iterator<Entry<*, *>> = recipeSetTable.values.iterator()
@@ -55,22 +84,100 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
         )
     }
 
-    class Entry<R, D>(val id: String, val recipeType: RecipeSetType<R, D>, private val recipeDir: Path) :
-        AbstractCollection<R>() {
+    fun loadBuiltInRecipes() {
+        createBuiltInRecipeSet(
+            BUILT_IN_FURNACE_FUEL,
+            TimedFuelRecipe.Type,
+            TimedFuelRecipe.Database(BUILT_IN_FURNACE_FUEL, TimedFuelRecipe.JeiConfig.DEFAULT).also { db ->
+                // there's no actual registry of furnace fuel items because fuel-ness of an item is a dynamic
+                // property, so we'll approximate it by checking the fuel-ness of every registered item
+                val fuelItems = Object2IntOpenHashMap<ItemKey>()
+                ForgeRegistries.ITEMS.forEach { item ->
+                    val subItems = NonNullList.create<ItemStack>()
+                    item.getSubItems(CreativeTabs.SEARCH, subItems)
+                    subItems.forEach { stack ->
+                        val burnTime = TileEntityFurnace.getItemBurnTime(stack)
+                        if (burnTime > 0) {
+                            fuelItems.put(ItemKey.fromStack(stack)!!, burnTime)
+                        }
+                    }
+                }
+                val seenOreIds = Int2ObjectOpenHashMap<Boolean>()
+                fuelItems.forEach { (item, burnTime) ->
+                    var shouldMakeItemEntry = true
+                    OreDictHelper.forEachOreId(item) { oreId ->
+                        when (seenOreIds[oreId]) {
+                            true -> shouldMakeItemEntry = false
+                            false -> {} // a different ore ID might work
+                            null -> {
+                                if (
+                                    OreDictHelper.getOreStacks(oreId).all {
+                                        TileEntityFurnace.getItemBurnTime(it) == burnTime
+                                    }
+                                ) {
+                                    seenOreIds.put(oreId, true)
+                                    shouldMakeItemEntry = false
+                                    val oreName = OreDictionary.getOreName(oreId)
+                                    val id = "ore/$oreName"
+                                    db.recipeMap[id] = TimedFuelRecipe(
+                                        id,
+                                        mapOf(
+                                            "fuel" to IngredientMatcherMap().also {
+                                                it[ItemStackBuffer.Type] = listOf(
+                                                    ItemStackBuffer.OreDictionaryMatcher(
+                                                        OreEntry(oreName), 1, ItemConsumeType.CONSUME
+                                                    )
+                                                )
+                                            }
+                                        ),
+                                        burnTime
+                                    )
+                                } else {
+                                    seenOreIds.put(oreId, false)
+                                }
+                            }
+                        }
+                    }
+                    if (shouldMakeItemEntry) {
+                        val id = item.dataTag?.let { // this *should* be deterministic
+                            "item/${item.item.registryName!!}/${item.meta}/${it.hashCode()}"
+                        } ?: "item/${item.item.registryName!!}/${item.meta}"
+                        db.recipeMap[id] = TimedFuelRecipe(
+                            id,
+                            mapOf(
+                                "fuel" to IngredientMatcherMap().also {
+                                    it[ItemStackBuffer.Type] = listOf(
+                                        ItemStackBuffer.ItemMatcher(item, 1, ItemConsumeType.CONSUME)
+                                    )
+                                }
+                            ),
+                            burnTime
+                        )
+                    }
+                }
+            }
+        )
+    }
 
+    class Entry<R, D>(
+        val id: String,
+        val recipeType: RecipeSetType<R, D>,
+        private val recipeDir: Path?,
         val database: D
-
-        init {
-            if (!Files.isDirectory(recipeDir)) {
-                throw SerializationException("Recipe set directory is not a directory: $recipeDir")
+    ) : AbstractCollection<R>() {
+        companion object {
+            fun <R, D> loadDatabase(id: String, recipeType: RecipeSetType<R, D>, recipeDir: Path): Entry<R, D> {
+                if (!Files.isDirectory(recipeDir)) {
+                    throw SerializationException("Recipe set directory is not a directory: $recipeDir")
+                }
+                val specFile = recipeDir.resolve("recipeset.tjson")
+                val specDto = if (Files.isRegularFile(specFile)) {
+                    TypedJsonParser.parseObject(specFile.readText())
+                } else {
+                    TJson.Object()
+                }
+                return Entry(id, recipeType, recipeDir, JsonPath.atRoot { recipeType.loadDatabase(id, specDto) })
             }
-            val specFile = recipeDir.resolve("recipeset.tjson")
-            val specDto = if (Files.isRegularFile(specFile)) {
-                TypedJsonParser.parseObject(specFile.readText())
-            } else {
-                TJson.Object()
-            }
-            database = JsonPath.atRoot { recipeType.loadDatabase(id, specDto) }
         }
 
         private val defaultJeiEntry: JeiEntry? = recipeType.getJeiRecipeAdaptor(database)?.let { JeiEntry(it) }
@@ -87,6 +194,7 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
         }
 
         fun loadRecipes() {
+            if (recipeDir == null) return
             val recipeDirName = recipeDir.fileName.toString()
             Files.newDirectoryStream(recipeDir).use { dirStream ->
                 dirStream.asSequence().sortedBy { it.fileName }.forEach { recipeFile ->

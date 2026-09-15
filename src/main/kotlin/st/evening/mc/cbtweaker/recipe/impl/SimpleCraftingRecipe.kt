@@ -19,6 +19,7 @@ import st.evening.mc.cbtweaker.util.gui.BarDrawData
 import st.evening.mc.cbtweaker.util.recipe.IngredientLoader
 import st.evening.mc.cbtweaker.util.recipe.IngredientMatcherMap
 import st.evening.mc.cbtweaker.util.recipe.IngredientProviderMap
+import st.evening.mc.cbtweaker.util.recipe.RecipeExecutor
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
@@ -153,5 +154,17 @@ class SimpleCraftingRecipe(
 
         override fun getJeiRecipeAdaptor(database: Database): JeiRecipeSetAdaptor<SimpleCraftingRecipe>? =
             database.getJeiRecipeAdaptor()
+    }
+
+    abstract class Executor : RecipeExecutor<SimpleCraftingRecipe>() {
+        override fun getRecipeId(recipe: SimpleCraftingRecipe): String = recipe.id
+
+        override fun getRecipeDuration(recipe: SimpleCraftingRecipe): Int = recipe.duration
+
+        override fun getRecipeInputs(recipe: SimpleCraftingRecipe): Map<String, IngredientMatcherMap> =
+            recipe.inputTable
+
+        override fun getRecipeOutputs(recipe: SimpleCraftingRecipe): Map<String, IngredientProviderMap> =
+            recipe.outputTable
     }
 }

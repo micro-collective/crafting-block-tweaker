@@ -1,7 +1,6 @@
 package st.evening.mc.cbtweaker.behaviour.impl
 
 import it.unimi.dsi.fastutil.objects.Object2FloatMap
-import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap
 import mezz.jei.api.IJeiHelpers
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
@@ -26,7 +25,9 @@ import st.evening.mc.cbtweaker.gui.inventory.SyncedUiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.gui.inventory.sliceBackground
+import st.evening.mc.cbtweaker.recipe.RecipeSetManager
 import st.evening.mc.cbtweaker.recipe.impl.SimpleCraftingRecipe
+import st.evening.mc.cbtweaker.recipe.impl.TimedFuelRecipe
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
 import st.evening.mc.cbtweaker.singleblock.SingleBlockType
 import st.evening.mc.cbtweaker.util.MachineSoundWrapper
@@ -39,11 +40,14 @@ import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.NumberModifier
 import st.evening.mc.cbtweaker.util.machine.TickModulator
 import st.evening.mc.cbtweaker.util.machine.tryModifyIntCeil
+import st.evening.mc.cbtweaker.util.machine.tryModifyIntFloor
 import st.evening.mc.cbtweaker.util.recipe.LazyAccumulatorMap
 import st.evening.mc.cbtweaker.util.recipe.MatcherChecker
+import st.evening.mc.cbtweaker.util.recipe.MatcherConsumer
 import st.evening.mc.cbtweaker.util.recipe.ProviderChecker
 import st.evening.mc.cbtweaker.util.recipe.checkInputs
 import st.evening.mc.cbtweaker.util.recipe.checkOutputs
+import st.evening.mc.cbtweaker.util.recipe.useInputs
 import st.evening.mc.prelude.api.data.ser.BoolSerializer
 import st.evening.mc.prelude.api.data.ser.IntSerializer
 import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
@@ -72,15 +76,20 @@ import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.game.absurdLogicalSide
 import st.evening.mc.prelude.api.util.game.sidedStrong
 import st.evening.mc.prelude.api.util.math.IntRectangle
+import st.evening.mc.prelude.api.util.render.gui.DrawAlignment
 import st.evening.mc.prelude.api.util.render.gui.DrawOrientation
 
-object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State> {
+object FuelledCraftingBehaviour : MachineBehaviour<FuelledCraftingBehaviour.State> {
     val DEFAULT_PROGRESS_BAR: Positioned<BarDrawData> = Positioned(
-        UiPosition.CENTER,
+        UiPosition(DrawAlignment.CENTER, DrawAlignment.CENTER, 0, -9),
         BarDrawData(CbtGuiData.PROGRESS_BAR_BG, CbtGuiData.PROGRESS_BAR_FG, 0, 0, DrawOrientation.LEFT_TO_RIGHT)
     )
+    val DEFAULT_FUEL_BAR: Positioned<BarDrawData> = Positioned(
+        UiPosition(DrawAlignment.CENTER, DrawAlignment.CENTER, 0, 7),
+        BarDrawData(CbtGuiData.FUEL_BAR_BG, CbtGuiData.FUEL_BAR_FG, 0, 0, DrawOrientation.BOTTOM_TO_TOP)
+    )
 
-    override val id: ResourceLocation = CbTweaker.resource("crafting")
+    override val id: ResourceLocation = CbTweaker.resource("fuelled_crafting")
 
     context(_: JsonPath)
     override fun loadStateFactory(machine: CraftingBlockType<*>, dto: TJson.Object): MachineStateFactory<State> {
@@ -98,21 +107,23 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             } ?: emptyMap(),
             dto.useObject("progress_bar") { BarDrawData.loadPositioned(it, DEFAULT_PROGRESS_BAR) }
                 ?: DEFAULT_PROGRESS_BAR,
-            dto.useAny("working_sound") { SoundData.load(it, 0F) }
+            dto.useObject("fuel_bar") { BarDrawData.loadPositioned(it, DEFAULT_FUEL_BAR) } ?: DEFAULT_FUEL_BAR,
+            dto.useAny("working_sound") { SoundData.load(it, 1F) }
         )
-        val recipeSetEntry = CbTweaker.defns.recipeSets.getOrCreateRecipeSet(
+
+        val craftingRecipeSetEntry = CbTweaker.defns.recipeSets.getOrCreateRecipeSet(
             dto.expectString("recipes") ?: machine.id,
             SimpleCraftingRecipe.Type
         )
         dto.useString("jei") {
             when (it) {
                 "none" -> {}
-                "default" -> recipeSetEntry.registerJeiMachine(machine, null)
+                "default" -> craftingRecipeSetEntry.registerJeiMachine(machine, null)
 
-                "icon" -> recipeSetEntry.registerJeiMachine(
+                "icon" -> craftingRecipeSetEntry.registerJeiMachine(
                     machine,
                     SimpleCraftingRecipe.JeiIconAdaptor(
-                        recipeSetEntry.id,
+                        craftingRecipeSetEntry.id,
                         machine.id,
                         SimpleCraftingRecipe.JeiConfig(true, config.progressBar.data)
                     )
@@ -122,30 +133,41 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                     if (machine !is SingleBlockType<*>) {
                         throw SerializationException.withPath("Not a single-block machine!")
                     }
-                    recipeSetEntry.registerJeiMachine(
+                    craftingRecipeSetEntry.registerJeiMachine(
                         machine,
-                        JeiBufferAdaptor(recipeSetEntry.id, machine.id, config, machine)
+                        JeiBufferAdaptor(craftingRecipeSetEntry.id, machine.id, config, machine)
                     )
                 }
 
                 else -> throw SerializationException.withPath("Unknown JEI adaptor: $it")
             }
         } ?: run {
-            recipeSetEntry.registerJeiMachine(
+            craftingRecipeSetEntry.registerJeiMachine(
                 machine,
-                (machine as? SingleBlockType<*>)?.let { JeiBufferAdaptor(recipeSetEntry.id, it.id, config, it) }
+                (machine as? SingleBlockType<*>)?.let { JeiBufferAdaptor(craftingRecipeSetEntry.id, it.id, config, it) }
             )
         }
-        val recipeDb = recipeSetEntry.database
+
+        val fuelRecipeSetEntry = CbTweaker.defns.recipeSets.getOrCreateRecipeSet(
+            dto.expectString("fuel_recipes") ?: RecipeSetManager.BUILT_IN_FURNACE_FUEL,
+            TimedFuelRecipe.Type
+        )
+        fuelRecipeSetEntry.registerJeiMachine(machine, null)
+
+        val recipeDb = craftingRecipeSetEntry.database
+        val fuelDb = fuelRecipeSetEntry.database
         return factory@{ world, pos, bufGroups, components, host, oldState ->
-            if (oldState != null && oldState.config === config && oldState.recipeDb === recipeDb) {
+            if (
+                oldState != null && oldState.config === config &&
+                oldState.recipeDb === recipeDb && oldState.fuelDb === fuelDb
+            ) {
                 oldState.reinit(world, pos, bufGroups, components, host)
                 return@factory oldState
             } else {
                 return@factory sidedStrong({
-                    State.Server(config, recipeDb, world, pos, bufGroups, components, host)
+                    State.Server(config, recipeDb, fuelDb, world, pos, bufGroups, components, host)
                 }, {
-                    State.Client(config, recipeDb, world, pos)
+                    State.Client(config, recipeDb, fuelDb, world, pos)
                 })
             }
         }
@@ -192,47 +214,29 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
 
     override fun createUiElement(state: State): UiElement = state.createUiElement()
 
-    fun computeModifierState(
-        modTable: Map<String, Map<String, NumberModifier.Modifier>>,
-        components: ComponentSet
-    ): ModState {
-        val modStateTable = mutableMapOf<String, NumberModifier>()
-        modTable.forEach { (componentId, mods) ->
-            val count = components.getCount(componentId)
-            if (count <= 0) return@forEach
-            mods.forEach { (target, mod) ->
-                modStateTable.getOrPut(target) { NumberModifier() }.addModifier(mod, count)
-            }
-        }
-        val consumeFactors = Object2FloatOpenHashMap<String>()
-        modStateTable.forEach { (target, mod) ->
-            if (target.startsWith("consumption:")) {
-                consumeFactors.put(target.substring(12), mod.modify(1.0).toFloat())
-            }
-        }
-        consumeFactors.defaultReturnValue(1F)
-        return ModState(modStateTable, consumeFactors)
-    }
-
     class Config(
         val modTable: Map<String, Map<String, NumberModifier.Modifier>>,
         val progressBar: Positioned<BarDrawData>,
-        val workingSound: SoundData?
+        val fuelBar: Positioned<BarDrawData>,
+        val fuelledSound: SoundData?
     )
-
-    class ModState(val modTable: Map<String, NumberModifier>, val consumeFactors: Object2FloatMap<String>)
 
     abstract class State(
         val config: Config,
         val recipeDb: SimpleCraftingRecipe.Database,
+        val fuelDb: TimedFuelRecipe.Database,
         protected var world: World,
         protected var pos: BlockPos
     ) : WeaklyValid {
         companion object {
             private const val MOD_DURATION: String = "duration"
+            private const val MOD_FUEL_DURATION: String = "fuel_duration"
         }
 
         val rsHandler: RedstoneControlHandler = RedstoneControlHandler(world, pos)
+
+        protected val fuelState: ValueStateAtom<Int> = ValueStateAtom(0, IntSerializer)
+        protected val maxFuelState: ValueStateAtom<Int> = ValueStateAtom(0, IntSerializer)
 
         val activeState: ValueStateAtom<Boolean> = ValueStateAtom(false, BoolSerializer)
 
@@ -266,7 +270,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         fun createUiElement(): UiElement = UiElementImpl()
 
         private inner class UiElementImpl : SyncedUiElement {
-            override val syncData: Piecewise = ListStateComposite(uiWork, uiMaxWork)
+            override val syncData: Piecewise = ListStateComposite(fuelState, maxFuelState, uiWork, uiMaxWork)
 
             @ClientSide.Strong
             override fun addToGuiScreen(
@@ -279,6 +283,10 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                     uiIndex, layout, wrapper,
                     BarControl.Progress(config.progressBar.data, { uiWork.value }, { uiMaxWork.value })
                 )
+                config.fuelBar.uiPosition.placeElement(
+                    uiIndex, layout, wrapper,
+                    BarControl.Progress(config.fuelBar.data, { fuelState.value }, { maxFuelState.value })
+                )
             }
         }
 
@@ -286,23 +294,27 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         class Server(
             config: Config,
             recipeDb: SimpleCraftingRecipe.Database,
+            fuelDb: TimedFuelRecipe.Database,
             world: World,
             pos: BlockPos,
             private var bufGroups: BufferGroups,
             components: ComponentSet,
             private var host: MachineHost
-        ) : State(config, recipeDb, world, pos), CopiableConfigHost, NbtCompoundSerializable {
+        ) : State(config, recipeDb, fuelDb, world, pos), CopiableConfigHost, NbtCompoundSerializable {
             companion object {
                 private const val SER_REDSTONE: String = "redstone"
+                private const val SER_FUEL: String = "fuel"
+                private const val SER_MAX_FUEL: String = "max_fuel"
             }
 
-            private var modState: ModState = computeModifierState(config.modTable, components)
+            private var modState: SimpleCraftingBehaviour.ModState =
+                SimpleCraftingBehaviour.computeModifierState(config.modTable, components)
+            private var cachedFuelRecipe: TimedFuelRecipe? = null
             private val executor: Executor = Executor()
             private var stateDirty: Boolean = true
 
             init {
                 rsHandler.observeState(Observer.Simple.fixed {
-                    updateActiveState()
                     stateDirty = true
                 })
             }
@@ -316,7 +328,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             ) {
                 super.reinit(world, pos, bufGroups, components, host)
                 this.bufGroups = bufGroups
-                this.modState = computeModifierState(config.modTable, components)
+                this.modState = SimpleCraftingBehaviour.computeModifierState(config.modTable, components)
                 this.host = host
                 executor.updateCurrentRecipeWorkNeeded()
                 executor.notifyRecipeDirty()
@@ -328,25 +340,25 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             @ClientSide.Strong
             override fun getClient(): Client = absurdLogicalSide()
 
-            private fun updateActiveState() {
-                activeState.update(executor.working && rsHandler.canWork())
-            }
-
             fun handleBlockUpdate() {
-                if (rsHandler.updateRedstoneState(world, pos)) {
-                    updateActiveState()
-                }
+                rsHandler.updateRedstoneState(world, pos)
             }
 
             override fun notifyState(newComponents: ComponentSet?) {
                 if (newComponents != null) {
-                    modState = computeModifierState(config.modTable, newComponents)
+                    modState = SimpleCraftingBehaviour.computeModifierState(config.modTable, newComponents)
                     executor.updateCurrentRecipeWorkNeeded()
                 }
                 executor.notifyRecipeDirty()
             }
 
             override fun tick(ticker: TickModulator) {
+                val fuelValue = fuelState.value
+                if (fuelValue > 0) {
+                    fuelState.update(fuelValue - 1)
+                } else {
+                    activeState.update(false)
+                }
                 if (rsHandler.canWork()) {
                     executor.tick(ticker)
                 }
@@ -354,6 +366,34 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                     host.onMachineStateChanged()
                     stateDirty = false
                 }
+            }
+
+            private fun checkOrBurnFuel(accs: LazyAccumulatorMap, consumeFactors: Object2FloatMap<String>): Boolean {
+                if (fuelState.value > 0) return true
+                cachedFuelRecipe?.let {
+                    if (it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)) {
+                        burnFuel(it, accs, consumeFactors)
+                        return true
+                    }
+                    cachedFuelRecipe = null
+                }
+                val recipe = fuelDb.recipeMap.values.firstOrNull {
+                    it.inputTable.checkInputs(accs, consumeFactors, MatcherChecker.Initial)
+                } ?: return false
+                cachedFuelRecipe = recipe
+                burnFuel(recipe, accs, consumeFactors)
+                return true
+            }
+
+            private fun burnFuel(
+                recipe: TimedFuelRecipe,
+                accs: LazyAccumulatorMap,
+                consumeFactors: Object2FloatMap<String>
+            ) {
+                recipe.inputTable.useInputs(accs, consumeFactors, MatcherConsumer.Initial)
+                val modifiedDuration = modState.modTable.tryModifyIntFloor(MOD_FUEL_DURATION, recipe.duration)
+                fuelState.update(modifiedDuration)
+                maxFuelState.update(modifiedDuration)
             }
 
             override fun writeConfig(dto: NBTTagCompound) {
@@ -371,12 +411,17 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             override fun writeToNbt(dto: NBTTagCompound) {
                 dto.runAction {
                     SER_REDSTONE tag rsHandler.writeToNbt()
+                    SER_FUEL int fuelState.value
+                    SER_MAX_FUEL int maxFuelState.value
                 }
                 executor.writeToNbt(dto)
             }
 
             override fun readFromNbt(dto: NBTTagCompound) {
                 rsHandler.readFromNbt(dto.getString(SER_REDSTONE))
+                fuelState.setValueFromSync(dto.getInteger(SER_FUEL))
+                activeState.update(fuelState.value > 0)
+                maxFuelState.setValueFromSync(dto.getInteger(SER_FUEL))
                 executor.readFromNbt(dto)
             }
 
@@ -401,16 +446,26 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                         it.outputTable.checkOutputs(accs, ProviderChecker.Final)
                 }
 
+                override fun canStartRecipe(
+                    recipe: SimpleCraftingRecipe,
+                    accs: LazyAccumulatorMap,
+                    consumeFactors: Object2FloatMap<String>
+                ): Boolean = checkOrBurnFuel(accs, consumeFactors)
+
+                override fun canProgressRecipe(
+                    recipe: SimpleCraftingRecipe,
+                    accs: LazyAccumulatorMap,
+                    consumeFactors: Object2FloatMap<String>,
+                    workNeeded: Int,
+                    workDone: Int
+                ): Boolean = checkOrBurnFuel(accs, consumeFactors)
+
                 override fun updateWork(newWork: Int) {
                     uiWork.update(newWork)
                 }
 
                 override fun updateMaxWork(newMaxWork: Int) {
                     uiMaxWork.update(newMaxWork)
-                }
-
-                override fun onWorkingChanged() {
-                    updateActiveState()
                 }
 
                 override fun onStateChanged() {
@@ -423,20 +478,21 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         class Client(
             config: Config,
             recipeDb: SimpleCraftingRecipe.Database,
+            fuelDb: TimedFuelRecipe.Database,
             world: World,
             pos: BlockPos,
-        ) : State(config, recipeDb, world, pos) {
-            private val workingSound: MachineSoundWrapper?
+        ) : State(config, recipeDb, fuelDb, world, pos) {
+            private val fuelledSound: MachineSoundWrapper?
 
             init {
-                val soundData = config.workingSound
+                val soundData = config.fuelledSound
                 if (soundData != null) {
-                    workingSound = MachineSoundWrapper(this, pos, soundData)
+                    fuelledSound = MachineSoundWrapper(this, pos, soundData)
                     activeState.observeAll(Observer.Simple.fixed {
-                        workingSound.setActive(activeState.value)
+                        fuelledSound.setActive(activeState.value)
                     })
                 } else {
-                    workingSound = null
+                    fuelledSound = null
                 }
             }
 
@@ -448,7 +504,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 host: MachineHost
             ) {
                 super.reinit(world, pos, bufGroups, components, host)
-                workingSound?.setPosition(pos)
+                fuelledSound?.setPosition(pos)
             }
 
             @ServerSide
@@ -478,16 +534,18 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
             region: IntRectangle,
             jeiHelpers: IJeiHelpers
         ) {
-            val barBg = config.progressBar.data.bgTexture.drawable
-            val barPos = config.progressBar.uiPosition.computePosition(region, barBg.width, barBg.height)
+            val progBar = config.progressBar.data
+            val progBg = progBar.bgTexture.drawable
+            val progPos = config.progressBar.uiPosition.computePosition(region, progBg.width, progBg.height)
             container.addJeiUiElement(
-                JeiProgressBarElement(
-                    barPos.x,
-                    barPos.y,
-                    config.progressBar.data,
-                    recipe.duration,
-                    jeiHelpers.guiHelper
-                )
+                JeiProgressBarElement(progPos.x, progPos.y, progBar, recipe.duration, jeiHelpers.guiHelper)
+            )
+
+            val fuelBar = config.fuelBar.data
+            val fuelBg = fuelBar.bgTexture.drawable
+            val fuelPos = config.fuelBar.uiPosition.computePosition(region, fuelBg.width, fuelBg.height)
+            container.addJeiUiElement(
+                JeiProgressBarElement(fuelPos.x, fuelPos.y, fuelBar, 32, jeiHelpers.guiHelper, true)
             )
 
             val bufGroups = sbType.createJeiBufferGroups()

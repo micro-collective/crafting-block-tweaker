@@ -41,7 +41,7 @@ object CbtGuiResources {
     val PROGRESS_BAR_FG: GuiSamplable = PROGRESS_BAR.sliceSized(24, 17, 0, 17)
 
     val FUEL_BAR: GuiSamplable =
-        DrawableTexture(14, 28, TextureResource(CbTweaker.resource("textures/gui/components/fuel_bar.png")))
+        DrawableTexture(14, 28, TextureResource(CbTweaker.resource("textures/gui/component/fuel_bar.png")))
     val FUEL_BAR_BG: GuiSamplable = FUEL_BAR.sliceSized(14, 14, 0, 0)
     val FUEL_BAR_FG: GuiSamplable = FUEL_BAR.sliceSized(14, 14, 0, 14)
 
