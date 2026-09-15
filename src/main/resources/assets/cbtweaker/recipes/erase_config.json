@@ -1,0 +1,26 @@
+{
+  "type": "forge:ore_shaped",
+  "pattern": [
+    "#"
+  ],
+  "key": {
+    "#": [
+      {
+        "item": "cbtweaker:config_copier",
+        "data": 1
+      },
+      {
+        "item": "cbtweaker:config_copier",
+        "data": 2
+      },
+      {
+        "item": "cbtweaker:config_copier",
+        "data": 3
+      }
+    ]
+  },
+  "result": {
+    "item": "cbtweaker:config_copier",
+    "data": 0
+  }
+}
