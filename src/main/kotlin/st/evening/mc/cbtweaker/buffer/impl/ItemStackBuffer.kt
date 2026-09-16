@@ -233,6 +233,20 @@ class ItemStackBuffer private constructor(
             return stores[null]?.insertItem(rem, simulate) ?: rem
         }
 
+        fun dropItem(stack: ItemStack) {
+            if (buffers.isNotEmpty()) {
+                val buf = buffers[0]
+                InvHelper.dropItem(stack, buf.world, buf.bufPos)
+            }
+        }
+
+        fun insertOrDrop(stack: ItemStack, checkMode: Boolean) {
+            val rem = insert(stack, false)
+            if (!checkMode && !rem.isEmpty) {
+                dropItem(rem)
+            }
+        }
+
         @OptIn(PreludeInternal::class)
         inline fun forEach(action: (Map.Entry<ItemKey?, ModifiableItemStore>) -> Unit) {
             getAllStores().forEach(action)
@@ -528,12 +542,29 @@ class ItemStackBuffer private constructor(
             val scaledCount = CbtMathHelper.scaleConsumeInt(count, consumeFactor, checkMode)
             if (scaledCount <= 0) return true
             when (consumeType) {
-                ItemConsumeType.CONSUME ->
+                ItemConsumeType.CONSUME -> {
+                    val store = acc.value.getStore(item)
+                    val extracted = store.extractItem(scaledCount, false)
+                    if (extracted.count < scaledCount) return false
+                    val containerStack = extracted.item.getContainerItem(extracted)
+                    if (!containerStack.isEmpty) {
+                        containerStack.count = extracted.count
+                        val rem = store.insertItem(containerStack, false)
+                        if (!rem.isEmpty) {
+                            // we don't track the buffer(s) that the ingredients were extracted from, so this just drops
+                            // rem at a random buffer's position. hopefully it's empty in every reasonable case
+                            acc.value.insertOrDrop(rem, checkMode)
+                        }
+                    }
+                    return true
+                }
+                ItemConsumeType.DELETE ->
                     return acc.value.getStore(item).extractItem(scaledCount, false).count >= scaledCount
                 ItemConsumeType.DAMAGE -> {
                     val store = acc.value.getStore(item)
                     if (store.isEmpty) return false
                     val stack = store.getContentsAsStack()
+                    if (!stack.isItemStackDamageable) return false
                     if (stack.attemptDamageItem(scaledCount, CbtMathHelper.cbtRandom, null)) {
                         store.setItem(null)
                     } else {
@@ -541,7 +572,8 @@ class ItemStackBuffer private constructor(
                     }
                     return true
                 }
-                ItemConsumeType.KEEP -> return acc.value.getStore(item).count >= scaledCount
+                ItemConsumeType.KEEP ->
+                    return acc.value.getStore(item).extractItem(scaledCount, true).count >= scaledCount
             }
         }
 
@@ -565,7 +597,7 @@ class ItemStackBuffer private constructor(
         }
     }
 
-    class OreDictionaryMatcher(
+    class OreDictionaryMatcher( // could add an ore name -> multistore cache?
         private val oreEntry: OreEntry,
         private val count: Int,
         private val consumeType: ItemConsumeType
@@ -575,28 +607,57 @@ class ItemStackBuffer private constructor(
             if (scaledCount <= 0) return true
             when (consumeType) {
                 ItemConsumeType.CONSUME -> {
-                    acc.value.forEach { (_, store) -> // could add an ore name -> multistore cache?
-                        if (store.isEmpty || !oreEntry.matches(store.storedItem)) return@forEach
-                        scaledCount -= store.extractItem(scaledCount, false).count
+                    acc.value.forEachMatching {
+                        val extracted = it.extractItem(scaledCount, false)
+                        if (extracted.isEmpty) return@forEachMatching
+                        val containerStack = extracted.item.getContainerItem(extracted)
+                        if (!containerStack.isEmpty) {
+                            containerStack.count = extracted.count
+                            val rem = it.insertItem(containerStack, false)
+                            if (!rem.isEmpty) {
+                                acc.value.insertOrDrop(rem, checkMode)
+                            }
+                        }
+                        scaledCount -= extracted.count
+                        if (scaledCount <= 0) return true
+                    }
+                    return false
+                }
+                ItemConsumeType.DELETE -> {
+                    acc.value.forEachMatching {
+                        scaledCount -= it.extractItem(scaledCount, false).count
                         if (scaledCount <= 0) return true
                     }
                     return false
                 }
                 ItemConsumeType.DAMAGE -> {
-                    var didWork = false
                     acc.value.forEach { (_, store) ->
                         if (store.isEmpty || !oreEntry.matches(store.storedItem)) return@forEach
                         val stack = store.getContentsAsStack()
+                        if (!stack.isItemStackDamageable) return@forEach
                         if (stack.attemptDamageItem(scaledCount, CbtMathHelper.cbtRandom, null)) {
                             store.setItem(null)
                         } else {
                             store.setContentsFromStack(stack)
                         }
-                        didWork = true
+                        return true
                     }
-                    return didWork
+                    return false
                 }
-                ItemConsumeType.KEEP -> return true
+                ItemConsumeType.KEEP -> {
+                    acc.value.forEachMatching {
+                        scaledCount -= it.extractItem(scaledCount, true).count
+                        if (scaledCount <= 0) return true
+                    }
+                    return false
+                }
+            }
+        }
+
+        private inline fun Accumulator.forEachMatching(action: (ItemStore) -> Unit) {
+            forEach { (_, store) ->
+                if (store.isEmpty || !oreEntry.matches(store.storedItem)) return@forEach
+                action(store)
             }
         }
 
