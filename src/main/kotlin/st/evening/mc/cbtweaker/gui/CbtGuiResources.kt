@@ -17,6 +17,13 @@ object CbtGuiResources {
     val ICON_ENERGY: GuiSamplable =
         DrawableTexture(16, 16, TextureResource(CbTweaker.resource("textures/gui/icon/energy.png")))
 
+    val ICON_ING_KEEP: GuiSamplable =
+        DrawableTexture(7, 7, TextureResource(CbTweaker.resource("textures/gui/icon/ingredient_keep.png")))
+    val ICON_ING_DAMAGE: GuiSamplable =
+        DrawableTexture(7, 7, TextureResource(CbTweaker.resource("textures/gui/icon/ingredient_damage.png")))
+    val ICON_ING_CHANCE: GuiSamplable =
+        DrawableTexture(7, 7, TextureResource(CbTweaker.resource("textures/gui/icon/ingredient_chance.png")))
+
     val ITEM_SLOT: GuiDrawable = Drawable9Tile.fromSlices(
         DrawableTexture(18, 18, TextureResource(CbTweaker.resource("textures/gui/component/item_slot.png"))),
         1, 1, 1, 1

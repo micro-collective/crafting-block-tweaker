@@ -208,6 +208,7 @@ class MekanismLaserBuffer(
                                 1 - ticker.value / ticker.maxValue.toFloat()
                             }
                         )
+                        contents?.annotation?.drawAnnotation(barRegion, partialTicks)
                     }
                 }
             }
@@ -318,8 +319,12 @@ class MekanismLaserBuffer(
             return scaledAmount <= 0.0 || acc.value.extract(scaledAmount, !doConsume) >= scaledAmount
         }
 
-        private val jeiIngredient: JeiMekanismJoulesIngredient =
-            JeiMekanismJoulesIngredient(amount, false, JeiIngredient.Role.INPUT)
+        private val jeiIngredient: JeiMekanismJoulesIngredient = JeiMekanismJoulesIngredient(
+            amount,
+            false,
+            JeiIngredient.Role.INPUT,
+            JeiIngredient.Annotation.fromConsume(doConsume)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -347,7 +352,7 @@ class MekanismLaserBuffer(
         }
 
         private val jeiIngredient: JeiMekanismJoulesIngredient =
-            JeiMekanismJoulesIngredient(rate, true, JeiIngredient.Role.INPUT)
+            JeiMekanismJoulesIngredient(rate, true, JeiIngredient.Role.INPUT, null)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

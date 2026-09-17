@@ -45,6 +45,10 @@ cbtweaker.tooltip.vis_center=MClick: Center Camera
 cbtweaker.tooltip.vis_layer_up=Layer Up
 cbtweaker.tooltip.vis_layer_down=Layer Down
 
+cbtweaker.tooltip.ingredient_keep=(Not consumed)
+cbtweaker.tooltip.ingredient_damage=(Takes %d damage)
+cbtweaker.tooltip.ingredient_chance=(%s chance)
+
 cbtweaker.gui.vis_tool.not_bound=Not bound to a multi-block controller!
 
 cbtweaker.jei.category.multiblock_structure=Multi-Block Structure

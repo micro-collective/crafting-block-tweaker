@@ -365,6 +365,7 @@ class MekanismGasBuffer(
                         barRegion,
                         partialTicks
                     )
+                    contents?.annotation?.drawAnnotation(barRegion, partialTicks)
                 }
             }
         }
@@ -568,8 +569,12 @@ class MekanismGasBuffer(
             return drained != null && drained.amount >= scaledAmount
         }
 
-        private val jeiIngredient: JeiMekanismGasIngredient =
-            JeiMekanismGasIngredient(GasStack(gas, amount), false, JeiIngredient.Role.INPUT)
+        private val jeiIngredient: JeiMekanismGasIngredient = JeiMekanismGasIngredient(
+            GasStack(gas, amount),
+            false,
+            JeiIngredient.Role.INPUT,
+            JeiIngredient.Annotation.fromConsume(doConsume)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -604,7 +609,7 @@ class MekanismGasBuffer(
         }
 
         private val jeiIngredient: JeiMekanismGasIngredient =
-            JeiMekanismGasIngredient(GasStack(gas, rate), true, JeiIngredient.Role.INPUT)
+            JeiMekanismGasIngredient(GasStack(gas, rate), true, JeiIngredient.Role.INPUT, null)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -625,8 +630,12 @@ class MekanismGasBuffer(
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(GasStack(gas, amount), true) >= amount
 
-        private val jeiIngredient: JeiMekanismGasIngredient =
-            JeiMekanismGasIngredient(GasStack(gas, amount), false, JeiIngredient.Role.OUTPUT, chance)
+        private val jeiIngredient: JeiMekanismGasIngredient = JeiMekanismGasIngredient(
+            GasStack(gas, amount),
+            false,
+            JeiIngredient.Role.OUTPUT,
+            JeiIngredient.Annotation.fromChance(chance)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -653,7 +662,7 @@ class MekanismGasBuffer(
         }
 
         private val jeiIngredient: JeiMekanismGasIngredient =
-            JeiMekanismGasIngredient(GasStack(gas, rate), true, JeiIngredient.Role.OUTPUT)
+            JeiMekanismGasIngredient(GasStack(gas, rate), true, JeiIngredient.Role.OUTPUT, null)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

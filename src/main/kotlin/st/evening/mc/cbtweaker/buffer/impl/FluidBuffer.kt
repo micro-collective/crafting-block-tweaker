@@ -369,6 +369,7 @@ class FluidBuffer(
                         barRegion,
                         partialTicks
                     )
+                    contents?.annotation?.drawAnnotation(barRegion, partialTicks)
                 }
             }
         }
@@ -537,8 +538,12 @@ class FluidBuffer(
             return drained != null && drained.amount >= scaledAmount
         }
 
-        private val jeiIngredient: JeiFluidIngredient =
-            JeiFluidIngredient(fluid.newStack(amount)!!, false, JeiIngredient.Role.INPUT)
+        private val jeiIngredient: JeiFluidIngredient = JeiFluidIngredient(
+            fluid.newStack(amount)!!,
+            false,
+            JeiIngredient.Role.INPUT,
+            JeiIngredient.Annotation.fromConsume(doConsume)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -577,7 +582,7 @@ class FluidBuffer(
         }
 
         private val jeiIngredient: JeiFluidIngredient =
-            JeiFluidIngredient(fluid.newStack(rate)!!, true, JeiIngredient.Role.INPUT)
+            JeiFluidIngredient(fluid.newStack(rate)!!, true, JeiIngredient.Role.INPUT, null)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -598,8 +603,12 @@ class FluidBuffer(
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(fluid.newStack(amount), true) >= amount
 
-        private val jeiIngredient: JeiFluidIngredient =
-            JeiFluidIngredient(fluid.newStack(amount)!!, false, JeiIngredient.Role.OUTPUT, chance)
+        private val jeiIngredient: JeiFluidIngredient = JeiFluidIngredient(
+            fluid.newStack(amount)!!,
+            false,
+            JeiIngredient.Role.OUTPUT,
+            JeiIngredient.Annotation.fromChance(chance)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -626,7 +635,7 @@ class FluidBuffer(
         }
 
         private val jeiIngredient: JeiFluidIngredient =
-            JeiFluidIngredient(fluid.newStack(rate)!!, true, JeiIngredient.Role.OUTPUT)
+            JeiFluidIngredient(fluid.newStack(rate)!!, true, JeiIngredient.Role.OUTPUT, null)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

@@ -44,6 +44,10 @@ object CbtLang {
     const val TOOLTIP_VIS_LAYER_UP: String = "$KEY_TOOLTIP.vis_layer_up"
     const val TOOLTIP_VIS_LAYER_DOWN: String = "$KEY_TOOLTIP.vis_layer_down"
 
+    const val TOOLTIP_ING_KEEP: String = "$KEY_TOOLTIP.ingredient_keep"
+    const val TOOLTIP_ING_DAMAGE: String = "$KEY_TOOLTIP.ingredient_damage"
+    const val TOOLTIP_ING_CHANCE: String = "$KEY_TOOLTIP.ingredient_chance"
+
     private const val KEY_GUI: String = "${CbtConsts.MOD_ID}.gui"
     private const val KEY_GUI_VIS_TOOL: String = "$KEY_GUI.vis_tool"
     const val GUI_VIS_TOOL_NOT_BOUND: String = "$KEY_GUI_VIS_TOOL.not_bound"

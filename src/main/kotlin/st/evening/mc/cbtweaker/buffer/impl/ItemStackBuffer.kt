@@ -25,7 +25,6 @@ import st.evening.mc.cbtweaker.buffer.ingredient.IngredientProvider
 import st.evening.mc.cbtweaker.buffer.ingredient.IngredientProviderType
 import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
 import st.evening.mc.cbtweaker.compat.jei.ingredient.impl.JeiItemIngredient
-import st.evening.mc.cbtweaker.compat.jei.ingredient.impl.JeiOreDictIngredient
 import st.evening.mc.cbtweaker.compat.jei.ui.JeiUiElement
 import st.evening.mc.cbtweaker.gui.CbtGuiData
 import st.evening.mc.cbtweaker.gui.inventory.UiContainer
@@ -71,7 +70,6 @@ import st.evening.mc.prelude.api.util.game.stacksWith
 import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.math.Rect2i
 import st.evening.mc.prelude.api.util.math.Vec2i
-import st.evening.mc.prelude.api.util.render.gui.GuiRenderHelper
 import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
 import java.util.LinkedList
@@ -374,7 +372,7 @@ class ItemStackBuffer private constructor(
                     override fun drawElement(ingredient: ItemStack?, partialTicks: Float) {
                         slotBg.drawable.drawFullSize(partialTicks, slotX, slotY)
                         if (ingredient != null) {
-                            GuiRenderHelper.drawItem(itemRegion.posX, itemRegion.posY, ingredient)
+                            slotContents!!.drawIcon(itemRegion.posX, itemRegion.posY, ingredient, partialTicks)
                         }
                     }
                 })
@@ -577,7 +575,14 @@ class ItemStackBuffer private constructor(
             }
         }
 
-        private val jeiIngredient: JeiItemIngredient = JeiItemIngredient(item.newStack(count), JeiIngredient.Role.INPUT)
+        private val jeiIngredient: JeiItemIngredient = when (consumeType) {
+            ItemConsumeType.CONSUME, ItemConsumeType.DELETE ->
+                JeiItemIngredient(item.newStack(count), JeiIngredient.Role.INPUT, null)
+            ItemConsumeType.DAMAGE ->
+                JeiItemIngredient(item.newStack(1), JeiIngredient.Role.INPUT, JeiIngredient.Annotation.Damage(count))
+            ItemConsumeType.KEEP ->
+                JeiItemIngredient(item.newStack(count), JeiIngredient.Role.INPUT, JeiIngredient.Annotation.Keep)
+        }
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -661,7 +666,14 @@ class ItemStackBuffer private constructor(
             }
         }
 
-        private val jeiIngredient: JeiOreDictIngredient = JeiOreDictIngredient(oreEntry, JeiIngredient.Role.INPUT)
+        private val jeiIngredient: JeiItemIngredient = when (consumeType) {
+            ItemConsumeType.CONSUME, ItemConsumeType.DELETE ->
+                JeiItemIngredient(oreEntry, count, JeiIngredient.Role.INPUT, null)
+            ItemConsumeType.DAMAGE ->
+                JeiItemIngredient(oreEntry, 1, JeiIngredient.Role.INPUT, JeiIngredient.Annotation.Damage(count))
+            ItemConsumeType.KEEP ->
+                JeiItemIngredient(oreEntry, count, JeiIngredient.Role.INPUT, JeiIngredient.Annotation.Keep)
+        }
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
@@ -687,8 +699,11 @@ class ItemStackBuffer private constructor(
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(item.newStack(count), false).isEmpty
 
-        private val jeiIngredient: JeiItemIngredient =
-            JeiItemIngredient(item.newStack(count), JeiIngredient.Role.OUTPUT, chance)
+        private val jeiIngredient: JeiItemIngredient = JeiItemIngredient(
+            item.newStack(count),
+            JeiIngredient.Role.OUTPUT,
+            JeiIngredient.Annotation.fromChance(chance)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 

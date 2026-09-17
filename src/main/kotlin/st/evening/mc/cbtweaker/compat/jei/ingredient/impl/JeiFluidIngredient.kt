@@ -11,16 +11,19 @@ import st.evening.mc.prelude.api.util.game.getStillSprite
 import st.evening.mc.prelude.api.util.render.RenderingHelper
 import st.evening.mc.prelude.api.util.render.TextureResource
 import st.evening.mc.prelude.api.util.render.gui.GuiRenderHelper
-import st.evening.mc.prelude.api.util.text.toStringPercentage
 
 class JeiFluidIngredient(
     val fluidStack: FluidStack,
     val unitName: String,
     override val role: JeiIngredient.Role,
-    val chance: Float = 1F
+    override val annotation: JeiIngredient.Annotation?
 ) : JeiIngredient<FluidStack> {
-    constructor(fluidStack: FluidStack, isRate: Boolean, role: JeiIngredient.Role, chance: Float = 1F) :
-        this(fluidStack, if (isRate) "mB/t" else "mB", role, chance)
+    constructor(
+        fluidStack: FluidStack,
+        isRate: Boolean,
+        role: JeiIngredient.Role,
+        annotation: JeiIngredient.Annotation?
+    ) : this(fluidStack, if (isRate) "mB/t" else "mB", role, annotation)
 
     override val jeiIngredientType: IIngredientType<FluidStack>
         get() = VanillaTypes.FLUID
@@ -33,14 +36,13 @@ class JeiFluidIngredient(
         RenderingHelper.setColourArgb(ingredient.fluid.getColor(ingredient))
         GuiRenderHelper.drawAtlasSprite(x, y, x + 16, y + 16, ingredient.getStillSprite())
         RenderingHelper.resetColour()
+        annotation?.drawAnnotation(x + 16, y, partialTicks)
     }
 
     @ClientSide.Physical
     override fun getTooltip(ingredient: FluidStack, tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
         tooltip += "${ingredient.fluid.getRarity(ingredient).color}${ingredient.localizedName}"
         tooltip += "${TextFormatting.GRAY}%,d %s".format(ingredient.amount, unitName)
-        if (chance < 1F) {
-            tooltip += "${TextFormatting.GOLD}(${chance.toStringPercentage()})"
-        }
+        annotation?.getAnnotationTooltip(tooltip, tooltipFlags)
     }
 }

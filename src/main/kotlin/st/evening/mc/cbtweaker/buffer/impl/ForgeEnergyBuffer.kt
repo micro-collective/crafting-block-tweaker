@@ -186,11 +186,12 @@ class ForgeEnergyBuffer(
 
         fun isEmpty(): Boolean = contents == null
 
-        fun setContents(amount: Int, isRate: Boolean, role: JeiIngredient.Role) {
+        fun setContents(amount: Int, isRate: Boolean, role: JeiIngredient.Role, annotation: JeiIngredient.Annotation?) {
             contents = JeiForgeEnergyIngredient(
                 amount,
                 if (isRate) "${config.energyUnitName}/t" else config.energyUnitName,
-                role
+                role,
+                annotation
             )
         }
 
@@ -224,6 +225,7 @@ class ForgeEnergyBuffer(
                                 1 - ticker.value / ticker.maxValue.toFloat()
                             }
                         )
+                        contents?.annotation?.drawAnnotation(barRegion, partialTicks)
                     }
                 }
             }
@@ -239,11 +241,16 @@ class ForgeEnergyBuffer(
             }
         }
 
-        fun addIngredient(amount: Int, isRate: Boolean, role: JeiIngredient.Role): Boolean {
+        fun addIngredient(
+            amount: Int,
+            isRate: Boolean,
+            role: JeiIngredient.Role,
+            annotation: JeiIngredient.Annotation?
+        ): Boolean {
             while (buffers.isNotEmpty()) {
                 val buffer = buffers.removeFirst()
                 if (buffer.isEmpty()) {
-                    buffer.setContents(amount, isRate, role)
+                    buffer.setContents(amount, isRate, role, annotation)
                     return true
                 }
             }
@@ -378,13 +385,17 @@ class ForgeEnergyBuffer(
             return scaledAmount <= 0 || acc.value.extract(scaledAmount, !doConsume) >= scaledAmount
         }
 
-        private val jeiIngredient: JeiForgeEnergyIngredient =
-            JeiForgeEnergyIngredient(amount, DEFAULT_ENERGY_UNIT, JeiIngredient.Role.INPUT)
+        private val jeiIngredient: JeiForgeEnergyIngredient = JeiForgeEnergyIngredient(
+            amount,
+            DEFAULT_ENERGY_UNIT,
+            JeiIngredient.Role.INPUT,
+            JeiIngredient.Annotation.fromConsume(doConsume)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
         override fun populateJei(acc: JeiAccumulator): Boolean =
-            acc.addIngredient(amount, false, JeiIngredient.Role.INPUT)
+            acc.addIngredient(amount, false, JeiIngredient.Role.INPUT, JeiIngredient.Annotation.fromConsume(doConsume))
 
         object Type : IngredientMatcherType<Accumulator, JeiAccumulator> {
             override val id: ResourceLocation = CbTweaker.resource("energy")
@@ -408,11 +419,12 @@ class ForgeEnergyBuffer(
         }
 
         private val jeiIngredient: JeiForgeEnergyIngredient =
-            JeiForgeEnergyIngredient(rate, DEFAULT_POWER_UNIT, JeiIngredient.Role.INPUT)
+            JeiForgeEnergyIngredient(rate, DEFAULT_POWER_UNIT, JeiIngredient.Role.INPUT, null)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
-        override fun populateJei(acc: JeiAccumulator): Boolean = acc.addIngredient(rate, true, JeiIngredient.Role.INPUT)
+        override fun populateJei(acc: JeiAccumulator): Boolean =
+            acc.addIngredient(rate, true, JeiIngredient.Role.INPUT, null)
 
         object Type : IngredientMatcherType<Accumulator, JeiAccumulator> {
             override val id: ResourceLocation = CbTweaker.resource("power")
@@ -428,13 +440,17 @@ class ForgeEnergyBuffer(
         override fun insertFinal(acc: Lazy<Accumulator>, checkMode: Boolean): Boolean =
             !CbtMathHelper.rollProduce(chance, checkMode) || acc.value.insert(amount, false) >= amount
 
-        private val jeiIngredient: JeiForgeEnergyIngredient =
-            JeiForgeEnergyIngredient(amount, DEFAULT_ENERGY_UNIT, JeiIngredient.Role.OUTPUT, chance)
+        private val jeiIngredient: JeiForgeEnergyIngredient = JeiForgeEnergyIngredient(
+            amount,
+            DEFAULT_ENERGY_UNIT,
+            JeiIngredient.Role.OUTPUT,
+            JeiIngredient.Annotation.fromChance(chance)
+        )
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
         override fun populateJei(acc: JeiAccumulator): Boolean =
-            acc.addIngredient(amount, false, JeiIngredient.Role.OUTPUT)
+            acc.addIngredient(amount, false, JeiIngredient.Role.OUTPUT, JeiIngredient.Annotation.fromChance(chance))
 
         object Type : IngredientProviderType<Accumulator, JeiAccumulator> {
             override val id: ResourceLocation = CbTweaker.resource("energy")
@@ -452,12 +468,12 @@ class ForgeEnergyBuffer(
         }
 
         private val jeiIngredient: JeiForgeEnergyIngredient =
-            JeiForgeEnergyIngredient(rate, DEFAULT_POWER_UNIT, JeiIngredient.Role.OUTPUT)
+            JeiForgeEnergyIngredient(rate, DEFAULT_POWER_UNIT, JeiIngredient.Role.OUTPUT, null)
 
         override fun getJeiIngredients(): Collection<JeiIngredient<*>> = listOf(jeiIngredient)
 
         override fun populateJei(acc: JeiAccumulator): Boolean =
-            acc.addIngredient(rate, true, JeiIngredient.Role.OUTPUT)
+            acc.addIngredient(rate, true, JeiIngredient.Role.OUTPUT, null)
 
         object Type : IngredientProviderType<Accumulator, JeiAccumulator> {
             override val id: ResourceLocation = CbTweaker.resource("power")
