@@ -45,13 +45,16 @@ class JeiProgressBarElement(
     bar: BarDrawData,
     private val duration: Int,
     guiHelper: IGuiHelper,
-    reverse: Boolean = false
+    reverse: Boolean = false,
+    private val showTooltip: Boolean = true
 ) : JeiBarElement<Nothing>(posX, posY, bar) {
     private val ticker: ITickTimer = duration.coerceAtLeast(4).let { guiHelper.createTickTimer(it, it, reverse) }
 
     override fun getBarFill(): Float = ticker.value / ticker.maxValue.toFloat()
 
     override fun getTooltip(ingredient: Nothing?, tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
-        tooltip += CbtClientHelper.formatTickTime(duration)
+        if (showTooltip) {
+            tooltip += CbtClientHelper.formatTickTime(duration)
+        }
     }
 }

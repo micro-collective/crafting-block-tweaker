@@ -545,7 +545,10 @@ object FuelledCraftingBehaviour : MachineBehaviour<FuelledCraftingBehaviour.Stat
             val fuelBg = fuelBar.bgTexture.drawable
             val fuelPos = config.fuelBar.uiPosition.computePosition(region, fuelBg.width, fuelBg.height)
             container.addJeiUiElement(
-                JeiProgressBarElement(fuelPos.x, fuelPos.y, fuelBar, 32, jeiHelpers.guiHelper, true)
+                JeiProgressBarElement(
+                    fuelPos.x, fuelPos.y, fuelBar, 32, jeiHelpers.guiHelper,
+                    reverse = true, showTooltip = false
+                )
             )
 
             val bufGroups = sbType.createJeiBufferGroups()
