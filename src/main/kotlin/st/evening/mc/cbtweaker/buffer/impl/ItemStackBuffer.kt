@@ -37,9 +37,8 @@ import st.evening.mc.cbtweaker.util.gui.UiPosition
 import st.evening.mc.cbtweaker.util.machine.ItemConsumeType
 import st.evening.mc.cbtweaker.util.machine.TickModulator
 import st.evening.mc.cbtweaker.util.recipe.IngredientLoader
+import st.evening.mc.cbtweaker.util.recipe.ItemSpecifier
 import st.evening.mc.prelude.api.PreludeInternal
-import st.evening.mc.prelude.api.capability.ItemStore
-import st.evening.mc.prelude.api.capability.ModifiableItemStore
 import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
@@ -206,29 +205,49 @@ class ItemStackBuffer private constructor(
 
     class Accumulator {
         private val buffers: MutableList<ItemStackBuffer> = mutableListOf()
-        private val stores: MutableMap<ItemKey?, MultiStore> = mutableMapOf()
+        private val wildcard: MutableMap<ItemSpecifier.Wildcard, MultiStore> = mutableMapOf()
+        private val byMeta: MutableMap<ItemSpecifier.ByMeta, MultiStore> = mutableMapOf()
+        private val emptySlots: MultiStore = MultiStore(null)
 
         fun accumulate(buffer: ItemStackBuffer) {
             buffers += buffer
             for (i in 0..<buffer.slots) {
-                val key = ItemKey.fromStack(buffer.getStackInSlot(i))
-                stores.getOrPut(key) { MultiStore(key) }.addSlot(buffer, i)
+                val stack = buffer.getStackInSlot(i)
+                if (stack.isEmpty) {
+                    emptySlots.addSlot(buffer, i)
+                } else {
+                    wildcard.put(ItemSpecifier.Wildcard.fromStack(stack), buffer, i)
+                    byMeta.put(ItemSpecifier.ByMeta.fromStack(stack), buffer, i)
+                }
             }
         }
 
-        fun getStore(key: ItemKey): ModifiableItemStore = stores[key] ?: ItemStore.Empty
+        private fun <K : ItemSpecifier> MutableMap<K, MultiStore>.put(key: K, buffer: ItemStackBuffer, slotIndex: Int) {
+            getOrPut(key) { MultiStore(key) }.addSlot(buffer, slotIndex)
+        }
+
+        fun getStore(key: ItemSpecifier): MultiStore? = when (key) {
+            is ItemSpecifier.Wildcard -> wildcard[key]
+            is ItemSpecifier.ByMeta -> byMeta[key]
+        }
+
+        fun getEmptyStore(): MultiStore = emptySlots
 
         @PreludeInternal
-        fun getAllStores(): Map<ItemKey?, ModifiableItemStore> = stores
+        fun getAllStores(): Collection<MultiStore> = wildcard.values
 
         fun insert(stack: ItemStack, simulate: Boolean): ItemStack {
             if (stack.isEmpty) return ItemStack.EMPTY
             var rem = stack
-            stores[ItemKey.fromStack(stack)]?.let {
-                rem = it.insertItem(rem, simulate)
+            byMeta[ItemSpecifier.ByMeta.fromStack(stack)]?.let {
+                rem = it.insert(rem, simulate)
                 if (rem.isEmpty) return ItemStack.EMPTY
             }
-            return stores[null]?.insertItem(rem, simulate) ?: rem
+            wildcard[ItemSpecifier.Wildcard.fromStack(rem)]?.let {
+                rem = it.insert(rem, simulate)
+                if (rem.isEmpty) return ItemStack.EMPTY
+            }
+            return emptySlots.insert(rem, simulate)
         }
 
         fun dropItem(stack: ItemStack) {
@@ -239,14 +258,14 @@ class ItemStackBuffer private constructor(
         }
 
         fun insertOrDrop(stack: ItemStack, checkMode: Boolean) {
-            val rem = insert(stack, false)
+            val rem = this@Accumulator.insert(stack, false)
             if (!checkMode && !rem.isEmpty) {
                 dropItem(rem)
             }
         }
 
         @OptIn(PreludeInternal::class)
-        inline fun forEach(action: (Map.Entry<ItemKey?, ModifiableItemStore>) -> Unit) {
+        inline fun forEach(action: (MultiStore) -> Unit) {
             getAllStores().forEach(action)
         }
 
@@ -258,61 +277,34 @@ class ItemStackBuffer private constructor(
             return acc
         }
 
-        private class MultiStore(storedItem: ItemKey?) : ModifiableItemStore {
+        class MultiStore(val storedItem: ItemSpecifier?) {
             private val slots: MutableList<BufferSlot> = mutableListOf()
 
-            override var storedItem: ItemKey? = storedItem
-                private set
-
-            override val count: Int
+            val count: Int
                 get() = slots.sumOf { (buffer, slotIndex) ->
                     val stack = buffer.getStackInSlot(slotIndex)
-                    return@sumOf if (storedItem?.matches(stack) != false) stack.count else 0
+                    return@sumOf if (storedItem?.test(stack) != false) stack.count else 0
                 }
-
-            override val capacity: Int
-                get() = slots.sumOf { (buffer, slotIndex) -> buffer.getSlotLimit(slotIndex) }
 
             fun addSlot(buffer: ItemStackBuffer, slotIndex: Int) {
                 slots += BufferSlot(buffer, slotIndex)
             }
 
-            override fun setItem(item: ItemKey?) {
+            fun setItem(item: ItemKey?) {
                 if (item == null) {
                     slots.forEach { (buffer, slotIndex) ->
                         buffer.setAndNotify(slotIndex, ItemStack.EMPTY)
                     }
-                    storedItem = null
                 } else {
                     slots.forEach { (buffer, slotIndex) ->
                         val stack = buffer.getStackInSlot(slotIndex)
                         if (stack.isEmpty) return@forEach
                         buffer.setAndNotify(slotIndex, item.newStack(stack.count))
                     }
-                    storedItem = item
                 }
             }
 
-            override fun setItemCount(newCount: Int) {
-                if (newCount > count) {
-                    val key = storedItem ?: return
-                    val itemMaxStack = key.item.getItemStackLimit(key.newStack(1))
-                    var rem = newCount - count
-                    slots.forEach { (buffer, slotIndex) ->
-                        val stack = buffer.getStackInSlot(slotIndex)
-                        if (!stack.isEmpty && !key.matches(stack)) return@forEach
-                        val amount = min(buffer.config.maxStackSize, itemMaxStack) - stack.count
-                        if (amount <= 0) return@forEach
-                        buffer.setAndNotify(slotIndex, stack.copyWithSize(stack.count + amount))
-                        rem -= amount
-                        if (rem <= 0) return
-                    }
-                } else if (newCount < count) {
-                    extractItem(count - newCount, false)
-                }
-            }
-
-            override fun insertItem(stack: ItemStack, simulate: Boolean): ItemStack {
+            fun insert(stack: ItemStack, simulate: Boolean): ItemStack {
                 var rem = stack
                 slots.forEach { (buffer, slotIndex) ->
                     rem = buffer.insertItem(slotIndex, stack, simulate)
@@ -321,17 +313,39 @@ class ItemStackBuffer private constructor(
                 return rem
             }
 
-            override fun extractItem(amount: Int, simulate: Boolean): ItemStack {
+            fun extract(amount: Int, simulate: Boolean): ItemStack {
                 val key = storedItem ?: return ItemStack.EMPTY
                 var remAmount = amount
                 slots.forEach { (buffer, slotIndex) ->
-                    if (!key.matches(buffer.getStackInSlot(slotIndex))) return@forEach
+                    if (!key.test(buffer.getStackInSlot(slotIndex))) return@forEach
                     remAmount -= buffer.extractItem(slotIndex, remAmount, simulate).count
                     if (remAmount <= 0) {
                         return key.newStack(amount)
                     }
                 }
                 return if (remAmount >= amount) ItemStack.EMPTY else key.newStack(amount - remAmount)
+            }
+
+            fun damage(amount: Int, simulate: Boolean): Int {
+                val key = storedItem ?: return 0
+                var remAmount = amount
+                slots.forEach { (buffer, slotIndex) ->
+                    val stack = buffer.getStackInSlot(slotIndex)
+                    if (!key.test(stack)) return@forEach
+                    val amountHere = remAmount.coerceAtMost(stack.maxDamage - stack.itemDamage + 1)
+                    if (amountHere <= 0) return@forEach
+                    val damagedStack = stack.copy()
+                    if (!simulate) {
+                        if (damagedStack.attemptDamageItem(amountHere, CbtMathHelper.cbtRandom, null)) {
+                            buffer.setAndNotify(slotIndex, ItemStack.EMPTY)
+                        } else {
+                            buffer.setAndNotify(slotIndex, damagedStack)
+                        }
+                    }
+                    remAmount -= amountHere
+                    if (remAmount <= 0) return amount
+                }
+                return amount - remAmount
             }
 
             private data class BufferSlot(val buffer: ItemStackBuffer, val slotIndex: Int)
@@ -533,21 +547,25 @@ class ItemStackBuffer private constructor(
         ): Collection<JeiUiElement<*>> = buffer.createJeiUiElements(contRegion)
     }
 
-    class ItemMatcher(private val item: ItemKey, private val count: Int, private val consumeType: ItemConsumeType) :
+    class ItemMatcher(
+        private val item: ItemSpecifier,
+        private val count: Int,
+        private val consumeType: ItemConsumeType
+    ) :
         IngredientMatcher<Accumulator, JeiAccumulator> {
 
         override fun consumeInitial(acc: Lazy<Accumulator>, consumeFactor: Float, checkMode: Boolean): Boolean {
             val scaledCount = CbtMathHelper.scaleConsumeInt(count, consumeFactor, checkMode)
             if (scaledCount <= 0) return true
+            val store = acc.value.getStore(item) ?: return false
             when (consumeType) {
                 ItemConsumeType.CONSUME -> {
-                    val store = acc.value.getStore(item)
-                    val extracted = store.extractItem(scaledCount, false)
+                    val extracted = store.extract(scaledCount, false)
                     if (extracted.count < scaledCount) return false
                     val containerStack = extracted.item.getContainerItem(extracted)
                     if (!containerStack.isEmpty) {
                         containerStack.count = extracted.count
-                        val rem = store.insertItem(containerStack, false)
+                        val rem = store.insert(containerStack, false)
                         if (!rem.isEmpty) {
                             // we don't track the buffer(s) that the ingredients were extracted from, so this just drops
                             // rem at a random buffer's position. hopefully it's empty in every reasonable case
@@ -556,22 +574,9 @@ class ItemStackBuffer private constructor(
                     }
                     return true
                 }
-                ItemConsumeType.DELETE ->
-                    return acc.value.getStore(item).extractItem(scaledCount, false).count >= scaledCount
-                ItemConsumeType.DAMAGE -> {
-                    val store = acc.value.getStore(item)
-                    if (store.isEmpty) return false
-                    val stack = store.getContentsAsStack()
-                    if (!stack.isItemStackDamageable) return false
-                    if (stack.attemptDamageItem(scaledCount, CbtMathHelper.cbtRandom, null)) {
-                        store.setItem(null)
-                    } else {
-                        store.setContentsFromStack(stack)
-                    }
-                    return true
-                }
-                ItemConsumeType.KEEP ->
-                    return acc.value.getStore(item).extractItem(scaledCount, true).count >= scaledCount
+                ItemConsumeType.DELETE -> return store.extract(scaledCount, false).count >= scaledCount
+                ItemConsumeType.DAMAGE -> return store.damage(scaledCount, false) >= scaledCount
+                ItemConsumeType.KEEP -> return store.extract(scaledCount, true).count >= scaledCount
             }
         }
 
@@ -593,7 +598,7 @@ class ItemStackBuffer private constructor(
 
             context(_: JsonPath)
             override fun loadMatcher(dto: TJson.Object): ItemMatcher = ItemMatcher(
-                ItemKey.Serializer.deserializeFromJson(dto),
+                ItemSpecifier.load(dto),
                 dto.expectInt("count") ?: 1,
                 dto.useString("consume") {
                     ItemConsumeType.serializer.deserializeFromJson(it)
@@ -613,12 +618,12 @@ class ItemStackBuffer private constructor(
             when (consumeType) {
                 ItemConsumeType.CONSUME -> {
                     acc.value.forEachMatching {
-                        val extracted = it.extractItem(scaledCount, false)
+                        val extracted = it.extract(scaledCount, false)
                         if (extracted.isEmpty) return@forEachMatching
                         val containerStack = extracted.item.getContainerItem(extracted)
                         if (!containerStack.isEmpty) {
                             containerStack.count = extracted.count
-                            val rem = it.insertItem(containerStack, false)
+                            val rem = it.insert(containerStack, false)
                             if (!rem.isEmpty) {
                                 acc.value.insertOrDrop(rem, checkMode)
                             }
@@ -630,28 +635,21 @@ class ItemStackBuffer private constructor(
                 }
                 ItemConsumeType.DELETE -> {
                     acc.value.forEachMatching {
-                        scaledCount -= it.extractItem(scaledCount, false).count
+                        scaledCount -= it.extract(scaledCount, false).count
                         if (scaledCount <= 0) return true
                     }
                     return false
                 }
                 ItemConsumeType.DAMAGE -> {
-                    acc.value.forEach { (_, store) ->
-                        if (store.isEmpty || !oreEntry.matches(store.storedItem)) return@forEach
-                        val stack = store.getContentsAsStack()
-                        if (!stack.isItemStackDamageable) return@forEach
-                        if (stack.attemptDamageItem(scaledCount, CbtMathHelper.cbtRandom, null)) {
-                            store.setItem(null)
-                        } else {
-                            store.setContentsFromStack(stack)
-                        }
-                        return true
+                    acc.value.forEachMatching {
+                        scaledCount -= it.damage(scaledCount, false)
+                        if (scaledCount <= 0) return true
                     }
                     return false
                 }
                 ItemConsumeType.KEEP -> {
                     acc.value.forEachMatching {
-                        scaledCount -= it.extractItem(scaledCount, true).count
+                        scaledCount -= it.extract(scaledCount, true).count
                         if (scaledCount <= 0) return true
                     }
                     return false
@@ -659,9 +657,9 @@ class ItemStackBuffer private constructor(
             }
         }
 
-        private inline fun Accumulator.forEachMatching(action: (ItemStore) -> Unit) {
-            forEach { (_, store) ->
-                if (store.isEmpty || !oreEntry.matches(store.storedItem)) return@forEach
+        private inline fun Accumulator.forEachMatching(action: (Accumulator.MultiStore) -> Unit) {
+            forEach { store ->
+                if (store.storedItem?.matchesOreEntry(oreEntry) != true) return@forEach
                 action(store)
             }
         }

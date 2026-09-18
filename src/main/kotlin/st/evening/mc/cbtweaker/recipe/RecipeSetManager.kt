@@ -15,6 +15,7 @@ import st.evening.mc.cbtweaker.compat.jei.recipe.JeiRecipeSetAdaptor
 import st.evening.mc.cbtweaker.recipe.impl.TimedFuelRecipe
 import st.evening.mc.cbtweaker.util.machine.ItemConsumeType
 import st.evening.mc.cbtweaker.util.recipe.IngredientMatcherMap
+import st.evening.mc.cbtweaker.util.recipe.ItemSpecifier
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
@@ -147,7 +148,20 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
                             mapOf(
                                 "fuel" to IngredientMatcherMap().also {
                                     it[ItemStackBuffer.Type] = listOf(
-                                        ItemStackBuffer.ItemMatcher(item, 1, ItemConsumeType.CONSUME)
+                                        ItemStackBuffer.ItemMatcher(
+                                            run {
+                                                val stack = item.newStack(1)
+                                                if (stack.isItemStackDamageable) {
+                                                    stack.itemDamage = 1
+                                                    if (TileEntityFurnace.getItemBurnTime(stack) == burnTime) {
+                                                        return@run ItemSpecifier.Wildcard.fromKey(item)
+                                                    }
+                                                }
+                                                return@run ItemSpecifier.ByMeta.fromKey(item)
+                                            },
+                                            1,
+                                            ItemConsumeType.CONSUME
+                                        )
                                     )
                                 }
                             ),

@@ -12,7 +12,6 @@ import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.forEachArray
 import st.evening.mc.prelude.api.data.tjson.forEachObject
 import st.evening.mc.prelude.api.data.tjson.useStringValue
-import st.evening.mc.prelude.api.util.game.ItemKey
 import st.evening.mc.prelude.api.util.game.OreEntry
 import java.util.function.Predicate
 
@@ -106,7 +105,7 @@ object IngredientLoader {
     context(_: JsonPath)
     fun loadItemFilter(dto: TJson): Predicate<ItemStack> = when (dto) {
         is TJson.String -> OreEntry(dto.value)
-        is TJson.Object -> ItemKey.Serializer.deserializeFromJson(dto)
+        is TJson.Object -> ItemSpecifier.load(dto)
         else -> throw SerializationException.withPath("Expected an ore dictionary name or an item key object!")
     }
 }
