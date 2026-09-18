@@ -47,7 +47,9 @@ class HatchStructureBlockMatcher(
                 override fun getTooltip(tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
                     representative.getColouredTooltip(tooltip, tooltipFlags)
                     val groupIdString = "${TextFormatting.WHITE}$groupId"
-                    tooltip += "${TextFormatting.AQUA}${I18n.format(CbtLang.TOOLTIP_BUFFER_GROUP, groupIdString)}"
+                    if (tooltipFlags.isAdvanced) {
+                        tooltip += "${TextFormatting.AQUA}${I18n.format(CbtLang.TOOLTIP_BUFFER_GROUP, groupIdString)}"
+                    }
                 }
             }
         }

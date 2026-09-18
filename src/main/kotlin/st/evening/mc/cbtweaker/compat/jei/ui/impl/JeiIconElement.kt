@@ -34,9 +34,11 @@ class JeiIconElement<T : Any>(
         if (ingredient != null) {
             jeiIngredient?.getTooltip(ingredient, tooltip, tooltipFlags)
         }
-        bufGroupId?.let {
-            tooltip += TextFormatting.AQUA.toString() +
-                I18n.format(CbtLang.TOOLTIP_BUFFER_GROUP, "${TextFormatting.WHITE}$it")
+        if (tooltipFlags.isAdvanced) {
+            bufGroupId?.let {
+                tooltip += TextFormatting.AQUA.toString() +
+                    I18n.format(CbtLang.TOOLTIP_BUFFER_GROUP, "${TextFormatting.WHITE}$it")
+            }
         }
     }
 
