@@ -10,13 +10,18 @@ import st.evening.mc.prelude.api.data.tjson.TJson
 interface StructureBlockMatcher {
     val visualization: List<StructureBlockVisualization>
 
-    fun matchBlock(world: World, pos: BlockPos, rotation: Rotation): StructureBlockMatch?
+    fun matchBlock(world: World, pos: BlockPos, rotation: Rotation, mirrorX: Boolean): StructureBlockMatch?
 
     object NothingMatcher : StructureBlockMatcher {
         override val visualization: List<StructureBlockVisualization>
             get() = emptyList()
 
-        override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation): StructureBlockMatch? = null
+        override fun matchBlock(
+            world: World,
+            pos: BlockPos,
+            rotation: Rotation,
+            mirrorX: Boolean
+        ): StructureBlockMatch? = null
     }
 
     class MatcherSet(private val matchers: List<StructureBlockMatcher>) : StructureBlockMatcher {
@@ -26,8 +31,12 @@ interface StructureBlockMatcher {
             matchers.flatMap { it.visualization }
         }
 
-        override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation): StructureBlockMatch? =
-            matchers.firstNotNullOfOrNull { it.matchBlock(world, pos, rotation) }
+        override fun matchBlock(
+            world: World,
+            pos: BlockPos,
+            rotation: Rotation,
+            mirrorX: Boolean
+        ): StructureBlockMatch? = matchers.firstNotNullOfOrNull { it.matchBlock(world, pos, rotation, mirrorX) }
     }
 }
 

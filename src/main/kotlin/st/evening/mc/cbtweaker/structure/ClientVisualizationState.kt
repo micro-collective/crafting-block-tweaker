@@ -73,6 +73,7 @@ data class ClientVisualizationState(
                 return
             }
 
+            VisualizationRenderer.invalidateInWorldVisualization()
             val mbType = ctrlBlock.mbType
             if (state != null && state.mbType == mbType) {
                 currentState = state.copy(

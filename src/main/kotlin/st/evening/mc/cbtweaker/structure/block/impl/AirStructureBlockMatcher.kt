@@ -12,13 +12,14 @@ import st.evening.mc.cbtweaker.structure.block.StructureBlockVisualization
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.resource
+import st.evening.mc.prelude.api.util.data.orNull
 
 object AirStructureBlockMatcher : StructureBlockMatcher {
     override val visualization: List<StructureBlockVisualization>
         get() = emptyList()
 
-    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation): StructureBlockMatch? =
-        if (world.isAirBlock(pos)) StructureBlockMatch.Normal else null
+    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation, mirrorX: Boolean): StructureBlockMatch? =
+        orNull(world.isAirBlock(pos)) { StructureBlockMatch.Normal }
 
     object Type : StructureBlockMatcherType {
         override val id: ResourceLocation = CbTweaker.resource("air")

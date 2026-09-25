@@ -16,7 +16,7 @@ import st.evening.mc.prelude.api.util.render.RenderingHelper
 import st.evening.mc.prelude.api.util.render.gui.GuiRenderHelper
 
 @ClientSide.Physical
-class StructureRecipeWrapper(private val mbCtrlBlock: MultiBlockControllerBlock, structMatcher: StructureMatcher) :
+class StructureRecipeWrapper(private val mbCtrlBlock: MultiBlockControllerBlock, structMatcher: StructureMatcher<*>) :
     IRecipeWrapper {
     private val visRenderer: VisualizationRenderer = VisualizationRenderer(structMatcher)
 

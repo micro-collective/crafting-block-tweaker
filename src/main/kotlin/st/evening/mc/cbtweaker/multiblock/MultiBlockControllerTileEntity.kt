@@ -16,16 +16,19 @@ import st.evening.mc.cbtweaker.common.MachineTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.network.S2CBindMultiBlockAssembly
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
+import st.evening.mc.cbtweaker.structure.StructureVisualization
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.onServer
 
 class MultiBlockControllerTileEntity :
-    LazyTileEntity<MultiBlockData<*>>(), MachineTileEntity, CopiableConfigHost, ITickable {
+    LazyTileEntity<MultiBlockData<*, *>>(), MachineTileEntity, CopiableConfigHost, ITickable {
 
-    override fun initData(): MultiBlockData<*> =
-        MultiBlockData(this, (world.getBlockState(pos).block as MultiBlockControllerBlock).mbType)
+    override fun initData(): MultiBlockData<*, *> {
+        val mbType = (world.getBlockState(pos).block as MultiBlockControllerBlock).mbType
+        return MultiBlockData(this, mbType, mbType.structureMatcher)
+    }
 
     val mbType: MultiBlockType<*>
         get() = data.mbType
@@ -108,4 +111,6 @@ class MultiBlockControllerTileEntity :
     }
 
     fun createMachineUiElement(): UiElement? = data.createMachineUiElement()
+
+    fun getStructureVisualization(): StructureVisualization = data.getStructureVisualization()
 }

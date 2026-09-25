@@ -18,7 +18,7 @@ import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.hatch.HatchTileEntity
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
-import st.evening.mc.cbtweaker.structure.StructureMatch
+import st.evening.mc.cbtweaker.structure.StructureParts
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
@@ -36,8 +36,7 @@ import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 
 class MultiBlockAssembly<S>(
-    private val mbData: MultiBlockData<S>,
-    val structureBlocks: Set<BlockPos>,
+    private val mbData: MultiBlockData<S, *>,
     private val baseComponents: ComponentSet,
     private val hatches: List<HatchTileEntity>,
     private val bufGroups: BufferGroups,
@@ -45,13 +44,13 @@ class MultiBlockAssembly<S>(
 ) : MachineHost, CopiableConfigHost, ServerSideSerializable {
     companion object {
         fun <S> fromStructure(
-            mbData: MultiBlockData<S>,
-            structMatch: StructureMatch,
+            mbData: MultiBlockData<S, *>,
+            parts: StructureParts,
             oldAssembly: MultiBlockAssembly<S>?
         ): MultiBlockAssembly<S> {
             val hatches = mutableListOf<HatchTileEntity>()
             val bufGroups = Object2ObjectRBTreeMap<String, BufferGroup>()
-            structMatch.hatches.forEach { (groupId, matchHatches) ->
+            parts.hatches.forEach { (groupId, matchHatches) ->
                 val group = BufferGroup()
                 matchHatches.forEach {
                     hatches += it
@@ -59,9 +58,7 @@ class MultiBlockAssembly<S>(
                 }
                 bufGroups[groupId] = group
             }
-            return MultiBlockAssembly(
-                mbData, structMatch.positions, structMatch.components, hatches, bufGroups, oldAssembly
-            )
+            return MultiBlockAssembly(mbData, parts.components, hatches, bufGroups, oldAssembly)
         }
     }
 

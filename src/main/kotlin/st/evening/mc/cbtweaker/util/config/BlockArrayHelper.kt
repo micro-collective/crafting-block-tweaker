@@ -43,12 +43,13 @@ object BlockArrayHelper {
 
     context(_: JsonPath)
     fun loadBlockArray(blockArrayDto: TJson.Array): Array<Array<CharArray>> {
-        // y and z slices have their min at the end of the array and their max at the start, so we reverse them
+        // earlier y slices correspond to higher y values, and north is facing downwards "towards the viewer", so we
+        // need to reverse at all three levels to transform back into the world coordinate system
         val blockArray = arrayOfNulls<Array<CharArray?>>(blockArrayDto.size)
         blockArrayDto.forEachArrayIndexed { coY, ySliceDto ->
             val ySlice = arrayOfNulls<CharArray>(ySliceDto.size)
             ySliceDto.forEachStringIndexed { coZ, zSliceDto ->
-                ySlice[ySlice.size - 1 - coZ] = zSliceDto.toCharArray()
+                ySlice[ySlice.size - 1 - coZ] = zSliceDto.toCharArray().also { it.reverse() }
             }
             blockArray[blockArray.size - 1 - coY] = ySlice
         }

@@ -15,20 +15,22 @@ import st.evening.mc.cbtweaker.structure.block.StructureBlockMatch
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcherType
 import st.evening.mc.cbtweaker.structure.block.StructureBlockVisualization
+import st.evening.mc.cbtweaker.util.withMirrorX
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
-import st.evening.mc.prelude.api.data.tjson.expectString
 import st.evening.mc.prelude.api.data.tjson.expectStringValue
+import st.evening.mc.prelude.api.data.tjson.useAny
 import st.evening.mc.prelude.api.resource
 import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.OreEntry
 import st.evening.mc.prelude.api.util.game.getColouredTooltip
+import st.evening.mc.prelude.api.util.world.unaryMinus
 
 class OreDictionaryStructureBlockMatcher(
     private val oreEntry: OreEntry,
-    private val componentId: String?,
+    private val match: StructureBlockMatch,
     private val visualize: Boolean
 ) : StructureBlockMatcher {
     override val visualization: List<StructureBlockVisualization> by lazy {
@@ -38,7 +40,7 @@ class OreDictionaryStructureBlockMatcher(
             if (item !is ItemBlock) return@mapNotNull null
             return@mapNotNull object : StructureBlockVisualization {
                 @Suppress("DEPRECATION")
-                override val blockState: IBlockState = item.block.getStateFromMeta(stack.metadata) // questionable
+                override val baseBlockState: IBlockState = item.block.getStateFromMeta(stack.metadata) // questionable
 
                 override val representative: ItemStack
                     get() = stack
@@ -52,12 +54,11 @@ class OreDictionaryStructureBlockMatcher(
         }
     }
 
-    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation): StructureBlockMatch? {
-        val state = world.getBlockState(pos).withRotation(rotation)
+    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation, mirrorX: Boolean): StructureBlockMatch? {
+        val state = world.getBlockState(pos).withRotation(-rotation).withMirrorX(mirrorX)
         val block = state.block
-        return orNull(oreEntry.matches(Item.getItemFromBlock(block), block.damageDropped(state))) { // questionable
-            StructureBlockMatch.maybeComponent(componentId)
-        }
+        // questionable
+        return orNull(oreEntry.matches(Item.getItemFromBlock(block), block.damageDropped(state))) { match }
     }
 
     object Type : StructureBlockMatcherType {
@@ -66,7 +67,9 @@ class OreDictionaryStructureBlockMatcher(
         context(_: JsonPath)
         override fun loadMatcher(dto: TJson.Object): StructureBlockMatcher = OreDictionaryStructureBlockMatcher(
             OreEntry(dto.expectStringValue("ore")),
-            dto.expectString("component"),
+            dto.useAny("component") {
+                StructureBlockMatch.Component.load(it)
+            } ?: StructureBlockMatch.Normal,
             dto.expectBool("visualize") ?: true
         )
     }

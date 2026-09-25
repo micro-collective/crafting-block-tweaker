@@ -39,7 +39,7 @@ class HatchStructureBlockMatcher(
     override val visualization: List<StructureBlockVisualization> by lazy {
         tierRange.map { tier ->
             object : StructureBlockVisualization {
-                override val blockState: IBlockState = hatchType.getHatchBlock(tier)
+                override val baseBlockState: IBlockState = hatchType.getHatchBlock(tier)
 
                 override val representative: ItemStack = hatchType.getHatchStack(1, tier)
 
@@ -55,8 +55,8 @@ class HatchStructureBlockMatcher(
         }
     }
 
-    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation): StructureBlockMatch? {
-        val state = world.getBlockState(pos).withRotation(rotation)
+    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation, mirrorX: Boolean): StructureBlockMatch? {
+        val state = world.getBlockState(pos)
         val block = state.getBlock()
         if (block !is HatchBlock || block.hatchType != hatchType || state.getValue(block.tierProperty) !in tierRange) {
             return null

@@ -7,7 +7,8 @@ import net.minecraft.util.math.Vec3i
 import net.minecraft.world.World
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatch
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
-import st.evening.mc.cbtweaker.util.rotate
+import st.evening.mc.cbtweaker.util.invOffsetWithRotation
+import st.evening.mc.cbtweaker.util.offsetWithRotation
 import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 
@@ -61,9 +62,6 @@ class MatcherCuboid private constructor(
             }
             return MatcherCuboid(posMatcherTable, minX, maxX, minY, maxY, minZ, maxZ)
         }
-
-        private fun computeOffsetPos(basePos: BlockPos, offset: Vec3i, rotation: Rotation, mirror: Boolean): BlockPos =
-            basePos.add(rotation.rotate(offset, mirror))
     }
 
     val sizeX: Int
@@ -73,21 +71,74 @@ class MatcherCuboid private constructor(
     val sizeZ: Int
         get() = maxZ - minZ + 1
 
-    fun computePositions(originPos: BlockPos, rotation: Rotation, mirror: Boolean): Sequence<BlockPos> =
-        posMatcherTable.keys.asSequence().map { computeOffsetPos(originPos, it, rotation, mirror) }
+    fun computePositions(originPos: BlockPos, rotation: Rotation, mirrorX: Boolean): Sequence<BlockPos> =
+        originPos.offsetWithRotation(posMatcherTable.keys.asSequence(), rotation, mirrorX)
 
-    fun tryMatch(world: World, originPos: BlockPos, rotation: Rotation, mirror: Boolean): StructureMatch? {
-        val structure = StructureMatch()
-        posMatcherTable.forEach { (offset, matcher) ->
-            val pos = computeOffsetPos(originPos, offset, rotation, mirror)
-            val match = matcher.matchBlock(world, pos, rotation) ?: return null
-            structure.addPosition(pos)
-            when (match) {
-                is StructureBlockMatch.Component -> structure.addComponent(match.componentId)
-                is StructureBlockMatch.Hatch -> structure.addHatch(match.groupId, match.hatch)
-                else -> {}
+    fun tryMatch(world: World, originPos: BlockPos, rotation: Rotation, mirrorX: Boolean): List<StructureBlockMatch>? {
+        return posMatcherTable.map { (offset, matcher) ->
+            matcher.matchBlock(world, originPos.offsetWithRotation(offset, rotation, mirrorX), rotation, mirrorX)
+                ?: return null
+        }
+    }
+
+    class IncrementalMatcher(
+        val matchRegion: MatcherCuboid,
+        val world: World,
+        val originPos: BlockPos,
+        val rotation: Rotation,
+        val mirrorX: Boolean
+    ) {
+        private val toCheck: MutableSet<BlockPos> =
+            matchRegion.computePositions(originPos, rotation, mirrorX).toMutableSet()
+        private val failedChecks: MutableSet<BlockPos> = mutableSetOf()
+        private val cachedMatch: MutableMap<BlockPos, StructureBlockMatch> = mutableMapOf()
+
+        var lastMatchSuccess: Boolean? = null
+            private set
+
+        val dirtyCount: Int
+            get() = toCheck.size + failedChecks.size
+
+        // returns garbage if lastMatchSuccess != true
+        fun getLastMatch(): Map<BlockPos, StructureBlockMatch> = cachedMatch
+
+        fun markDirty(pos: BlockPos) {
+            toCheck += pos
+            failedChecks -= pos
+            cachedMatch -= pos
+            lastMatchSuccess = null
+        }
+
+        fun markDirty(positions: Collection<BlockPos>) {
+            toCheck.addAll(positions)
+            val positionSet = positions.toSet()
+            failedChecks.removeAll(positionSet)
+            cachedMatch -= positionSet
+            lastMatchSuccess = null
+        }
+
+        fun tryMatch(): Map<BlockPos, StructureBlockMatch>? {
+            toCheck.forEach { pos ->
+                val matcher = matchRegion.posMatcherTable[pos.invOffsetWithRotation(originPos, rotation, mirrorX)]
+                    ?: return@forEach
+                val match = matcher.matchBlock(world, pos, rotation, mirrorX)
+                if (match != null) {
+                    cachedMatch[pos] = match
+                } else {
+                    failedChecks += pos
+                }
+            }
+            toCheck.clear()
+            if (failedChecks.isEmpty()) {
+                lastMatchSuccess = true
+                // could copy this, but it's unlikely that the old result will be needed after a new tryMatch call
+                return cachedMatch
+            } else {
+                lastMatchSuccess = false
+                return null
             }
         }
-        return structure
+
+        fun computePositions(): Sequence<BlockPos> = matchRegion.computePositions(originPos, rotation, mirrorX)
     }
 }

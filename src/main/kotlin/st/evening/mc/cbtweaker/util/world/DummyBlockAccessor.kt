@@ -36,6 +36,10 @@ abstract class DummyBlockAccessor : IBlockAccess {
         val entries: Collection<Map.Entry<BlockPos, IBlockState>>
             get() = blockTable.entries
 
+        fun clear() {
+            blockTable.clear()
+        }
+
         override fun getBlockState(pos: BlockPos): IBlockState = blockTable[pos] ?: Blocks.AIR.defaultState
 
         fun setBlockState(pos: BlockPos, state: IBlockState) {

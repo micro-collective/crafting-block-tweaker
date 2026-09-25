@@ -26,6 +26,7 @@ import org.lwjgl.util.glu.Project
 import org.lwjgl.util.vector.Matrix4f
 import org.lwjgl.util.vector.Vector4f
 import st.evening.mc.cbtweaker.CbtLang
+import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
 import st.evening.mc.cbtweaker.structure.block.StructureBlockVisualization
 import st.evening.mc.cbtweaker.util.CbtClientHelper
@@ -36,16 +37,18 @@ import st.evening.mc.prelude.api.util.collection.getOrPut
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.playUiClick
 import st.evening.mc.prelude.api.util.math.MathsHelper
+import st.evening.mc.prelude.api.util.math.plus
 import st.evening.mc.prelude.api.util.render.RenderingHelper
 import st.evening.mc.prelude.api.util.render.TextureResource
 import st.evening.mc.prelude.api.util.render.tessellate
+import st.evening.mc.prelude.api.util.world.findTileEntity
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 
 @ClientSide.Physical
-class VisualizationRenderer(structMatcher: StructureMatcher) {
-    private val visWorld: JeiVisualizationWorld = JeiVisualizationWorld(structMatcher)
+class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
+    private val visWorld: VisualizationWorld = VisualizationWorld(structMatcher)
     private var hoveredBlock: StructureBlockVisualization? = null
 
     private var focusX: Double = DEFAULT_FOCUS_X
@@ -165,7 +168,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
         val blocksToRender = mutableListOf<Pair<BlockPos, IBlockState>>()
         visWorld.blocks.forEach { (pos, matcher) ->
             CbtClientHelper.indexByGlobalTimer(matcher.visualization)?.let {
-                blocksToRender += pos to it.blockState
+                blocksToRender += pos to it.baseBlockState
             }
         }
         if (blocksToRender.isEmpty()) return
@@ -179,7 +182,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
                 blocksToRender.forEach { (pos, state) ->
                     if (!state.getBlock().canRenderInLayer(state, renderLayer)) return@forEach
                     RenderingHelper.pushMatrix {
-                        GlStateManager.translate(pos.x.toFloat(), pos.y.toFloat(), pos.z.toFloat())
+                        RenderingHelper.translate(pos.x, pos.y, pos.z)
                         blockRenderer.renderBlock(state, pos, visWorld, this)
                     }
                 }
@@ -260,7 +263,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
         RenderingHelper.resetColour()
     }
 
-    private class JeiVisualizationWorld(structMatcher: StructureMatcher) : DummyBlockAccessor() {
+    private class VisualizationWorld(structMatcher: StructureMatcher<*>) : DummyBlockAccessor() {
         private val blockTable: MutableMap<BlockPos, StructureBlockMatcher> = mutableMapOf()
         private val levelSetTable: Int2ObjectMap<MutableMap<BlockPos, StructureBlockMatcher>> = Int2ObjectOpenHashMap()
 
@@ -272,8 +275,8 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
         init {
             var minLevel = Int.MAX_VALUE
             var maxLevel = Int.MIN_VALUE
-            structMatcher.visualization.forEach { (pos, matcher) ->
-                val blockPos = BlockPos(pos)
+            structMatcher.getVisualization(null).matchers.forEach { (pos, matcher) ->
+                val blockPos = BlockPos(pos) // ignoring the mirrorX flag here; it shouldn't matter
                 blockTable[blockPos] = matcher
                 val level = pos.y
                 levelSetTable.getOrPut(level) { mutableMapOf() }[blockPos] = matcher
@@ -314,7 +317,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
         }
 
         override fun getBlockState(pos: BlockPos): IBlockState =
-            blocks[pos]?.let { CbtClientHelper.indexByGlobalTimer(it.visualization) }?.blockState
+            blocks[pos]?.let { CbtClientHelper.indexByGlobalTimer(it.visualization) }?.baseBlockState
                 ?: Blocks.AIR.defaultState
     }
 
@@ -428,7 +431,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
             }
         }
 
-        private fun drawCube(pos: Vec3i) {
+        fun drawCube(pos: Vec3i) {
             val minX = pos.x.toDouble()
             val maxX = minX + 1.0
             val minY = pos.y.toDouble()
@@ -439,7 +442,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
             GlStateManager.disableTexture2D()
             GlStateManager.enableBlend()
             GlStateManager.enablePolygonOffset()
-            GlStateManager.doPolygonOffset(-1F, -10F)
+            GlStateManager.doPolygonOffset(-1F, -300F)
 
             // draw sides
             tess.tessellate(GL11.GL_QUAD_STRIP, DefaultVertexFormats.POSITION) {
@@ -477,39 +480,75 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
             GlStateManager.enableTexture2D()
         }
 
+        private val inWorldVisWorld: DummyBlockAccessor.MapBacked = DummyBlockAccessor.MapBacked()
+        private var inWorldVisBlocks: Map<BlockPos, StructureBlockMatcher>? = null
+        private var inWorldVisMirrorX: Boolean = false
+        private var inWorldLastCycle: Int = -1
+
+        fun invalidateInWorldVisualization() {
+            inWorldVisBlocks = null
+            inWorldLastCycle = -1
+        }
+
         fun renderInWorldVisualization(partialTicks: Float) {
+            val state = ClientVisualizationState.getState() ?: return
             val mc = Minecraft.getMinecraft()
             val player = mc.player
-            val state = ClientVisualizationState.getState() ?: return
+            val world = player.world
             val rotation = state.ctrlFront.getRotationFromNorth()
             val level = VisualizationToolItem.getLevel(state.visToolStack)
 
             GlStateManager.enableBlend()
             GlStateManager.depthMask(false)
             RenderingHelper.pushMatrix {
-                GlStateManager.translate(
-                    -(player.prevPosX + (player.posX - player.prevPosX) * partialTicks),
-                    -(player.prevPosY + (player.posY - player.prevPosY) * partialTicks),
-                    -(player.prevPosZ + (player.posZ - player.prevPosZ) * partialTicks)
-                )
+                RenderingHelper.translateInverseMotionInterpolation(player, partialTicks)
 
                 GlStateManager.color(1F, 0F, 0F, 0.3F)
-                val visWorld = DummyBlockAccessor.MapBacked()
-                state.mbType.structureMatcher.visualization.forEach { (offset, matcher) ->
-                    if (level != null && offset.y != level) return@forEach
-                    // TODO mirroring
-                    val pos = state.ctrlPos.add(rotation.rotate(offset, false))
-                    if (!player.world.isAirBlock(pos)) {
-                        if (matcher.matchBlock(player.world, pos, rotation) == null) {
-                            drawCube(pos)
+                val k = CbtClientHelper.getGlobalTimerIndex()
+                val visBlocks: Map<BlockPos, StructureBlockMatcher>?
+                val visMirrorX: Boolean
+                if (k != inWorldLastCycle) {
+                    inWorldLastCycle = k
+                    val (matchers, mirrorX) = world.findTileEntity<MultiBlockControllerTileEntity>(state.ctrlPos)
+                        ?.getStructureVisualization() ?: state.mbType.structureMatcher.getVisualization(null)
+                    val blocks = matchers.mapKeys { (offset, _) -> state.ctrlPos + rotation.rotate(offset, mirrorX) }
+                    inWorldVisBlocks = blocks
+                    inWorldVisMirrorX = mirrorX
+                    inWorldVisWorld.clear()
+                    blocks.forEach { (pos, matcher) ->
+                        val blocks = matcher.visualization
+                        if (blocks.isNotEmpty()) {
+                            inWorldVisWorld.setBlockState(pos, blocks[k % blocks.size].getBlockState(rotation, mirrorX))
                         }
+                    }
+                    visBlocks = blocks
+                    visMirrorX = mirrorX
+                } else {
+                    visBlocks = inWorldVisBlocks
+                    visMirrorX = inWorldVisMirrorX
+                }
+                if (visBlocks == null) {
+                    RenderingHelper.resetColour()
+                    return@pushMatrix
+                }
+
+                val ctrlY = state.ctrlPos.y
+                val blocksToDraw = mutableListOf<BlockPos>()
+                visBlocks.forEach { (pos, matcher) ->
+                    if
+                        ((level != null && pos.y != ctrlY + level) ||
+                        matcher.matchBlock(world, pos, rotation, visMirrorX) != null
+                    ) {
+                        return@forEach
+                    }
+                    if (world.isAirBlock(pos)) {
+                        blocksToDraw += pos
                     } else {
-                        CbtClientHelper.indexByGlobalTimer(matcher.visualization)?.let {
-                            visWorld.setBlockState(pos, it.blockState)
-                        }
+                        drawCube(pos)
                     }
                 }
                 RenderingHelper.resetColour()
+                if (blocksToDraw.isEmpty()) return@pushMatrix
 
                 GlStateManager.enableBlend()
                 GlStateManager.blendFunc(
@@ -525,24 +564,25 @@ class VisualizationRenderer(structMatcher: StructureMatcher) {
                 BlockRenderLayer.entries.forEach { renderLayer ->
                     ForgeHooksClient.setRenderLayer(renderLayer)
                     tess.tessellate(GL11.GL_QUADS, DefaultVertexFormats.BLOCK) {
-                        visWorld.entries.forEach { (pos, state) ->
+                        blocksToDraw.forEach { pos ->
+                            val state = inWorldVisWorld.getBlockState(pos)
                             if (!state.getBlock().canRenderInLayer(state, renderLayer)) return@forEach
                             RenderingHelper.pushMatrix {
-                                GlStateManager.translate(pos.x.toFloat(), pos.y.toFloat(), pos.z.toFloat())
-                                blockRenderer.renderBlock(state, pos, visWorld, this)
+                                RenderingHelper.translate(pos.x, pos.y, pos.z)
+                                blockRenderer.renderBlock(state, pos, inWorldVisWorld, this)
                             }
                         }
                     }
                 }
                 ForgeHooksClient.setRenderLayer(null)
 
-                GlStateManager.depthMask(true)
                 GL14.glBlendColor(1F, 1F, 1F, 1F)
                 GlStateManager.blendFunc(
                     GlStateManager.SourceFactor.SRC_ALPHA,
                     GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA
                 )
             }
+            GlStateManager.depthMask(true)
         }
     }
 }

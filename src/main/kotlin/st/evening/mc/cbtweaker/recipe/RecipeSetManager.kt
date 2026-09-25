@@ -181,7 +181,10 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
     ) : AbstractCollection<R>() {
         companion object {
             fun <R, D> loadDatabase(id: String, recipeType: RecipeSetType<R, D>, recipeDir: Path): Entry<R, D> {
-                if (!Files.isDirectory(recipeDir)) {
+                if (!Files.exists(recipeDir)) {
+                    CbTweaker.logger.warn("Creating missing recipe set directory: $recipeDir")
+                    Files.createDirectories(recipeDir)
+                } else if (!Files.isDirectory(recipeDir)) {
                     throw SerializationException("Recipe set directory is not a directory: $recipeDir")
                 }
                 val specFile = recipeDir.resolve("recipeset.tjson")

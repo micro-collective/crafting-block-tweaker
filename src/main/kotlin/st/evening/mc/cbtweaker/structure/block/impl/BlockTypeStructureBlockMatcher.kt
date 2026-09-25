@@ -9,26 +9,26 @@ import st.evening.mc.cbtweaker.structure.block.StructureBlockMatch
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcherType
 import st.evening.mc.cbtweaker.structure.block.StructureBlockVisualization
+import st.evening.mc.cbtweaker.util.withMirrorX
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectBool
-import st.evening.mc.prelude.api.data.tjson.expectString
+import st.evening.mc.prelude.api.data.tjson.useAny
 import st.evening.mc.prelude.api.resource
 import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.game.BlockKey
+import st.evening.mc.prelude.api.util.world.unaryMinus
 
 class BlockTypeStructureBlockMatcher(
     private val block: BlockKey,
-    private val componentId: String?,
+    private val match: StructureBlockMatch,
     visualize: Boolean
 ) : StructureBlockMatcher {
     override val visualization: List<StructureBlockVisualization> =
         if (visualize) listOf(StructureBlockVisualization.State(block.asState())) else emptyList()
 
-    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation): StructureBlockMatch? =
-        orNull(block.matches(world.getBlockState(pos).withRotation(rotation))) {
-            StructureBlockMatch.maybeComponent(componentId)
-        }
+    override fun matchBlock(world: World, pos: BlockPos, rotation: Rotation, mirrorX: Boolean): StructureBlockMatch? =
+        orNull(block.matches(world.getBlockState(pos).withRotation(-rotation).withMirrorX(mirrorX))) { match }
 
     object Type : StructureBlockMatcherType {
         override val id: ResourceLocation
@@ -37,7 +37,9 @@ class BlockTypeStructureBlockMatcher(
         context(_: JsonPath)
         override fun loadMatcher(dto: TJson.Object): StructureBlockMatcher = BlockTypeStructureBlockMatcher(
             BlockKey.Serializer.deserializeFromJson(dto),
-            dto.expectString("component"),
+            dto.useAny("component") {
+                StructureBlockMatch.Component.load(it)
+            } ?: StructureBlockMatch.Normal,
             dto.expectBool("visualize") ?: true
         )
     }

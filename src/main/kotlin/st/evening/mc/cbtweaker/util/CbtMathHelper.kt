@@ -1,7 +1,9 @@
 package st.evening.mc.cbtweaker.util
 
+import net.minecraft.block.state.IBlockState
 import net.minecraft.entity.Entity
 import net.minecraft.tileentity.TileEntity
+import net.minecraft.util.Mirror
 import net.minecraft.util.Rotation
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.MathHelper
@@ -70,17 +72,35 @@ fun BlockSide.getRotationFromNorth(): Rotation = when (this) {
     BlockSide.WEST -> Rotation.COUNTERCLOCKWISE_90
 }
 
-fun Rotation.rotate(vec: Vec3i, mirror: Boolean): Vec3i = when (this) {
-    Rotation.NONE -> if (mirror) Vec3i(-vec.x, vec.y, vec.z) else vec
-    Rotation.CLOCKWISE_90 -> if (mirror) Vec3i(vec.z, vec.y, vec.x) else Vec3i(-vec.z, vec.y, vec.x)
-    Rotation.CLOCKWISE_180 -> if (mirror) Vec3i(vec.x, vec.y, -vec.z) else Vec3i(-vec.x, vec.y, -vec.z)
-    Rotation.COUNTERCLOCKWISE_90 -> if (mirror) Vec3i(-vec.z, vec.y, -vec.x) else Vec3i(vec.z, vec.y, -vec.x)
+fun Rotation.rotate(vec: Vec3i, mirrorX: Boolean): Vec3i = when (this) {
+    Rotation.NONE -> if (mirrorX) Vec3i(-vec.x, vec.y, vec.z) /* reflect across z axis */ else vec
+    Rotation.CLOCKWISE_90 ->
+        if (mirrorX) Vec3i(-vec.z, vec.y, -vec.x) /* reflect across negative diag */ else Vec3i(-vec.z, vec.y, vec.x)
+    Rotation.CLOCKWISE_180 ->
+        if (mirrorX) Vec3i(vec.x, vec.y, -vec.z) /* reflect across x axis */ else Vec3i(-vec.x, vec.y, -vec.z)
+    Rotation.COUNTERCLOCKWISE_90 ->
+        if (mirrorX) Vec3i(vec.z, vec.y, vec.x) /* reflect across positive diag */ else Vec3i(vec.z, vec.y, -vec.x)
 }
 
-fun BlockPos.offsetWithRotation(offset: Vec3i, rotation: Rotation, mirror: Boolean): BlockPos =
-    this + rotation.rotate(offset, mirror)
+fun Rotation.unrotate(vec: Vec3i, mirrorX: Boolean): Vec3i = when (this) { // note 6 of these are reflections
+    Rotation.NONE -> if (mirrorX) Vec3i(-vec.x, vec.y, vec.z) else vec
+    Rotation.CLOCKWISE_90 -> if (mirrorX) Vec3i(-vec.z, vec.y, -vec.x) else Vec3i(vec.z, vec.y, -vec.x) // ccw 90
+    Rotation.CLOCKWISE_180 -> if (mirrorX) Vec3i(vec.x, vec.y, -vec.z) else Vec3i(-vec.x, vec.y, -vec.z)
+    Rotation.COUNTERCLOCKWISE_90 -> if (mirrorX) Vec3i(vec.z, vec.y, vec.x) else Vec3i(-vec.z, vec.y, vec.x) // cw 90
+}
 
-fun Rotation.rotate(pos: BlockPos, axisPos: BlockPos, mirror: Boolean): BlockPos =
-    axisPos.offsetWithRotation(pos - axisPos, this, mirror)
+fun IBlockState.withMirrorX(mirrorX: Boolean): IBlockState = if (mirrorX) withMirror(Mirror.FRONT_BACK) else this
+
+fun BlockPos.offsetWithRotation(offset: Vec3i, rotation: Rotation, mirrorX: Boolean): BlockPos =
+    this + rotation.rotate(offset, mirrorX)
+
+fun BlockPos.offsetWithRotation(offsets: Sequence<Vec3i>, rotation: Rotation, mirrorX: Boolean): Sequence<BlockPos> =
+    offsets.map { offsetWithRotation(it, rotation, mirrorX) }
+
+fun BlockPos.invOffsetWithRotation(originPos: BlockPos, rotation: Rotation, mirrorX: Boolean): Vec3i =
+    rotation.unrotate(this - originPos, mirrorX)
+
+fun Rotation.rotate(pos: BlockPos, axisPos: BlockPos, mirrorX: Boolean): BlockPos =
+    axisPos.offsetWithRotation(pos - axisPos, this, mirrorX)
 
 fun TileEntity.isInInteractionRange(entity: Entity): Boolean = entity.getDistanceSqToCenter(pos) <= 64.0

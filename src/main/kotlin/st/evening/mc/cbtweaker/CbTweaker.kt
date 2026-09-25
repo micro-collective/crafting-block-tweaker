@@ -98,7 +98,7 @@ class CbtDefinitions(reg: ModRegistrar) {
     val machineBehaviours: EventRegistry.Simple<MachineBehaviour<*>> = EventRegistry.Simple("machine behaviour")
     val structureBlockMatchers: EventRegistry.Simple<StructureBlockMatcherType> =
         EventRegistry.Simple("structure block matcher")
-    val structureMatchers: EventRegistry.Simple<StructureMatcherType> = EventRegistry.Simple("structure matcher")
+    val structureMatchers: EventRegistry.Simple<StructureMatcherType<*>> = EventRegistry.Simple("structure matcher")
 
     init {
         val builtInsConfig = CbTweaker.config.builtIns
@@ -154,7 +154,7 @@ class CbtDefinitions(reg: ModRegistrar) {
             }
         }
         if (builtInsConfig.loadBuiltInStructureMatchers) {
-            reg.on<CbtRegistrationEvent<StructureMatcherType>> { event ->
+            reg.on<CbtRegistrationEvent<StructureMatcherType<*>>> { event ->
                 event.register(SimpleStructureMatcher.Type)
                 event.register(LinearStructureMatcher.Type)
             }

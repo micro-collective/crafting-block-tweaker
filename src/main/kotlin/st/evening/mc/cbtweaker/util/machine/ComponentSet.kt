@@ -34,7 +34,7 @@ class MutableComponentSet : ComponentSet {
     }
 
     fun put(componentId: String) {
-        put(componentId, 1)
+        components.adjustOrPutValue(componentId, 1, 1)
     }
 
     fun addAll(o: ComponentSet) {

@@ -2,6 +2,7 @@ package st.evening.mc.cbtweaker.multiblock
 
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
+import net.minecraft.client.Minecraft
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
@@ -12,7 +13,10 @@ import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.common.BufferedSyncHolder
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
-import st.evening.mc.cbtweaker.structure.impl.SimpleStructureMatcher
+import st.evening.mc.cbtweaker.structure.StructureHighlightParticle
+import st.evening.mc.cbtweaker.structure.StructureMatch
+import st.evening.mc.cbtweaker.structure.StructureMatcher
+import st.evening.mc.cbtweaker.structure.StructureVisualization
 import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.cbtweaker.util.machine.RefreshState
 import st.evening.mc.cbtweaker.world.RoiHost
@@ -21,14 +25,20 @@ import st.evening.mc.prelude.api.block.prefab.BlockSidedIfc
 import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
+import st.evening.mc.prelude.api.util.game.onPhysicalClient
 import st.evening.mc.prelude.api.util.world.onClient
 import st.evening.mc.prelude.api.util.world.onServer
 
-class MultiBlockData<S>(
+class MultiBlockData<S, M>(
     val mbCtrl: MultiBlockControllerTileEntity,
-    val mbType: MultiBlockType<S>
+    val mbType: MultiBlockType<S>,
+    private val structureMatcher: StructureMatcher<M>
 ) : RoiHost, CopiableConfigHost, BufferedSyncHolder, ServerSideSerializable {
     private var mbRoiTicket: RoiTicket? = null
+    private var prevMatchData: M? = null
+    private val changedBlocks: MutableSet<BlockPos> = mutableSetOf()
+    private var structDirty: Boolean = true
+
     private var assembly: MultiBlockAssembly<S>? = null
     @ServerSide
     private var bufferedAssemblyDeser: NBTTagCompound? = null
@@ -38,7 +48,6 @@ class MultiBlockData<S>(
     private var cachedAssemblyConfig: NBTTagCompound? = null
     var assemblyStateClock: Int = 0
         private set
-    private var structDirty: Boolean = false
 
     private var refreshState: RefreshState = RefreshState.NONE
     private var wasActiveLastTick: Boolean = false
@@ -55,49 +64,46 @@ class MultiBlockData<S>(
     override val isValidRoiHost: Boolean
         get() = !mbCtrl.isInvalid
 
-    private fun dropRoi(invalidateAssembly: Boolean) {
+    private fun dropRoi() {
         mbRoiTicket?.let { ticket ->
             ticket.invalidateRoi()
-            if (invalidateAssembly) {
-                assembly?.let {
-                    mbCtrl.world.onServer {
-                        val configDto = NBTTagCompound()
-                        it.writeConfig(configDto)
-                        if (!configDto.isEmpty) {
-                            cachedAssemblyConfig = configDto
-                        }
-                        it.handleDestruction(mbCtrl.world.getBlockState(mbCtrl.pos))
-                    }
-                    it.disassociateHatches(mbCtrl)
-                    it.invalidate()
-                    assembly = null
-                    assemblyStateClock++
-                    mbCtrl.onAssemblyChanged(null)
-                }
-                structDirty = true
-            }
             mbRoiTicket = null
         }
     }
 
-    private fun acquireBaseRoi() {
-        val world = mbCtrl.world
-        val pos = mbCtrl.pos
-        val region = mbType.structureMatcher.getRegion(
-            world, pos, world.getBlockState(pos).getValue(BlockSidedIfc.PROP_FACING)
-        )
-        mbRoiTicket = CbTweaker.defns.roiTracker.registerRoi(this, world, region)
+    private fun dropAssembly() {
+        assembly?.let {
+            mbCtrl.world.onServer {
+                val configDto = NBTTagCompound()
+                it.writeConfig(configDto)
+                if (!configDto.isEmpty) {
+                    cachedAssemblyConfig = configDto
+                }
+                it.handleDestruction(mbCtrl.world.getBlockState(mbCtrl.pos))
+            }
+            it.disassociateHatches(mbCtrl)
+            it.invalidate()
+            assembly = null
+            assemblyStateClock++
+            mbCtrl.onAssemblyChanged(null)
+        }
     }
 
     fun onInvalidated() {
-        dropRoi(true)
+        dropRoi()
+        dropAssembly()
+        changedBlocks.clear()
+        structDirty = true
     }
 
     override fun onRegionChanged(ticket: RoiTicket, pos: BlockPos) {
-        if (pos == mbCtrl.pos) {
-            dropRoi(true)
+        if (mbCtrl.isInvalid) return
+        if (pos == mbCtrl.pos) { // either rotated or broken; either way, we'll need to re-check the entire structure
+            onInvalidated()
+        } else {
+            changedBlocks += pos
+            structDirty = true
         }
-        structDirty = true
     }
 
     fun notifyHatchChanged(compsDirty: Boolean) {
@@ -107,17 +113,18 @@ class MultiBlockData<S>(
     fun tick() {
         val world = mbCtrl.world
         val pos = mbCtrl.pos
-        if (mbRoiTicket == null) {
-            acquireBaseRoi()
-            structDirty = true
-        }
-
         if (structDirty) {
-            val matcher = mbType.structureMatcher
-            val match = matcher.findMatch(world, pos, world.getBlockState(pos).getValue(BlockSidedIfc.PROP_FACING))
-            if (match != null) {
+            val match = structureMatcher.findMatch(
+                world,
+                pos,
+                world.getBlockState(pos).getValue(BlockSidedIfc.PROP_FACING),
+                prevMatchData,
+                if (mbRoiTicket != null) changedBlocks else emptySet()
+            )
+            changedBlocks.clear()
+            if (match is StructureMatch.Success<M>) {
                 assembly?.invalidate()
-                val assembly = MultiBlockAssembly.fromStructure(this, match, assembly)
+                val assembly = MultiBlockAssembly.fromStructure(this, match.parts, assembly)
                 this.assembly = assembly
                 assemblyStateClock++
                 mbCtrl.world.onClient {
@@ -126,17 +133,14 @@ class MultiBlockData<S>(
                         it.data.release()
                         bufferedAssemblyBind = null
                     }
+                    onPhysicalClient {
+                        val fx = Minecraft.getMinecraft().effectRenderer
+                        match.parts.positions.forEach {
+                            fx.addEffect(StructureHighlightParticle(world, it, 16))
+                        }
+                    }
                 }
                 mbCtrl.onAssemblyChanged(assembly)
-                // this only really works for the simple structure matcher, because other structures can potentially
-                // grow without needing an original block removed, e.g. the linear matcher
-                // in the future, could allow the matcher itself to define dynamic ROIs, but this works for now
-                if (matcher is SimpleStructureMatcher) {
-                    dropRoi(false)
-                    mbRoiTicket = CbTweaker.defns.roiTracker.registerRoi(
-                        this, world, assembly.structureBlocks.iterator()
-                    )
-                }
                 assembly.associateHatches(mbCtrl)
                 mbCtrl.world.onServer {
                     bufferedAssemblyDeser?.let {
@@ -152,7 +156,12 @@ class MultiBlockData<S>(
                 // don't need to hard-refresh because the executor state will be fresh anyways
                 refreshState = RefreshState.SOFT_REFRESH
             } else {
-                dropRoi(true)
+                dropAssembly()
+            }
+            prevMatchData = match.data
+            match.newRegion?.let {
+                dropRoi()
+                mbRoiTicket = CbTweaker.defns.roiTracker.registerRoi(this, world, it.iterator())
             }
             structDirty = false
         }
@@ -238,6 +247,8 @@ class MultiBlockData<S>(
     }
 
     fun createMachineUiElement(): UiElement? = assembly?.createMachineUiElement()
+
+    fun getStructureVisualization(): StructureVisualization = structureMatcher.getVisualization(prevMatchData)
 
     private class BindData(val hostId: Int, val data: PacketBuffer)
 }

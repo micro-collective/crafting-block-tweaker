@@ -20,7 +20,7 @@ class MultiBlockType<S>(
 ) : CraftingBlockType<S> {
     // multiblock type has to be initialized at pre-init time so that the controller block can be constructed
     // however, these properties may rely on registry entries from other mods, so they must be initialized at init time
-    lateinit var structureMatcher: StructureMatcher
+    lateinit var structureMatcher: StructureMatcher<*>
         private set
     override lateinit var stateFactory: MachineStateFactory<S>
         private set
@@ -30,7 +30,7 @@ class MultiBlockType<S>(
     override val craftingBlock: Block
         get() = controllerBlock
 
-    internal fun init(structureMatcher: StructureMatcher, stateFactory: MachineStateFactory<S>) {
+    internal fun init(structureMatcher: StructureMatcher<*>, stateFactory: MachineStateFactory<S>) {
         this.structureMatcher = structureMatcher
         this.stateFactory = stateFactory
     }

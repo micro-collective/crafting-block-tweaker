@@ -4,15 +4,20 @@ import net.minecraft.block.state.IBlockState
 import net.minecraft.client.Minecraft
 import net.minecraft.client.util.ITooltipFlag
 import net.minecraft.item.ItemStack
+import net.minecraft.util.Rotation
 import net.minecraft.util.text.TextFormatting
+import st.evening.mc.cbtweaker.util.withMirrorX
 import st.evening.mc.prelude.api.util.game.ClientSide
 
 interface StructureBlockVisualization {
-    val blockState: IBlockState
+    val baseBlockState: IBlockState
+
+    fun getBlockState(rotation: Rotation, mirrorX: Boolean): IBlockState =
+        baseBlockState.withMirrorX(mirrorX).withRotation(rotation)
 
     val representative: ItemStack
         get() {
-            val state = blockState
+            val state = baseBlockState
             val block = state.block
             return ItemStack(block, 1, block.damageDropped(state))
         }
@@ -30,8 +35,8 @@ interface StructureBlockVisualization {
                 return
             }
         }
-        tooltip.add(blockState.block.localizedName)
+        tooltip += baseBlockState.block.localizedName
     }
 
-    class State(override val blockState: IBlockState) : StructureBlockVisualization
+    class State(override val baseBlockState: IBlockState) : StructureBlockVisualization
 }
