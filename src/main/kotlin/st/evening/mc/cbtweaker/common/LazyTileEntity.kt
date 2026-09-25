@@ -10,6 +10,7 @@ import net.minecraft.world.World
 import st.evening.mc.prelude.api.data.ser.ServerSideSerializable
 import st.evening.mc.prelude.api.data.sync.SyncHost
 import st.evening.mc.prelude.api.util.data.buildArrayFromPacketBuffer
+import st.evening.mc.prelude.api.util.data.getIntOrNull
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
@@ -78,18 +79,19 @@ abstract class LazyTileEntity<T : ServerSideSerializable> : TileEntity() {
 
     override fun handleUpdateTag(tag: NBTTagCompound) {
         super.readFromNBT(tag)
+        val hostId = tag.getIntOrNull(SER_SYNC_ID) ?: return
         world.onClient {
             this.data // ensure the sync proxy is installed
             val proxy = syncProxy
             if (proxy != null) {
                 val syncMgr = proxy.syncManager.getClient()
-                syncMgr.registerClientSide(tag.getInteger(SER_SYNC_ID))
+                syncMgr.registerClientSide(hostId)
                 syncMgr.readFullState(PacketBuffer(Unpooled.wrappedBuffer(tag.getByteArray(SER_DATA))))
             } else {
                 (data as? BufferedSyncHolder)?.let {
                     val data = PacketBuffer(Unpooled.wrappedBuffer(tag.getByteArray(SER_DATA)))
                     data.retain()
-                    it.bufferSyncData(tag.getInteger(SER_SYNC_ID), data)
+                    it.bufferSyncData(hostId, data)
                 }
             }
         }
