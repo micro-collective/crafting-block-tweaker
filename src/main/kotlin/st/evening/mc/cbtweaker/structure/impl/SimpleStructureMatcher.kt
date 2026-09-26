@@ -20,6 +20,7 @@ import st.evening.mc.prelude.api.data.tjson.expectBool
 import st.evening.mc.prelude.api.data.tjson.useArrayValue
 import st.evening.mc.prelude.api.data.tjson.useObjectValue
 import st.evening.mc.prelude.api.resource
+import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.world.BlockSide
 
 class SimpleStructureMatcher(private val matchRegion: MatcherCuboid, private val allowMirror: Boolean) :
@@ -32,8 +33,17 @@ class SimpleStructureMatcher(private val matchRegion: MatcherCuboid, private val
         prev: MatchData?,
         changedBlocks: Collection<BlockPos>
     ): StructureMatch<MatchData> {
-        prev?.markDirty(changedBlocks)
         val rotation = front.getRotationFromNorth()
+        val fPrevSuccess: Boolean?
+        val mPrevSuccess: Boolean?
+        if (prev != null) {
+            prev.markDirty(changedBlocks)
+            fPrevSuccess = prev.forward.lastMatchSuccess
+            mPrevSuccess = prev.mirror?.lastMatchSuccess
+        } else {
+            fPrevSuccess = null
+            mPrevSuccess = null
+        }
         return StructureMatch.mirrorMatch(
             rotation,
             prev,
@@ -43,11 +53,23 @@ class SimpleStructureMatcher(private val matchRegion: MatcherCuboid, private val
             { MatcherCuboid.IncrementalMatcher(matchRegion, world, corePos, rotation, it) },
             ::MatchData,
             StructureParts::fromMatches,
-            { _, match, _ -> match.keys },
-            { matchRegion.computePositions(corePos, rotation, false).asIterable() },
+            { _, match, mirrorX ->
+                if (mirrorX) {
+                    orNull(mPrevSuccess != true) { match.keys }
+                } else {
+                    orNull(fPrevSuccess != true) { match.keys }
+                }
+            },
+            {
+                orNull(fPrevSuccess != false) {
+                    matchRegion.computePositions(corePos, rotation, false).asIterable()
+                }
+            },
             { _, _ ->
-                (matchRegion.computePositions(corePos, rotation, false) +
-                    matchRegion.computePositions(corePos, rotation, true)).asIterable()
+                orNull(fPrevSuccess != false || mPrevSuccess != false) {
+                    (matchRegion.computePositions(corePos, rotation, false) +
+                        matchRegion.computePositions(corePos, rotation, true)).asIterable()
+                }
             },
             MatcherCuboid.IncrementalMatcher::tryMatch
         )

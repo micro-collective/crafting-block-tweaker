@@ -32,6 +32,7 @@ import st.evening.mc.prelude.api.data.tjson.useArrayValue
 import st.evening.mc.prelude.api.data.tjson.useObjectValue
 import st.evening.mc.prelude.api.data.tjson.useString
 import st.evening.mc.prelude.api.resource
+import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.math.ceilDivPos
 import st.evening.mc.prelude.api.util.math.minus
 import st.evening.mc.prelude.api.util.math.plus
@@ -99,8 +100,17 @@ class LinearStructureMatcher(
         prev: MatchData?,
         changedBlocks: Collection<BlockPos>
     ): StructureMatch<MatchData> {
-        prev?.markDirty(changedBlocks)
         val rotation = front.getRotationFromNorth()
+        val fPrevRepeatCount: Int
+        val mPrevRepeatCount: Int
+        if (prev != null) {
+            prev.markDirty(changedBlocks)
+            fPrevRepeatCount = prev.forward.lastMatchRepeatCount
+            mPrevRepeatCount = prev.mirror?.lastMatchRepeatCount ?: -2
+        } else {
+            fPrevRepeatCount = -2
+            mPrevRepeatCount = -2
+        }
         return StructureMatch.mirrorMatch(
             rotation,
             prev,
@@ -110,9 +120,17 @@ class LinearStructureMatcher(
             { MatchTable(this, world, corePos, rotation, it) },
             ::MatchData,
             { it },
-            { table, _, _ -> table.getRoi().asIterable() },
-            { it.getRoi().asIterable() },
-            { forward, mirror -> (forward.getRoi() + mirror.getRoi()).asIterable() },
+            { table, _, mirrorX -> table.getNewRoi(if (mirrorX) mPrevRepeatCount else fPrevRepeatCount)?.asIterable() },
+            { it.getNewRoi(fPrevRepeatCount)?.asIterable() },
+            { forward, mirror ->
+                val p = forward.getNewRoi(fPrevRepeatCount)
+                val q = mirror.getNewRoi(mPrevRepeatCount)
+                return@mirrorMatch if (p != null) {
+                    if (q != null) (p + q).asIterable() else p.asIterable()
+                } else {
+                    q?.asIterable()
+                }
+            },
             MatchTable::tryMatch
         )
     }
@@ -407,6 +425,9 @@ class LinearStructureMatcher(
             }
             return seqs.asSequence().flatten()
         }
+
+        fun getNewRoi(prevRepeatCount: Int): Sequence<BlockPos>? =
+            orNull(prevRepeatCount != lastMatchRepeatCount) { getRoi() }
     }
 
     object Type : StructureMatcherType<MatchData> {

@@ -59,9 +59,9 @@ sealed interface StructureMatch<M> {
             createState: (mirrorX: Boolean) -> S,
             createData: (forward: S, mirror: S?) -> M,
             getStructureParts: (R) -> StructureParts,
-            getSuccessRegion: (S, R, mirrorX: Boolean) -> Iterable<BlockPos>,
-            getNoMirrorFailRegion: (S) -> Iterable<BlockPos>,
-            getFailRegion: (forward: S, mirror: S) -> Iterable<BlockPos>,
+            getSuccessRegion: (S, R, mirrorX: Boolean) -> Iterable<BlockPos>?,
+            getNoMirrorFailRegion: (S) -> Iterable<BlockPos>?,
+            getFailRegion: (forward: S, mirror: S) -> Iterable<BlockPos>?,
             tryMatch: (S) -> R?
         ): StructureMatch<M> {
             val fState = prev?.let { getForwardState(it) } ?: createState(false)
