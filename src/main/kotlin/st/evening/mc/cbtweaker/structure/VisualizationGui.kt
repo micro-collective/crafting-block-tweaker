@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.resources.I18n
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.CbtLang
+import st.evening.mc.cbtweaker.gui.CbtFontRenderer
 import st.evening.mc.cbtweaker.gui.CbtGuiResources
 import st.evening.mc.cbtweaker.network.C2SVisualizationLevel
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
@@ -63,8 +64,11 @@ class VisualizationGui : GuiScreen() {
             state.renderer.render(visX, visY, visMouseX, visMouseY)
 
             RenderingHelper.pushMatrix {
-                GlStateManager.scale(0.75F, 0.75F, 0.75F)
-                drawString(fontRenderer, I18n.format(state.mbType.translationKey), visX + 35, visY + 138, 0x404040)
+                RenderingHelper.translate2(visX, visY)
+                GlStateManager.scale(0.75F, 0.75F, 1F)
+                fontRenderer.drawString(
+                    I18n.format(state.mbType.translationKey), 28, 131, GuiRenderHelper.DEFAULT_TEXT_COLOUR
+                )
             }
             GuiRenderHelper.drawItemAndOverlay(slotX, slotY, state.mbStack)
             GlStateManager.disableDepth()
@@ -89,7 +93,7 @@ class VisualizationGui : GuiScreen() {
             VisualizationRenderer.getUiTooltip(tooltip, visMouseX, visMouseY)
         }
         if (tooltip.isNotEmpty()) {
-            drawHoveringText(tooltip, mouseX, mouseY)
+            drawHoveringText(tooltip, mouseX, mouseY, CbtFontRenderer.renderer)
         }
     }
 

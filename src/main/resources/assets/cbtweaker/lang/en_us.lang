@@ -37,17 +37,17 @@ cbtweaker.tooltip.empty_fluid=No Fluid
 cbtweaker.tooltip.empty_gas=No Gas
 
 cbtweaker.tooltip.vis_controls=Controls
-cbtweaker.tooltip.vis_horizontal_pan=LClick: Horizontal Pan
-cbtweaker.tooltip.vis_vertical_pan=Shift+LClick: Vertical Pan
-cbtweaker.tooltip.vis_orbit=RClick: Orbit
-cbtweaker.tooltip.vis_zoom=Shift+RClick: Zoom
-cbtweaker.tooltip.vis_center=MClick: Center Camera
+cbtweaker.tooltip.vis_horizontal_pan=Horizontal Pan
+cbtweaker.tooltip.vis_vertical_pan=Vertical Pan
+cbtweaker.tooltip.vis_orbit=Orbit
+cbtweaker.tooltip.vis_zoom=Zoom
+cbtweaker.tooltip.vis_center=Center Camera
 cbtweaker.tooltip.vis_layer_up=Layer Up
 cbtweaker.tooltip.vis_layer_down=Layer Down
 
-cbtweaker.tooltip.ingredient_keep=(Not consumed)
-cbtweaker.tooltip.ingredient_damage=(Takes %d damage)
-cbtweaker.tooltip.ingredient_chance=(%s chance)
+cbtweaker.tooltip.ingredient_keep=Not consumed
+cbtweaker.tooltip.ingredient_damage=Takes %d damage
+cbtweaker.tooltip.ingredient_chance=%s chance
 
 cbtweaker.gui.vis_tool.not_bound=Not bound to a multi-block controller!
 

@@ -5,6 +5,7 @@ import net.minecraft.client.resources.I18n
 import net.minecraft.client.util.ITooltipFlag
 import net.minecraft.util.text.TextFormatting
 import st.evening.mc.cbtweaker.CbtLang
+import st.evening.mc.cbtweaker.gui.CbtFontRenderer
 import st.evening.mc.cbtweaker.gui.CbtGuiResources
 import st.evening.mc.prelude.api.gui.drawable.drawFullSize
 import st.evening.mc.prelude.api.util.game.ClientSide
@@ -57,7 +58,8 @@ interface JeiIngredient<T : Any> {
 
             @ClientSide.Physical
             override fun getAnnotationTooltip(tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
-                tooltip += "${TextFormatting.GREEN}${I18n.format(CbtLang.TOOLTIP_ING_KEEP)}"
+                tooltip += "${CbtFontRenderer.ICON_ING_KEEP} ${TextFormatting.GREEN}" +
+                    I18n.format(CbtLang.TOOLTIP_ING_KEEP)
             }
         }
 
@@ -69,7 +71,8 @@ interface JeiIngredient<T : Any> {
 
             @ClientSide.Physical
             override fun getAnnotationTooltip(tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
-                tooltip += "${TextFormatting.YELLOW}${I18n.format(CbtLang.TOOLTIP_ING_DAMAGE, amount)}"
+                tooltip += "${CbtFontRenderer.ICON_ING_DAMAGE} ${TextFormatting.YELLOW}" +
+                    I18n.format(CbtLang.TOOLTIP_ING_DAMAGE, amount)
             }
         }
 
@@ -81,8 +84,8 @@ interface JeiIngredient<T : Any> {
 
             @ClientSide.Physical
             override fun getAnnotationTooltip(tooltip: MutableList<String>, tooltipFlags: ITooltipFlag) {
-                tooltip +=
-                    "${TextFormatting.GOLD}${I18n.format(CbtLang.TOOLTIP_ING_CHANCE, chance.toStringPercentage())}"
+                tooltip += "${CbtFontRenderer.ICON_ING_CHANCE} ${TextFormatting.GOLD}" +
+                    I18n.format(CbtLang.TOOLTIP_ING_CHANCE, chance.toStringPercentage())
             }
         }
     }

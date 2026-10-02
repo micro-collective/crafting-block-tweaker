@@ -2,9 +2,11 @@ package st.evening.mc.cbtweaker.compat.jei.ui
 
 import mezz.jei.api.ingredients.IIngredientRenderer
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.FontRenderer
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.util.ITooltipFlag
 import st.evening.mc.cbtweaker.compat.jei.ingredient.JeiIngredient
+import st.evening.mc.cbtweaker.gui.CbtFontRenderer
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.math.IntRectangle
 import st.evening.mc.prelude.api.util.render.RenderingHelper
@@ -33,6 +35,8 @@ interface JeiUiElement<T : Any> {
                 element.drawElement(ingredient, minecraft.renderPartialTicks)
             }
         }
+
+        override fun getFontRenderer(minecraft: Minecraft, ingredient: T): FontRenderer = CbtFontRenderer.renderer
 
         override fun getTooltip(minecraft: Minecraft, ingredient: T, tooltipFlag: ITooltipFlag): List<String> {
             val tooltip = mutableListOf<String>()

@@ -14,6 +14,18 @@ import st.evening.mc.prelude.api.util.world.RelativeFace
 
 @ClientSide.Physical
 object CbtGuiResources {
+    val MOUSE_BUTTONS: GuiSamplable =
+        DrawableTexture(24, 10, TextureResource(CbTweaker.resource("textures/gui/mouse_buttons.png")))
+    val MOUSE_BUTTON_LEFT: GuiSamplable = MOUSE_BUTTONS.sliceSized(8, 10, 0, 0)
+    val MOUSE_BUTTON_RIGHT: GuiSamplable = MOUSE_BUTTONS.sliceSized(8, 10, 8, 0)
+    val MOUSE_BUTTON_MIDDLE: GuiSamplable = MOUSE_BUTTONS.sliceSized(8, 10, 16, 0)
+
+    val MODIFIER_KEYS: GuiSamplable =
+        DrawableTexture(40, 8, TextureResource(CbTweaker.resource("textures/gui/modifier_keys.png")))
+    val MODIFIER_KEY_CTRL: GuiSamplable = MODIFIER_KEYS.sliceSized(15, 8, 0, 0)
+    val MODIFIER_KEY_ALT: GuiSamplable = MODIFIER_KEYS.sliceSized(12, 8, 15, 0)
+    val MODIFIER_KEY_SHIFT: GuiSamplable = MODIFIER_KEYS.sliceSized(13, 8, 27, 0)
+
     val ICON_ENERGY: GuiSamplable =
         DrawableTexture(16, 16, TextureResource(CbTweaker.resource("textures/gui/icon/energy.png")))
 

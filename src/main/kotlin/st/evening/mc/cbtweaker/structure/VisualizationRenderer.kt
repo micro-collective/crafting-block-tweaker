@@ -26,6 +26,7 @@ import org.lwjgl.util.glu.Project
 import org.lwjgl.util.vector.Matrix4f
 import org.lwjgl.util.vector.Vector4f
 import st.evening.mc.cbtweaker.CbtLang
+import st.evening.mc.cbtweaker.gui.CbtFontRenderer
 import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
 import st.evening.mc.cbtweaker.structure.block.StructureBlockVisualization
@@ -423,12 +424,22 @@ class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
                 tooltip += I18n.format(CbtLang.TOOLTIP_VIS_LAYER_DOWN)
             } else if (isOverHelp(mouseX, mouseY)) {
                 tooltip += "${TextFormatting.RED}${I18n.format(CbtLang.TOOLTIP_VIS_CONTROLS)}"
-                tooltip += I18n.format(CbtLang.TOOLTIP_VIS_HORZ_PAN)
-                tooltip += I18n.format(CbtLang.TOOLTIP_VIS_VERT_PAN)
-                tooltip += I18n.format(CbtLang.TOOLTIP_VIS_ORBIT)
-                tooltip += I18n.format(CbtLang.TOOLTIP_VIS_ZOOM)
-                tooltip += I18n.format(CbtLang.TOOLTIP_VIS_CENTER)
+                tooltip.addHelpLine("${CbtFontRenderer.ICON_MOUSE_LEFT}", CbtLang.TOOLTIP_VIS_HORZ_PAN)
+                tooltip.addHelpLine(
+                    "${CbtFontRenderer.ICON_MODKEY_SHIFT}+${CbtFontRenderer.ICON_MOUSE_LEFT}",
+                    CbtLang.TOOLTIP_VIS_VERT_PAN
+                )
+                tooltip.addHelpLine("${CbtFontRenderer.ICON_MOUSE_RIGHT}", CbtLang.TOOLTIP_VIS_ORBIT)
+                tooltip.addHelpLine(
+                    "${CbtFontRenderer.ICON_MODKEY_SHIFT}+${CbtFontRenderer.ICON_MOUSE_RIGHT}",
+                    CbtLang.TOOLTIP_VIS_ZOOM
+                )
+                tooltip.addHelpLine("${CbtFontRenderer.ICON_MOUSE_MIDDLE}", CbtLang.TOOLTIP_VIS_CENTER)
             }
+        }
+
+        private fun MutableList<String>.addHelpLine(modKeys: String, controlLangKey: String) {
+            this += "${TextFormatting.DARK_GRAY}$modKeys ${TextFormatting.WHITE}${I18n.format(controlLangKey)}"
         }
 
         fun drawCube(pos: Vec3i) {

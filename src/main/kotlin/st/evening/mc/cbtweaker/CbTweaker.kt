@@ -1,10 +1,12 @@
 package st.evening.mc.cbtweaker
 
+import mezz.jei.gui.recipes.RecipesGui
 import net.minecraft.block.Block
 import net.minecraft.client.Minecraft
 import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.item.ItemStack
 import net.minecraft.util.SoundEvent
+import net.minecraftforge.client.event.RenderTooltipEvent
 import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.common.Loader
@@ -21,8 +23,10 @@ import st.evening.mc.cbtweaker.buffer.impl.ForgeEnergyBuffer
 import st.evening.mc.cbtweaker.buffer.impl.ItemComponentBuffer
 import st.evening.mc.cbtweaker.buffer.impl.ItemStackBuffer
 import st.evening.mc.cbtweaker.compat.CbtCompat
+import st.evening.mc.cbtweaker.compat.jei.structure.StructureRecipeWrapper
 import st.evening.mc.cbtweaker.event.CbtIngredientHandlerRegistrationEvent
 import st.evening.mc.cbtweaker.event.CbtRegistrationEvent
+import st.evening.mc.cbtweaker.gui.CbtFontRenderer
 import st.evening.mc.cbtweaker.hatch.HatchContainer
 import st.evening.mc.cbtweaker.hatch.HatchManager
 import st.evening.mc.cbtweaker.hatch.HatchTileEntity
@@ -264,8 +268,18 @@ class CbtDefinitions(reg: ModRegistrar) {
             recipeSets.loadRecipes()
         }
         onPhysicalClient {
+            reg.on<FMLInitializationEvent> {
+                CbtFontRenderer.init()
+            }
             reg.on<RenderWorldLastEvent> { event ->
                 VisualizationRenderer.renderInWorldVisualization(event.partialTicks)
+            }
+            reg.on<RenderTooltipEvent.Pre> { event ->
+                val screen = Minecraft.getMinecraft().currentScreen
+                if (StructureRecipeWrapper.forceCbtFontRenderer && screen is RecipesGui) {
+                    StructureRecipeWrapper.forceCbtFontRenderer = false
+                    event.fontRenderer = CbtFontRenderer.renderer
+                }
             }
         }
         CbtCompat.init(reg)
