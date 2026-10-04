@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 135.46666 135.46667"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <g
+     id="layer1"
+     transform="translate(-10.262304,1.0995325)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:25.4px;line-height:0.9;font-family:'Acari Sans';-inkscape-font-specification:'Acari Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:-0.529167px;word-spacing:0px;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.132;stroke-dasharray:none"
+       x="17.014257"
+       y="81.399109"
+       id="text1"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:0.9;font-family:'Acari Sans';-inkscape-font-specification:'Acari Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:-0.529167px;word-spacing:0px;writing-mode:lr-tb;baseline-shift:baseline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.132;stroke-dasharray:none"
+         id="tspan8"
+         x="17.014257"
+         y="81.399109">Crafting</tspan><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:0.9;font-family:'Acari Sans';-inkscape-font-specification:'Acari Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:-0.529167px;word-spacing:0px;writing-mode:lr-tb;baseline-shift:baseline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.132;stroke-dasharray:none"
+         x="17.014257"
+         y="104.25911"
+         id="tspan2"
+         rotate="0 0 0 0 0 0">Block</tspan><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;line-height:0.9;font-family:'Acari Sans';-inkscape-font-specification:'Acari Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:-0.529167px;word-spacing:0px;writing-mode:lr-tb;baseline-shift:baseline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.132;stroke-dasharray:none"
+         x="17.014257"
+         y="127.1191"
+         id="tspan3"
+         rotate="0 0 0 0 0 0 0 0">Tweaker</tspan></text>
+    <path
+       d="m 102.78607,48.403151 a 16.949697,16.949697 0 0 0 -4.386785,16.37204 l 11.577935,-11.577942 10.98664,0.998618 0.99861,10.986629 -11.57795,11.577941 a 16.949697,16.949697 0 0 0 16.37204,-4.386791 16.949697,16.949697 0 0 0 4.38678,-16.372037 L 160.31525,26.829714 148.32999,14.844467 119.15811,44.016364 a 16.949697,16.949697 0 0 0 -16.37204,4.386787 z"
+       style="font-variation-settings:'wght' 700;stroke-width:0.169124"
+       id="path25" />
+  </g>
+</svg>

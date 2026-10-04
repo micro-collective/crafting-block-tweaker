@@ -8,7 +8,7 @@
     "url": "",
     "updateUrl": "",
     "authorList": ["phantamanta44"],
-    "logoFile": "",
+    "logoFile": "assets/cbtweaker/logo.png",
     "screenshots": [],
     "useDependencyInformation": true,
     "dependencies": ["prelude", "jei"],
