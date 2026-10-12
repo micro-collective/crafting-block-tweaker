@@ -5,6 +5,12 @@ import gnu.trove.iterator.TObjectIntIterator
 import gnu.trove.map.TObjectIntMap
 import gnu.trove.map.hash.TObjectIntHashMap
 import st.evening.mc.cbtweaker.util.TObjectIntEmptyIterator
+import st.evening.mc.prelude.api.data.ser.SerializationException
+import st.evening.mc.prelude.api.data.tjson.JsonPath
+import st.evening.mc.prelude.api.data.tjson.TJson
+import st.evening.mc.prelude.api.data.tjson.expectInt
+import st.evening.mc.prelude.api.data.tjson.expectStringValue
+import st.evening.mc.prelude.api.data.tjson.forEachValue
 
 interface ComponentSet {
     fun getCount(componentId: String): Int
@@ -15,6 +21,40 @@ interface ComponentSet {
         override fun getCount(componentId: String): Int = 0
 
         override fun iterator(): TObjectIntIterator<String> = TObjectIntEmptyIterator()
+    }
+
+    companion object {
+        context(_: JsonPath)
+        fun load(dto: TJson): ComponentSet {
+            val components = MutableComponentSet()
+            if (dto is TJson.Array) {
+                dto.forEachValue {
+                    if (!loadComponent(components, it)) {
+                        throw SerializationException.withPath("Expected a component ID or a component object!")
+                    }
+                }
+            } else if (!loadComponent(components, dto)) {
+                throw SerializationException.withPath(
+                    "Expected a component ID, a component object, or an array of components!"
+                )
+            }
+            return components
+        }
+
+        context(_: JsonPath)
+        private fun loadComponent(dest: MutableComponentSet, dto: TJson): Boolean {
+            when (dto) {
+                is TJson.String -> {
+                    dest.put(dto.value, 1)
+                    return true
+                }
+                is TJson.Object -> {
+                    dest.put(dto.expectStringValue("id"), dto.expectInt("count") ?: 1)
+                    return true
+                }
+                else -> return false
+            }
+        }
     }
 }
 

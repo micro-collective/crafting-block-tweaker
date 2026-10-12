@@ -9,6 +9,7 @@ import st.evening.mc.cbtweaker.structure.block.StructureBlockMatch
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcherType
 import st.evening.mc.cbtweaker.structure.block.StructureBlockVisualization
+import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.withMirrorX
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
@@ -38,7 +39,7 @@ class BlockTypeStructureBlockMatcher(
         override fun loadMatcher(dto: TJson.Object): StructureBlockMatcher = BlockTypeStructureBlockMatcher(
             BlockKey.Serializer.deserializeFromJson(dto),
             dto.useAny("component") {
-                StructureBlockMatch.Component.load(it)
+                StructureBlockMatch.Components(ComponentSet.load(it))
             } ?: StructureBlockMatch.Normal,
             dto.expectBool("visualize") ?: true
         )

@@ -22,7 +22,7 @@ data class StructureParts(
                 when (match) {
                     StructureBlockMatch.Normal -> {}
                     is StructureBlockMatch.Hatch -> hatches.getOrPut(match.groupId) { mutableListOf() } += match.hatch
-                    is StructureBlockMatch.Component -> components.put(match.componentId, match.count)
+                    is StructureBlockMatch.Components -> components.addAll(match.components)
                 }
             }
             return StructureParts(positions, hatches, components)

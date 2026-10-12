@@ -17,14 +17,16 @@ import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.gui.inventory.UiElementWrapper
 import st.evening.mc.cbtweaker.util.gui.DrawableData
 import st.evening.mc.cbtweaker.util.gui.UiPosition
+import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
 import st.evening.mc.cbtweaker.util.recipe.IngredientLoader
 import st.evening.mc.prelude.api.data.ser.NbtCompoundSerializable
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
+import st.evening.mc.prelude.api.data.tjson.expectBool
 import st.evening.mc.prelude.api.data.tjson.expectInt
-import st.evening.mc.prelude.api.data.tjson.expectStringValue
 import st.evening.mc.prelude.api.data.tjson.useAny
+import st.evening.mc.prelude.api.data.tjson.useAnyValue
 import st.evening.mc.prelude.api.gui.engine.prefab.InventorySlot
 import st.evening.mc.prelude.api.gui.engine.prefab.StackLayout
 import st.evening.mc.prelude.api.resource
@@ -135,7 +137,8 @@ class ItemComponentBuffer(
     class Config(
         val maxStackSize: Int,
         val itemFilter: Predicate<ItemStack>?,
-        val componentId: String,
+        val components: ComponentSet,
+        val multiplyByCount: Boolean,
         val uiPosition: UiPosition,
         val slotBg: DrawableData
     )
@@ -151,7 +154,8 @@ class ItemComponentBuffer(
             val config = Config(
                 dto.expectInt("stack_size") ?: 64,
                 dto.useAny("item_filter") { IngredientLoader.loadItemFilter(it) },
-                dto.expectStringValue("component_id"),
+                dto.useAnyValue("components") { ComponentSet.load(it) },
+                dto.expectBool("multiply_by_count") ?: true,
                 dto.useAny("ui_position") { UiPosition.load(it) } ?: UiPosition.CENTER,
                 dto.useAny("slot_bg") { DrawableData.loadSliceOrBlank(it, 16, 16) } ?: CbtGuiData.ITEM_SLOT
             )
@@ -161,7 +165,17 @@ class ItemComponentBuffer(
         }
 
         override fun collectComponents(components: MutableComponentSet, buffer: ItemComponentBuffer) {
-            components.put(buffer.config.componentId, buffer.storedStack.count)
+            val count = buffer.storedStack.count
+            if (count < 1) return
+            if (buffer.config.multiplyByCount && count > 1) {
+                val iter = buffer.config.components.iterator()
+                while (iter.hasNext()) {
+                    iter.advance()
+                    components.put(iter.key(), iter.value() * count)
+                }
+            } else {
+                components.addAll(buffer.config.components)
+            }
         }
 
         @ServerSide
