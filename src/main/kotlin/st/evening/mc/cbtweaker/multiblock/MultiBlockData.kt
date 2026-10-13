@@ -31,7 +31,8 @@ import st.evening.mc.prelude.api.util.world.onServer
 
 class MultiBlockData<S, M>(
     val mbCtrl: MultiBlockControllerTileEntity,
-    val mbType: MultiBlockType<S>,
+    val mbType: MultiBlockType,
+    val mbTypeData: MultiBlockType.Data<S>,
     private val structureMatcher: StructureMatcher<M>
 ) : RoiHost, CopiableConfigHost, BufferedSyncHolder, ServerSideSerializable {
     private var mbRoiTicket: RoiTicket? = null

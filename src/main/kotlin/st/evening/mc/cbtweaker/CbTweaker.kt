@@ -11,6 +11,7 @@ import net.minecraftforge.client.event.RenderWorldLastEvent
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.common.Loader
 import net.minecraftforge.fml.common.event.FMLInitializationEvent
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent
 import net.minecraftforge.fml.common.eventhandler.EventPriority
 import org.apache.logging.log4j.Logger
 import st.evening.mc.cbtweaker.behaviour.MachineBehaviour
@@ -239,10 +240,10 @@ class CbtDefinitions(reg: ModRegistrar) {
             machineBehaviours.init()
             structureBlockMatchers.init()
             structureMatchers.init()
-            templates.loadPreInit()
-            hatches.loadAll()
-            singleBlocks.preloadAll()
-            multiBlocks.preloadAll()
+
+            hatches.preload()
+            singleBlocks.preload()
+            multiBlocks.preload()
 
             onPhysicalClient {
                 if (CbTweaker.config.dataGen.genBlockModels) {
@@ -259,17 +260,18 @@ class CbtDefinitions(reg: ModRegistrar) {
         }
         reg.on<FMLInitializationEvent> {
             CapabilityMerger.init()
-            templates.loadInit()
-            if (CbTweaker.config.builtIns.loadBuiltInRecipeSets) {
-                recipeSets.loadBuiltInRecipes()
-            }
-            singleBlocks.loadAll()
-            multiBlocks.loadAll()
-            recipeSets.loadRecipes()
-        }
-        onPhysicalClient {
-            reg.on<FMLInitializationEvent> {
+            loadData()
+
+            onPhysicalClient {
                 CbtFontRenderer.init()
+            }
+        }
+
+        onPhysicalClient {
+            reg.on<FMLServerAboutToStartEvent> {
+                if (CbTweaker.config.devTools.reloadOnServerStart) {
+                    loadData()
+                }
             }
             reg.on<RenderWorldLastEvent> { event ->
                 VisualizationRenderer.renderInWorldVisualization(event.partialTicks)
@@ -282,6 +284,22 @@ class CbtDefinitions(reg: ModRegistrar) {
                 }
             }
         }
+
         CbtCompat.init(reg)
+    }
+
+    internal fun loadData() {
+        templates.clear()
+        templates.loadWindowTemplates()
+        recipeSets.clear()
+        if (CbTweaker.config.builtIns.loadBuiltInRecipeSets) {
+            // do this before loading machine types so they grab existing recipe sets instead of creating new ones
+            recipeSets.loadBuiltInRecipes()
+        }
+        hatches.load()
+        templates.loadStructureBlockMatcherTemplates()
+        singleBlocks.load()
+        multiBlocks.load()
+        recipeSets.loadRecipes()
     }
 }

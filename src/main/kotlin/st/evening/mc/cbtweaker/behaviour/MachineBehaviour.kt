@@ -17,7 +17,7 @@ import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.util.game.ServerSide
 
 interface MachineHost {
-    val machineType: CraftingBlockType<*>
+    val machineType: CraftingBlockType
 
     @ServerSide
     fun onMachineStateChanged()
@@ -36,7 +36,7 @@ fun interface MachineStateFactory<S> {
 
 interface MachineBehaviour<S> : Identifiable, BlockBehaviour<S> {
     context(_: JsonPath)
-    fun loadStateFactory(machine: CraftingBlockType<*>, dto: TJson.Object): MachineStateFactory<S>
+    fun loadStateFactory(machine: CraftingBlockType, dto: TJson.Object): MachineStateFactory<S>
 
     fun notifyState(state: S, newComponents: ComponentSet?)
 

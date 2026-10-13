@@ -521,7 +521,7 @@ class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
                 if (k != inWorldLastCycle) {
                     inWorldLastCycle = k
                     val (matchers, mirrorX) = world.findTileEntity<MultiBlockControllerTileEntity>(state.ctrlPos)
-                        ?.getStructureVisualization() ?: state.mbType.structureMatcher.getVisualization(null)
+                        ?.getStructureVisualization() ?: state.mbType.data.structureMatcher.getVisualization(null)
                     val blocks = matchers.mapKeys { (offset, _) -> state.ctrlPos + rotation.rotate(offset, mirrorX) }
                     inWorldVisBlocks = blocks
                     inWorldVisMirrorX = mirrorX

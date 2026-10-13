@@ -28,7 +28,7 @@ class SingleBlockMachineContainer private constructor(
     val ioConfigState: MutableBoolean?
 ) : CbtCustomContainer(
     playerInv,
-    machine.sbType.windowConfig,
+    machine.sbType.data.windowConfig,
     buildList {
         machine.bufHandler.getConfigSyncState(this)
         machine.rsHandler?.let { add(it) }

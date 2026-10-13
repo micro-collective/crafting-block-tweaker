@@ -83,7 +83,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
     override val id: ResourceLocation = CbTweaker.resource("crafting")
 
     context(_: JsonPath)
-    override fun loadStateFactory(machine: CraftingBlockType<*>, dto: TJson.Object): MachineStateFactory<State> {
+    override fun loadStateFactory(machine: CraftingBlockType, dto: TJson.Object): MachineStateFactory<State> {
         val config = Config(
             dto.useObject("modifiers") { modsDto ->
                 buildMap {
@@ -119,7 +119,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 )
 
                 "buffer" -> { // TODO configurable custom buffer adaptor
-                    if (machine !is SingleBlockType<*>) {
+                    if (machine !is SingleBlockType) {
                         throw SerializationException.withPath("Not a single-block machine!")
                     }
                     recipeSetEntry.registerJeiMachine(
@@ -133,7 +133,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         } ?: run {
             recipeSetEntry.registerJeiMachine(
                 machine,
-                (machine as? SingleBlockType<*>)?.let { JeiBufferAdaptor(recipeSetEntry.id, it.id, config, it) }
+                (machine as? SingleBlockType)?.let { JeiBufferAdaptor(recipeSetEntry.id, it.id, config, it) }
             )
         }
         val recipeDb = recipeSetEntry.database
@@ -463,13 +463,13 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
         private val id: String,
         override val jeiDiscriminator: String?,
         private val config: Config,
-        private val sbType: SingleBlockType<*>
+        private val sbType: SingleBlockType
     ) : JeiRecipeSetAdaptor<SimpleCraftingRecipe> {
         @ClientSide.Physical
         override fun getJeiCategoryName(): String = CbtJeiPlugin.getRecipeSetCategoryName(id, jeiDiscriminator)
 
         @ClientSide.Physical
-        override fun getJeiBackground(): GuiDrawable = sbType.windowConfig.sliceBackground()
+        override fun getJeiBackground(): GuiDrawable = sbType.data.windowConfig.sliceBackground()
 
         @ClientSide.Physical
         override fun addJeiUiElements(
@@ -490,7 +490,7 @@ object SimpleCraftingBehaviour : MachineBehaviour<SimpleCraftingBehaviour.State>
                 )
             )
 
-            val bufGroups = sbType.createJeiBufferGroups()
+            val bufGroups = sbType.data.createJeiBufferGroups()
             recipe.populateJei(recipe, bufGroups)
             val visitor = JeiUiElementConstructVisitor(container, region, jeiHelpers)
             bufGroups.values.forEach {

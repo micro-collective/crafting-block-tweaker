@@ -17,7 +17,7 @@ import st.evening.mc.prelude.api.util.world.BlockSide
 data class ClientVisualizationState(
     val visToolStack: ItemStack,
     val hand: EnumHand,
-    val mbType: MultiBlockType<*>,
+    val mbType: MultiBlockType,
     val ctrlPos: BlockPos,
     val ctrlFront: BlockSide,
     val mbStack: ItemStack,
@@ -85,7 +85,7 @@ data class ClientVisualizationState(
                 return
             }
 
-            val visRenderer = VisualizationRenderer(mbType.structureMatcher)
+            val visRenderer = VisualizationRenderer(mbType.data.structureMatcher)
             visRenderer.level = VisualizationToolItem.getLevel(stack)
             currentState = ClientVisualizationState(
                 stack.copy(),

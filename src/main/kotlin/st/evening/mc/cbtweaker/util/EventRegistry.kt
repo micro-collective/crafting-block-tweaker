@@ -4,6 +4,8 @@ import net.minecraft.util.ResourceLocation
 import net.minecraftforge.common.MinecraftForge
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.event.CbtRegistrationEvent
+import st.evening.mc.prelude.api.data.ser.SerializationException
+import st.evening.mc.prelude.api.data.tjson.JsonPath
 
 interface Identifiable {
     val id: ResourceLocation
@@ -33,6 +35,13 @@ abstract class EventRegistry<T : Identifiable, E>(private val objType: Class<T>,
     }
 
     operator fun get(key: ResourceLocation): E? = entries[key]
+
+    context(_: JsonPath)
+    fun load(key: ResourceLocation): E =
+        entries[key] ?: throw SerializationException.withPath("Unknown $objName type: $key")
+
+    context(_: JsonPath)
+    fun load(key: String): E = load(ResourceLocation(key))
 
     class Simple<T : Identifiable>(objType: Class<T>, objName: String) :
         EventRegistry<T, T>(objType, objName) {

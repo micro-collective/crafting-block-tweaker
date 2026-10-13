@@ -20,7 +20,7 @@ class HatchBlockItem(private val hatchBlock: HatchBlock) : CbtCustomBlockItem(ha
     @ClientSide.Physical
     override fun registerItemModels() {
         val regName = registryName!!
-        for (i in 0..<hatchBlock.hatchType.tierCount) {
+        for (i in 0..<hatchBlock.hatchType.fixedTierCount) {
             ModelLoader.setCustomModelResourceLocation(
                 this, i, ModelResourceLocation(regName.mapPath { "$it/${it}_$i" }, "inventory")
             )

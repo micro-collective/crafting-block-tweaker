@@ -91,7 +91,7 @@ class SimpleStructureMatcher(private val matchRegion: MatcherCuboid, private val
         override val id: ResourceLocation = CbTweaker.resource("simple")
 
         context(_: JsonPath)
-        override fun loadMatcher(mbType: MultiBlockType<*>, dto: TJson.Object): SimpleStructureMatcher {
+        override fun loadMatcher(mbType: MultiBlockType, dto: TJson.Object): SimpleStructureMatcher {
             val palette = dto.useObjectValue("palette") { BlockArrayHelper.loadPalette(it) }
             palette.put('@', MultiBlockControllerStructureBlockMatcher(mbType))
             val blueprint = dto.useArrayValue("structure") { BlockArrayHelper.loadBlockArray(it) }

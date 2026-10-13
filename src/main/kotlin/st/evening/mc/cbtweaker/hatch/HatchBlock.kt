@@ -29,15 +29,15 @@ import st.evening.mc.prelude.api.util.game.assertLogicalServer
 import st.evening.mc.prelude.api.util.world.onServer
 import st.evening.mc.prelude.api.util.world.useTileEntity
 
-class HatchBlock private constructor(val hatchType: HatchType<*>) :
+class HatchBlock private constructor(val hatchType: HatchType) :
     CbtCustomBlock(hatchType.blockConfig), TileEntityBlock, CustomItemBlock {
     companion object {
         private var ctorTierProp: IProperty<Int>? = null
 
-        fun construct(hatchType: HatchType<*>): HatchBlock {
+        fun construct(hatchType: HatchType, tierCount: Int): HatchBlock {
             // createBlockState gets called *at construction time, in the superconstructor*
             // so we have to do this dumb hack to be able to pass the property to createBlockState
-            ctorTierProp = TierProperty(hatchType.tierCount)
+            ctorTierProp = TierProperty(tierCount)
             return try {
                 HatchBlock(hatchType)
             } finally {
@@ -56,7 +56,7 @@ class HatchBlock private constructor(val hatchType: HatchType<*>) :
     override fun createBlockItem(): ItemBlock = HatchBlockItem(this)
 
     override fun getSubBlocks(tab: CreativeTabs, items: NonNullList<ItemStack>) {
-        for (i in 0..<hatchType.tierCount) {
+        for (i in 0..<hatchType.fixedTierCount) { // called by populateSearchTreeManager before data init
             items += ItemStack(this, 1, i)
         }
     }

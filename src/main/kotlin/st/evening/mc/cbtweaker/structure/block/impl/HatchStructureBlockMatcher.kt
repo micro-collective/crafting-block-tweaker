@@ -29,11 +29,11 @@ import st.evening.mc.prelude.api.util.game.getColouredTooltip
 import st.evening.mc.prelude.api.util.world.findTileEntity
 
 class HatchStructureBlockMatcher(
-    private val hatchType: HatchType<*>,
+    private val hatchType: HatchType,
     private val groupId: String,
     private val tierRange: IntRange
 ) : StructureBlockMatcher {
-    constructor(hatchType: HatchType<*>, groupId: String, tierMin: Int, tierMax: Int) :
+    constructor(hatchType: HatchType, groupId: String, tierMin: Int, tierMax: Int) :
         this(hatchType, groupId, tierMin..tierMax)
 
     override val visualization: List<StructureBlockVisualization> by lazy {
@@ -74,7 +74,7 @@ class HatchStructureBlockMatcher(
                 CbTweaker.defns.hatches[it] ?: throw SerializationException.withPath("Unknown hatch type: $it")
             }
             val tierMin = dto.useInt("tier_min") {
-                if (it < 0 || it >= hatchType.tierCount) {
+                if (it < 0 || it >= hatchType.data.tierCount) {
                     throw SerializationException.withPath("Hatch tier out of bounds!")
                 }
                 return@useInt it
@@ -85,9 +85,11 @@ class HatchStructureBlockMatcher(
                 tierMin,
                 dto.useInt("tier_max") {
                     if (it < tierMin) throw SerializationException.withPath("Maximum hatch tier below minimum!")
-                    if (it >= hatchType.tierCount) throw SerializationException.withPath("Hatch tier out of bounds!")
+                    if (it >= hatchType.data.tierCount) {
+                        throw SerializationException.withPath("Hatch tier out of bounds!")
+                    }
                     return@useInt it
-                } ?: (hatchType.tierCount - 1)
+                } ?: (hatchType.data.tierCount - 1)
             )
         }
     }

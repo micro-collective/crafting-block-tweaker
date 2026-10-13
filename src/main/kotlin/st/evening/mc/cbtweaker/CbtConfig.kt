@@ -3,7 +3,7 @@ package st.evening.mc.cbtweaker
 import st.evening.mc.prelude.api.config.json.JsonConfig
 
 class CbtConfig(config: JsonConfig.ConfigObject) {
-    val builtIns: BuiltIns by config.obj(factory = ::BuiltIns)
+    val builtIns: BuiltIns by config.obj("Built-in crafting block data", ::BuiltIns)
 
     class BuiltIns(config: JsonConfig.ConfigObject) {
         val loadBuiltInBuffers: Boolean by config.bool(
@@ -32,7 +32,7 @@ class CbtConfig(config: JsonConfig.ConfigObject) {
         )
     }
 
-    val compat: Compat by config.obj(factory = ::Compat)
+    val compat: Compat by config.obj("Inter-mod compatibility", ::Compat)
 
     class Compat(config: JsonConfig.ConfigObject) {
         val mekanism: Mekanism by config.obj(factory = ::Mekanism)
@@ -45,7 +45,20 @@ class CbtConfig(config: JsonConfig.ConfigObject) {
         }
     }
 
-    val dataGen: DataGen by config.obj(factory = ::DataGen)
+    val devTools: DevTools by config.obj("Modpack developer tools", ::DevTools)
+
+    class DevTools(config: JsonConfig.ConfigObject) {
+        val reloadOnServerStart: Boolean by config.bool(
+            false,
+            """
+            Reload crafting block data when the server starts?
+            Only applies to the integrated (single-player) server, since it would be redundant on the dedicated server.
+            """.trimIndent(),
+            sync = false
+        )
+    }
+
+    val dataGen: DataGen by config.obj("Asset and data generation", ::DataGen)
 
     class DataGen(config: JsonConfig.ConfigObject) {
         val resourceDir: String by config.string(

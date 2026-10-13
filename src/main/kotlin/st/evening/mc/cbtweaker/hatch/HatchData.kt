@@ -35,17 +35,22 @@ import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
 import st.evening.mc.prelude.api.util.world.onServer
 
-class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<B>, val hatchTier: Int) :
+class HatchData<B>(
+    private val hatch: HatchTileEntity,
+    val hatchType: HatchType,
+    private val hatchTypeData: HatchType.Data<B>,
+    val hatchTier: Int
+) :
     BufferObserver, CopiableConfigHost, ServerSideSerializable {
     companion object {
         private const val SER_BUFFER: String = "buffer"
         private const val SER_EXPORT: String = "export"
     }
 
-    val buffer: B = hatchType.getTier(hatchTier).bufferFactory.createBuffer(hatch.world, hatch.pos, this)
+    val buffer: B = hatchTypeData.getTier(hatchTier).bufferFactory.createBuffer(hatch.world, hatch.pos, this)
 
     val exportHandler: HatchAutoExportHandler? =
-        (hatchType.bufferType as? AutoExportingBufferType<B, *, *, *>)?.let { exportBufType ->
+        (hatchTypeData.bufferType as? AutoExportingBufferType<B, *, *, *>)?.let { exportBufType ->
             exportBufType.getDefaultAutoExportState(buffer)?.let {
                 HatchAutoExportHandler(exportBufType, it)
             }
@@ -56,7 +61,7 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
     private var dirtyState: RefreshState = RefreshState.NONE
 
     fun attachCapabilities(target: CapabilityVisitor) {
-        hatchType.bufferType.attachCapabilities(target, buffer)
+        hatchTypeData.bufferType.attachCapabilities(target, buffer)
     }
 
     override fun onIngredientsChanged() {
@@ -79,7 +84,7 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
 
     fun addToGroup(group: BufferGroup) {
         val pos = hatch.pos
-        group.addBuffer(hatchType.bufferType, "${pos.x},${pos.y},${pos.z}", buffer)
+        group.addBuffer(hatchTypeData.bufferType, "${pos.x},${pos.y},${pos.z}", buffer)
     }
 
     fun tick() {
@@ -96,7 +101,7 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
             }
             dirtyState = RefreshState.NONE
         }
-        hatchType.bufferType.tick(buffer)
+        hatchTypeData.bufferType.tick(buffer)
         hatch.world.onServer {
             exportHandler?.tick()
         }
@@ -105,22 +110,22 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
     fun handleInteraction(
         state: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean = hatchType.bufferType.handleInteraction(buffer, state, player, hand, face, hitX, hitY, hitZ)
+    ): Boolean = hatchTypeData.bufferType.handleInteraction(buffer, state, player, hand, face, hitX, hitY, hitZ)
 
     @ServerSide
     fun handleBlockUpdate(state: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-        hatchType.bufferType.handleBlockUpdate(buffer, state, fromBlock, fromPos)
+        hatchTypeData.bufferType.handleBlockUpdate(buffer, state, fromBlock, fromPos)
     }
 
     @ServerSide
     fun handleDestruction(state: IBlockState) {
-        hatchType.bufferType.handleDestruction(buffer, state)
+        hatchTypeData.bufferType.handleDestruction(buffer, state)
     }
 
     @ServerSide
     override fun writeConfig(dto: NBTTagCompound) {
         dto.runAction {
-            putNonEmpty(SER_BUFFER) { hatchType.bufferType.writeBufferConfig(buffer, it) }
+            putNonEmpty(SER_BUFFER) { hatchTypeData.bufferType.writeBufferConfig(buffer, it) }
             exportHandler?.let {
                 SER_EXPORT bool it.autoExporting
             }
@@ -130,7 +135,7 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
     @ServerSide
     override fun readConfig(dto: NBTTagCompound) {
         dto.getCompoundOrNull(SER_BUFFER)?.let {
-            hatchType.bufferType.readBufferConfig(buffer, it)
+            hatchTypeData.bufferType.readBufferConfig(buffer, it)
         }
         exportHandler?.let { handler ->
             dto.getBoolOrNull(SER_EXPORT)?.let {
@@ -139,12 +144,12 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
         }
     }
 
-    fun getSyncState(): Piecewise? = hatchType.bufferType.getBufferSyncState(buffer)
+    fun getSyncState(): Piecewise? = hatchTypeData.bufferType.getBufferSyncState(buffer)
 
     @ServerSide
     override fun writeToNbtServerSide(dto: NBTTagCompound) {
         dto.runAction {
-            SER_BUFFER tag NBTTagCompound().also { hatchType.bufferType.serializeBufferToNbt(buffer, it) }
+            SER_BUFFER tag NBTTagCompound().also { hatchTypeData.bufferType.serializeBufferToNbt(buffer, it) }
             exportHandler?.let {
                 SER_EXPORT bool it.autoExporting
             }
@@ -153,11 +158,11 @@ class HatchData<B>(private val hatch: HatchTileEntity, val hatchType: HatchType<
 
     @ServerSide
     override fun readFromNbtServerSide(dto: NBTTagCompound) {
-        hatchType.bufferType.deserializeBufferFromNbt(buffer, dto.getCompoundTag(SER_BUFFER))
+        hatchTypeData.bufferType.deserializeBufferFromNbt(buffer, dto.getCompoundTag(SER_BUFFER))
         exportHandler?.setStateFromSync(dto.getBoolean(SER_EXPORT))
     }
 
-    fun createUiElement(): UiElement? = hatchType.bufferType.createUiElement(buffer)
+    fun createUiElement(): UiElement? = hatchTypeData.bufferType.createUiElement(buffer)
 
     inner class HatchAutoExportHandler(
         exportBufType: AutoExportingBufferType<B, *, *, *>,

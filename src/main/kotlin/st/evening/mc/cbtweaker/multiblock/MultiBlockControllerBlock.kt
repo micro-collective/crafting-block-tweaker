@@ -20,10 +20,10 @@ import st.evening.mc.prelude.api.util.game.assertLogicalServer
 import st.evening.mc.prelude.api.util.world.onServer
 import st.evening.mc.prelude.api.util.world.useTileEntity
 
-class MultiBlockControllerBlock private constructor(val mbType: MultiBlockType<*>) :
+class MultiBlockControllerBlock private constructor(val mbType: MultiBlockType) :
     OrientableMachineBlock(mbType.blockConfig), TileEntityBlock {
     companion object {
-        fun construct(mbType: MultiBlockType<*>): MultiBlockControllerBlock =
+        fun construct(mbType: MultiBlockType): MultiBlockControllerBlock =
             MultiBlockControllerBlock(mbType).also { it.init() }
     }
 

@@ -46,7 +46,7 @@ class CbtJeiPlugin : IModPlugin {
         registry.addRecipeCatalyst(ItemStack(CbTweaker.defns.itemVisualizationTool), structVisCatUid)
         CbTweaker.defns.multiBlocks.forEach {
             registry.addRecipes(
-                listOf(StructureRecipeWrapper(it.controllerBlock, it.structureMatcher)),
+                listOf(StructureRecipeWrapper(it.controllerBlock, it.data.structureMatcher)),
                 structVisCatUid
             )
         }

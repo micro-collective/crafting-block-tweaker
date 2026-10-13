@@ -27,10 +27,11 @@ class MultiBlockControllerTileEntity :
 
     override fun initData(): MultiBlockData<*, *> {
         val mbType = (world.getBlockState(pos).block as MultiBlockControllerBlock).mbType
-        return MultiBlockData(this, mbType, mbType.structureMatcher)
+        val mbTypeData = mbType.data
+        return MultiBlockData(this, mbType, mbTypeData, mbTypeData.structureMatcher)
     }
 
-    val mbType: MultiBlockType<*>
+    val mbType: MultiBlockType
         get() = data.mbType
 
     val assembled: Boolean

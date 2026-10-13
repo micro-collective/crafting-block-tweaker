@@ -11,7 +11,7 @@ import st.evening.mc.cbtweaker.structure.block.StructureBlockVisualization
 import st.evening.mc.prelude.api.util.data.orNull
 
 // these can't be manually used; rather, they're automatically generated during multi-block loading
-class MultiBlockControllerStructureBlockMatcher(private val mbType: MultiBlockType<*>) : StructureBlockMatcher {
+class MultiBlockControllerStructureBlockMatcher(private val mbType: MultiBlockType) : StructureBlockMatcher {
     override val visualization: List<StructureBlockVisualization> =
         listOf(StructureBlockVisualization.State(mbType.controllerBlock.defaultState))
 

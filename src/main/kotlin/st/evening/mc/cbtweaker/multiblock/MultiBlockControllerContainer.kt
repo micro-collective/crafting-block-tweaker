@@ -24,7 +24,7 @@ class MultiBlockControllerContainer(
     playerInv: InventoryPlayer
 ) : CbtCustomContainer(
     playerInv,
-    machine.mbType.windowConfig,
+    machine.mbType.data.windowConfig,
     listOfNotNull(machine.rsHandler),
     listOfNotNull(machine.createMachineUiElement())
 ), MachineContainer {

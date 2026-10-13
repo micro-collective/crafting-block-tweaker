@@ -20,7 +20,7 @@ import st.evening.mc.prelude.api.util.world.findTileEntity
 
 class HatchContainer(val hatch: HatchTileEntity, playerInv: InventoryPlayer) : CbtCustomContainer(
     playerInv,
-    hatch.hatchType.getTier(hatch.tier).windowConfig,
+    hatch.hatchType.data.getTier(hatch.tier).windowConfig,
     listOfNotNull(hatch.exportHandler),
     listOfNotNull(hatch.createUiElement())
 ) {

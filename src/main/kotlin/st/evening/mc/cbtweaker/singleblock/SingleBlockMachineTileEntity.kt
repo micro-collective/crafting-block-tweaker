@@ -22,14 +22,15 @@ class SingleBlockMachineTileEntity :
     LazyTileEntity<SingleBlockData<*>>(), MachineTileEntity, CopiableConfigHost, ITickable {
 
     override fun initData(): SingleBlockData<*> {
-        val data = SingleBlockData(this, (world.getBlockState(pos).block as SingleBlockMachineBlock).sbType)
+        val sbType = (world.getBlockState(pos).block as SingleBlockMachineBlock).sbType
+        val data = SingleBlockData(this, sbType, sbType.data)
         data.getSyncState()?.let {
             initSync(TileEntitySyncProxy(this, it))
         }
         return data
     }
 
-    val sbType: SingleBlockType<*>
+    val sbType: SingleBlockType
         get() = data.sbType
 
     val bufHandler: SidedBufferHandler

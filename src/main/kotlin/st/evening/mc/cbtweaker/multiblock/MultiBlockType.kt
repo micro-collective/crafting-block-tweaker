@@ -5,36 +5,42 @@ import st.evening.mc.cbtweaker.CbtConsts
 import st.evening.mc.cbtweaker.behaviour.MachineBehaviour
 import st.evening.mc.cbtweaker.behaviour.MachineStateFactory
 import st.evening.mc.cbtweaker.common.BlockConfig
+import st.evening.mc.cbtweaker.common.CraftingBlockData
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.WindowConfig
 import st.evening.mc.cbtweaker.structure.StructureMatcher
 import st.evening.mc.prelude.api.registration.ModRegistrar
 import st.evening.mc.prelude.api.registration.block
 
-class MultiBlockType<S>(
+class MultiBlockType(
     reg: ModRegistrar,
     override val id: String,
     override val blockConfig: BlockConfig,
-    override val behaviour: MachineBehaviour<S>,
-    override val windowConfig: WindowConfig
-) : CraftingBlockType<S> {
-    // multiblock type has to be initialized at pre-init time so that the controller block can be constructed
-    // however, these properties may rely on registry entries from other mods, so they must be initialized at init time
-    lateinit var structureMatcher: StructureMatcher<*>
-        private set
-    override lateinit var stateFactory: MachineStateFactory<S>
-        private set
-
+) : CraftingBlockType {
     val controllerBlock: MultiBlockControllerBlock by reg.block("mb_$id") { MultiBlockControllerBlock.construct(this) }
 
     override val craftingBlock: Block
         get() = controllerBlock
 
-    internal fun init(structureMatcher: StructureMatcher<*>, stateFactory: MachineStateFactory<S>) {
-        this.structureMatcher = structureMatcher
-        this.stateFactory = stateFactory
+    override lateinit var data: Data<*>
+        private set
+
+    internal fun <S> initData(
+        behaviour: MachineBehaviour<S>,
+        stateFactory: MachineStateFactory<S>,
+        structureMatcher: StructureMatcher<*>,
+        windowConfig: WindowConfig
+    ) {
+        data = Data(behaviour, stateFactory, structureMatcher, windowConfig)
     }
 
     val translationKey: String
         get() = "${CbtConsts.MOD_ID}.multiblock.$id.name"
+
+    class Data<S>(
+        override val behaviour: MachineBehaviour<S>,
+        override val stateFactory: MachineStateFactory<S>,
+        val structureMatcher: StructureMatcher<*>,
+        override val windowConfig: WindowConfig
+    ) : CraftingBlockData<S>
 }

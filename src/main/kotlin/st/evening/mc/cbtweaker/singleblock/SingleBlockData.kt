@@ -37,8 +37,11 @@ import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.game.getTileEntityWeakValidity
 import st.evening.mc.prelude.api.util.world.onServer
 
-class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType: SingleBlockType<S>) :
-    MachineHost, BufferObserver, Observer.Simple, Observer.Indexed, CopiableConfigHost, ServerSideSerializable {
+class SingleBlockData<S>(
+    val sbMachine: SingleBlockMachineTileEntity,
+    val sbType: SingleBlockType,
+    sbTypeData: SingleBlockType.Data<S>
+) : MachineHost, BufferObserver, Observer.Simple, Observer.Indexed, CopiableConfigHost, ServerSideSerializable {
     companion object {
         private const val SER_BUFFERS: String = "buffers"
         private const val SER_MACHINE: String = "machine"
@@ -47,7 +50,7 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
     val bufHandler: SidedBufferHandler
     private var bufferDirtyState: RefreshState = RefreshState.NONE
 
-    private val behaviour: MachineBehaviour<S> = sbType.behaviour
+    private val behaviour: MachineBehaviour<S> = sbTypeData.behaviour
     private val machineState: S
     private val ticker: TickModulator = TickModulator(true)
 
@@ -59,9 +62,9 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
     init {
         val world = sbMachine.world
         val pos = sbMachine.pos
-        val bufGroups = sbType.createBufferGroups(world, pos, this)
+        val bufGroups = sbTypeData.createBufferGroups(world, pos, this)
         this.bufHandler = SidedBufferHandler(FrontGetter(sbMachine), bufGroups)
-        this.machineState = sbType.stateFactory.createState(world, pos, bufGroups, collectComponents(), this, null)
+        this.machineState = sbTypeData.stateFactory.createState(world, pos, bufGroups, collectComponents(), this, null)
         when (val activeState = behaviour.getActiveState(machineState)) {
             null -> {}
             is Piecewise.Atom -> activeState.observeSync(this)
@@ -69,7 +72,7 @@ class SingleBlockData<S>(val sbMachine: SingleBlockMachineTileEntity, val sbType
         }
     }
 
-    override val machineType: CraftingBlockType<*>
+    override val machineType: CraftingBlockType
         get() = sbType
 
     val isActive: Boolean

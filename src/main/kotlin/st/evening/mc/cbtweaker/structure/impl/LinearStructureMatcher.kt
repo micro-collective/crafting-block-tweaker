@@ -434,7 +434,7 @@ class LinearStructureMatcher(
         override val id: ResourceLocation = CbTweaker.resource("linear")
 
         context(_: JsonPath)
-        override fun loadMatcher(mbType: MultiBlockType<*>, dto: TJson.Object): LinearStructureMatcher {
+        override fun loadMatcher(mbType: MultiBlockType, dto: TJson.Object): LinearStructureMatcher {
             val repeatDir = dto.useString("repeat_direction") { RepeatDir.load(it) } ?: RepeatDir.Z_POS
             val palette = dto.useObjectValue("palette") { BlockArrayHelper.loadPalette(it) }
             palette.put('@', MultiBlockControllerStructureBlockMatcher(mbType))

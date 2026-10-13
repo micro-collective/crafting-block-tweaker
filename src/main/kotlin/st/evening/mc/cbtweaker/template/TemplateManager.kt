@@ -1,10 +1,8 @@
 package st.evening.mc.cbtweaker.template
 
-import net.minecraft.util.ResourceLocation
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.gui.inventory.WindowConfig
 import st.evening.mc.cbtweaker.structure.block.StructureBlockMatcher
-import st.evening.mc.prelude.api.data.ser.SerializationException
 import st.evening.mc.prelude.api.data.tjson.JsonPath
 import st.evening.mc.prelude.api.data.tjson.TJson
 import st.evening.mc.prelude.api.data.tjson.expectIsObject
@@ -15,13 +13,8 @@ import java.nio.file.Path
 class TemplateManager(templateDir: Path) {
     companion object {
         context(_: JsonPath)
-        private fun resolveStructureBlockMatcher(dto: TJson.Object): StructureBlockMatcher {
-            val type = dto.useStringValue("type") {
-                CbTweaker.defns.structureBlockMatchers[ResourceLocation(it)]
-                    ?: throw SerializationException.withPath("Unknown structure block matcher type: $it")
-            }
-            return type.loadMatcher(dto)
-        }
+        private fun resolveStructureBlockMatcher(dto: TJson.Object): StructureBlockMatcher =
+            dto.useStringValue("type") { CbTweaker.defns.structureBlockMatchers.load(it) }.loadMatcher(dto)
     }
 
     val windowTemplates: TemplateRegistry<WindowConfig> = TemplateRegistry(
@@ -44,18 +37,21 @@ class TemplateManager(templateDir: Path) {
         }
     }
 
-    fun loadPreInit() {
-        windowTemplates.apply {
-            if (CbTweaker.config.builtIns.loadBuiltInWindowTemplates) {
-                register("generic_small", WindowConfig.GENERIC_SMALL)
-                register("generic_medium", WindowConfig.GENERIC_MEDIUM)
-                register("generic_large", WindowConfig.GENERIC_LARGE)
-            }
-            loadTemplates()
-        }
+    fun clear() {
+        windowTemplates.clear()
+        structureBlockMatcherTemplates.clear()
     }
 
-    fun loadInit() {
+    fun loadWindowTemplates() {
+        if (CbTweaker.config.builtIns.loadBuiltInWindowTemplates) {
+            windowTemplates.register("generic_small", WindowConfig.GENERIC_SMALL)
+            windowTemplates.register("generic_medium", WindowConfig.GENERIC_MEDIUM)
+            windowTemplates.register("generic_large", WindowConfig.GENERIC_LARGE)
+        }
+        windowTemplates.loadTemplates()
+    }
+
+    fun loadStructureBlockMatcherTemplates() {
         structureBlockMatcherTemplates.loadTemplates()
     }
 }

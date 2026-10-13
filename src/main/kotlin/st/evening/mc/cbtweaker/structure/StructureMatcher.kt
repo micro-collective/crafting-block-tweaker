@@ -22,5 +22,5 @@ interface StructureMatcher<M> {
 
 interface StructureMatcherType<M> : Identifiable {
     context(_: JsonPath)
-    fun loadMatcher(mbType: MultiBlockType<*>, dto: TJson.Object): StructureMatcher<M>
+    fun loadMatcher(mbType: MultiBlockType, dto: TJson.Object): StructureMatcher<M>
 }

@@ -17,6 +17,10 @@ class TemplateRegistry<T>(
 ) {
     private val templateTable: MutableMap<String, T> = mutableMapOf()
 
+    fun clear() {
+        templateTable.clear()
+    }
+
     fun loadTemplates() {
         try {
             if (!Files.isRegularFile(templateFile)) return

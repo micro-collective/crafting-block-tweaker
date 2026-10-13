@@ -26,14 +26,15 @@ class HatchTileEntity : LazyTileEntity<HatchData<*>>(), CopiableConfigHost, ITic
     override fun initData(): HatchData<*> {
         val state = world.getBlockState(getPos())
         val block = state.getBlock() as HatchBlock
-        val data = HatchData(this, block.hatchType, state.getValue(block.tierProperty))
+        val hatchType = block.hatchType
+        val data = HatchData(this, hatchType, hatchType.data, state.getValue(block.tierProperty))
         data.getSyncState()?.let {
             initSync(TileEntitySyncProxy(this, it))
         }
         return data
     }
 
-    val hatchType: HatchType<*>
+    val hatchType: HatchType
         get() = data.hatchType
 
     val tier: Int

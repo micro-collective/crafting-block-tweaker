@@ -66,6 +66,10 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
         }
     }
 
+    fun clear() {
+        recipeSetTable.clear()
+    }
+
     override fun iterator(): Iterator<Entry<*, *>> = recipeSetTable.values.iterator()
 
     fun loadRecipes() {
@@ -245,7 +249,7 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
             }
         }
 
-        fun registerJeiMachine(machine: CraftingBlockType<*>, adaptor: JeiRecipeSetAdaptor<R>?) {
+        fun registerJeiMachine(machine: CraftingBlockType, adaptor: JeiRecipeSetAdaptor<R>?) {
             if (adaptor != null) {
                 val entry = JeiEntry(adaptor)
                 jeiEntries += entry
@@ -259,12 +263,12 @@ class RecipeSetManager(private val recipeSetsDir: Path) : Iterable<RecipeSetMana
             defaultJeiEntry?.let { sequenceOf(it) + jeiEntries.asSequence() } ?: jeiEntries.asSequence()
 
         inner class JeiEntry(val adaptor: JeiRecipeSetAdaptor<R>) {
-            private val _machines: MutableSet<CraftingBlockType<*>> = mutableSetOf()
+            private val _machines: MutableSet<CraftingBlockType> = mutableSetOf()
 
-            val machines: Set<CraftingBlockType<*>>
+            val machines: Set<CraftingBlockType>
                 get() = _machines
 
-            fun registerMachine(machine: CraftingBlockType<*>) {
+            fun registerMachine(machine: CraftingBlockType) {
                 _machines += machine
             }
         }

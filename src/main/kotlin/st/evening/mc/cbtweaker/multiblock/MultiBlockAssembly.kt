@@ -62,9 +62,9 @@ class MultiBlockAssembly<S>(
         }
     }
 
-    private val behaviour: MachineBehaviour<S> = mbData.mbType.behaviour
+    private val behaviour: MachineBehaviour<S> = mbData.mbTypeData.behaviour
     private val machineState: S = mbData.run {
-        mbType.stateFactory.createState(
+        mbTypeData.stateFactory.createState(
             mbCtrl.world, mbCtrl.pos, bufGroups, collectComponents(), this@MultiBlockAssembly, oldAssembly?.machineState
         )
     }
@@ -77,7 +77,7 @@ class MultiBlockAssembly<S>(
     val syncProxy: SyncHost?
         get() = _syncProxy
 
-    override val machineType: CraftingBlockType<*>
+    override val machineType: CraftingBlockType
         get() = mbData.mbType
 
     val isActive: Boolean
