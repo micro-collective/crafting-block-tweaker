@@ -108,7 +108,7 @@ object FuelledCraftingBehaviour : MachineBehaviour<FuelledCraftingBehaviour.Stat
             dto.useObject("progress_bar") { BarDrawData.loadPositioned(it, DEFAULT_PROGRESS_BAR) }
                 ?: DEFAULT_PROGRESS_BAR,
             dto.useObject("fuel_bar") { BarDrawData.loadPositioned(it, DEFAULT_FUEL_BAR) } ?: DEFAULT_FUEL_BAR,
-            dto.useAny("working_sound") { SoundData.load(it, 1F) }
+            dto.useAny("fuelled_sound") { SoundData.load(it, 1F) }
         )
 
         val craftingRecipeSetEntry = CbTweaker.defns.recipeSets.getOrCreateRecipeSet(
@@ -356,6 +356,7 @@ object FuelledCraftingBehaviour : MachineBehaviour<FuelledCraftingBehaviour.Stat
                 val fuelValue = fuelState.value
                 if (fuelValue > 0) {
                     fuelState.update(fuelValue - 1)
+                    activeState.update(true)
                 } else {
                     activeState.update(false)
                 }

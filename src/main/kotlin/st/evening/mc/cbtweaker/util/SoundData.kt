@@ -18,7 +18,7 @@ class SoundData(val soundEvent: SoundEvent, val volume: Float, val pitch: Float,
     companion object {
         context(_: JsonPath)
         fun load(dto: TJson, defaultAttackPitch: Float): SoundData = when (dto) {
-            is TJson.String -> SoundData(SoundEvent(ResourceLocation(dto.value)), 1F, 1F, 0F)
+            is TJson.String -> SoundData(SoundEvent(ResourceLocation(dto.value)), 1F, 1F, defaultAttackPitch)
 
             is TJson.Object -> SoundData(
                 SoundEvent(ResourceLocation(dto.expectStringValue("sound"))),
