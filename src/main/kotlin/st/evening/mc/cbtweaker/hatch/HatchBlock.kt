@@ -1,33 +1,26 @@
 package st.evening.mc.cbtweaker.hatch
 
 import com.google.common.base.Optional
-import net.minecraft.block.Block
 import net.minecraft.block.properties.IProperty
 import net.minecraft.block.state.BlockStateContainer
 import net.minecraft.block.state.IBlockState
 import net.minecraft.creativetab.CreativeTabs
-import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
-import net.minecraft.util.EnumFacing
-import net.minecraft.util.EnumHand
 import net.minecraft.util.NonNullList
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 import st.evening.mc.cbtweaker.CbTweaker
 import st.evening.mc.cbtweaker.CbtConsts
+import st.evening.mc.cbtweaker.common.BlockBehaviour
 import st.evening.mc.cbtweaker.common.CbtCustomBlock
 import st.evening.mc.cbtweaker.common.CustomBlockType
-import st.evening.mc.cbtweaker.compat.cofh.CoFHCoreCompat
 import st.evening.mc.prelude.api.block.CustomItemBlock
 import st.evening.mc.prelude.api.block.TileEntityBlock
+import st.evening.mc.prelude.api.registration.ContainerType
 import st.evening.mc.prelude.api.registration.TileEntityType
-import st.evening.mc.prelude.api.registration.openContainer
 import st.evening.mc.prelude.api.util.collection.IntRangeSet
-import st.evening.mc.prelude.api.util.game.SidednessAssertion
-import st.evening.mc.prelude.api.util.game.assertLogicalServer
-import st.evening.mc.prelude.api.util.world.onServer
-import st.evening.mc.prelude.api.util.world.useTileEntity
+import st.evening.mc.prelude.api.util.world.findTileEntity
 
 class HatchBlock private constructor(val hatchType: HatchType) :
     CbtCustomBlock(hatchType.blockConfig), TileEntityBlock, CustomItemBlock {
@@ -70,40 +63,10 @@ class HatchBlock private constructor(val hatchType: HatchType) :
 
     override fun getTileEntityType(world: World, meta: Int): TileEntityType<*> = CbTweaker.defns.tileEntityHatch
 
-    override fun onBlockActivated(
-        world: World, pos: BlockPos, state: IBlockState, player: EntityPlayer, hand: EnumHand,
-        facing: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean {
-        if (CoFHCoreCompat.tryWrenchDismantle(world, pos, state, player, hand)) return true
-        world.useTileEntity<HatchTileEntity>(pos) {
-            if (it.handleInteraction(state, player, hand, facing, hitX, hitY, hitZ)) return true
-            world.onServer {
-                player.openContainer(CbTweaker.defns.containerHatch, world, pos)
-            }
-            return true
-        }
-        return false
-    }
+    override fun getBehaviourHandler(world: World, pos: BlockPos): BlockBehaviour.Handler? =
+        world.findTileEntity<HatchTileEntity>(pos)
 
-    @OptIn(SidednessAssertion::class)
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun neighborChanged(state: IBlockState, world: World, pos: BlockPos, block: Block, fromPos: BlockPos) {
-        assertLogicalServer {
-            world.useTileEntity<HatchTileEntity>(pos) {
-                it.handleBlockUpdate(state, block, fromPos)
-            }
-        }
-    }
-
-    @OptIn(SidednessAssertion::class)
-    override fun breakBlock(world: World, pos: BlockPos, state: IBlockState) {
-        assertLogicalServer {
-            world.useTileEntity<HatchTileEntity>(pos) {
-                it.handleDestruction(state)
-            }
-        }
-        super.breakBlock(world, pos, state)
-    }
+    override fun getContainerType(): ContainerType = CbTweaker.defns.containerHatch
 
     override fun getTranslationKey(): String = "${CbtConsts.MOD_ID}.hatch.${hatchType.id}"
 

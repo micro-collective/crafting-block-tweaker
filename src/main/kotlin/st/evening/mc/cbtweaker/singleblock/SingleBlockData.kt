@@ -2,7 +2,9 @@ package st.evening.mc.cbtweaker.singleblock
 
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
+import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.EnumHand
@@ -10,6 +12,7 @@ import net.minecraft.util.math.BlockPos
 import st.evening.mc.cbtweaker.behaviour.MachineBehaviour
 import st.evening.mc.cbtweaker.behaviour.MachineHost
 import st.evening.mc.cbtweaker.buffer.BufferObserver
+import st.evening.mc.cbtweaker.common.BlockBehaviour
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
@@ -18,7 +21,9 @@ import st.evening.mc.cbtweaker.util.component.SidedBufferHandler
 import st.evening.mc.cbtweaker.util.component.collectComponents
 import st.evening.mc.cbtweaker.util.component.handleBlockUpdate
 import st.evening.mc.cbtweaker.util.component.handleDestruction
+import st.evening.mc.cbtweaker.util.component.handleDisplayTick
 import st.evening.mc.cbtweaker.util.component.handleInteraction
+import st.evening.mc.cbtweaker.util.component.handlePlacement
 import st.evening.mc.cbtweaker.util.config.putNonEmpty
 import st.evening.mc.cbtweaker.util.machine.ComponentSet
 import st.evening.mc.cbtweaker.util.machine.MutableComponentSet
@@ -33,15 +38,18 @@ import st.evening.mc.prelude.api.util.collection.WeakValidity
 import st.evening.mc.prelude.api.util.data.getCompoundOrNull
 import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.data.runAction
+import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.game.getTileEntityWeakValidity
 import st.evening.mc.prelude.api.util.world.onServer
+import java.util.Random
 
 class SingleBlockData<S>(
     val sbMachine: SingleBlockMachineTileEntity,
     val sbType: SingleBlockType,
     sbTypeData: SingleBlockType.Data<S>
-) : MachineHost, BufferObserver, Observer.Simple, Observer.Indexed, CopiableConfigHost, ServerSideSerializable {
+) : MachineHost, BlockBehaviour.Handler, BufferObserver, Observer.Simple, Observer.Indexed,
+    CopiableConfigHost, ServerSideSerializable {
     companion object {
         private const val SER_BUFFERS: String = "buffers"
         private const val SER_MACHINE: String = "machine"
@@ -131,7 +139,14 @@ class SingleBlockData<S>(
         behaviour.tick(machineState, ticker)
     }
 
-    fun handleInteraction(
+    override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
+        behaviour.handlePlacement(machineState, blockState, placer, stack)
+        bufHandler.forEachConfig {
+            it.handlePlacement(blockState, placer, stack)
+        }
+    }
+
+    override fun handleInteraction(
         blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
     ): Boolean {
@@ -143,7 +158,7 @@ class SingleBlockData<S>(
     }
 
     @ServerSide
-    fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
+    override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
         behaviour.handleBlockUpdate(machineState, blockState, fromBlock, fromPos)
         bufHandler.forEachConfig {
             it.handleBlockUpdate(blockState, fromBlock, fromPos)
@@ -151,10 +166,18 @@ class SingleBlockData<S>(
     }
 
     @ServerSide
-    fun handleDestruction(blockState: IBlockState) {
+    override fun handleDestruction(blockState: IBlockState) {
         behaviour.handleDestruction(machineState, blockState)
         bufHandler.forEachConfig {
             it.handleDestruction(blockState)
+        }
+    }
+
+    @ClientSide.Strong
+    override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
+        behaviour.handleDisplayTick(machineState, blockState, rand)
+        bufHandler.forEachConfig {
+            it.handleDisplayTick(blockState, rand)
         }
     }
 

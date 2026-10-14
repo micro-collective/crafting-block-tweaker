@@ -4,7 +4,9 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet
 import it.unimi.dsi.fastutil.objects.ObjectSet
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
+import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
 import net.minecraft.util.EnumFacing
@@ -13,6 +15,7 @@ import net.minecraft.util.math.BlockPos
 import st.evening.mc.cbtweaker.buffer.AutoExportingBufferType
 import st.evening.mc.cbtweaker.buffer.BufferGroup
 import st.evening.mc.cbtweaker.buffer.BufferObserver
+import st.evening.mc.cbtweaker.common.BlockBehaviour
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.multiblock.MultiBlockControllerTileEntity
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
@@ -30,18 +33,19 @@ import st.evening.mc.prelude.api.util.data.getBoolOrNull
 import st.evening.mc.prelude.api.util.data.getCompoundOrNull
 import st.evening.mc.prelude.api.util.data.runAction
 import st.evening.mc.prelude.api.util.game.CapabilityVisitor
+import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
 import st.evening.mc.prelude.api.util.world.onServer
+import java.util.Random
 
 class HatchData<B>(
     private val hatch: HatchTileEntity,
     val hatchType: HatchType,
     private val hatchTypeData: HatchType.Data<B>,
     val hatchTier: Int
-) :
-    BufferObserver, CopiableConfigHost, ServerSideSerializable {
+) : BlockBehaviour.Handler, BufferObserver, CopiableConfigHost, ServerSideSerializable {
     companion object {
         private const val SER_BUFFER: String = "buffer"
         private const val SER_EXPORT: String = "export"
@@ -107,19 +111,28 @@ class HatchData<B>(
         }
     }
 
-    fun handleInteraction(
-        state: IBlockState, player: EntityPlayer, hand: EnumHand,
+    override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
+        hatchTypeData.bufferType.handlePlacement(buffer, blockState, placer, stack)
+    }
+
+    override fun handleInteraction(
+        blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean = hatchTypeData.bufferType.handleInteraction(buffer, state, player, hand, face, hitX, hitY, hitZ)
+    ): Boolean = hatchTypeData.bufferType.handleInteraction(buffer, blockState, player, hand, face, hitX, hitY, hitZ)
 
     @ServerSide
-    fun handleBlockUpdate(state: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-        hatchTypeData.bufferType.handleBlockUpdate(buffer, state, fromBlock, fromPos)
+    override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
+        hatchTypeData.bufferType.handleBlockUpdate(buffer, blockState, fromBlock, fromPos)
     }
 
     @ServerSide
-    fun handleDestruction(state: IBlockState) {
-        hatchTypeData.bufferType.handleDestruction(buffer, state)
+    override fun handleDestruction(blockState: IBlockState) {
+        hatchTypeData.bufferType.handleDestruction(buffer, blockState)
+    }
+
+    @ClientSide.Strong
+    override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
+        hatchTypeData.bufferType.handleDisplayTick(buffer, blockState, rand)
     }
 
     @ServerSide

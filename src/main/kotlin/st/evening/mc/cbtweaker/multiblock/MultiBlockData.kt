@@ -3,13 +3,16 @@ package st.evening.mc.cbtweaker.multiblock
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
 import net.minecraft.client.Minecraft
+import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
 import net.minecraft.util.EnumFacing
 import net.minecraft.util.EnumHand
 import net.minecraft.util.math.BlockPos
 import st.evening.mc.cbtweaker.CbTweaker
+import st.evening.mc.cbtweaker.common.BlockBehaviour
 import st.evening.mc.cbtweaker.common.BufferedSyncHolder
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.serconfig.CopiableConfigHost
@@ -28,13 +31,14 @@ import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.game.onPhysicalClient
 import st.evening.mc.prelude.api.util.world.onClient
 import st.evening.mc.prelude.api.util.world.onServer
+import java.util.Random
 
 class MultiBlockData<S, M>(
     val mbCtrl: MultiBlockControllerTileEntity,
     val mbType: MultiBlockType,
     val mbTypeData: MultiBlockType.Data<S>,
     private val structureMatcher: StructureMatcher<M>
-) : RoiHost, CopiableConfigHost, BufferedSyncHolder, ServerSideSerializable {
+) : RoiHost, BlockBehaviour.Handler, CopiableConfigHost, BufferedSyncHolder, ServerSideSerializable {
     private var mbRoiTicket: RoiTicket? = null
     private var prevMatchData: M? = null
     private val changedBlocks: MutableSet<BlockPos> = mutableSetOf()
@@ -188,19 +192,28 @@ class MultiBlockData<S, M>(
         }
     }
 
-    fun handleInteraction(
-        state: IBlockState, player: EntityPlayer, hand: EnumHand,
+    override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
+        assembly?.handlePlacement(blockState, placer, stack)
+    }
+
+    override fun handleInteraction(
+        blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean = assembly?.handleInteraction(state, player, hand, face, hitX, hitY, hitZ) ?: false
+    ): Boolean = assembly?.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ) ?: false
 
     @ServerSide
-    fun handleBlockUpdate(state: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-        assembly?.handleBlockUpdate(state, fromBlock, fromPos)
+    override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
+        assembly?.handleBlockUpdate(blockState, fromBlock, fromPos)
+    }
+
+    @ClientSide.Strong
+    override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
+        assembly?.handleDisplayTick(blockState, rand)
     }
 
     @ServerSide
-    fun handleDestruction(state: IBlockState) {
-        assembly?.handleDestruction(state)
+    override fun handleDestruction(blockState: IBlockState) {
+        assembly?.handleDestruction(blockState)
     }
 
     @ServerSide

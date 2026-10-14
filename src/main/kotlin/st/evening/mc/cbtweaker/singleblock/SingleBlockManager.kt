@@ -42,7 +42,7 @@ class SingleBlockManager(specDir: Path, private val reg: ModRegistrar) :
     private fun <S> loadType(type: SingleBlockType, behaviour: MachineBehaviour<S>, dto: TJson.Object) {
         type.initData(
             behaviour,
-            dto.useObjectValue("behaviour") { behaviour.loadStateFactory(type, dto) },
+            dto.useObjectValue("behaviour") { behaviour.loadStateFactory(type, it) },
             dto.useObject("buffers") { bufGroupsDto ->
                 val bufGroupFactories = Object2ObjectRBTreeMap<String, BufferGroup.Factory>()
                 bufGroupsDto.forEachObject { bufGroupId, bufGroupDto ->

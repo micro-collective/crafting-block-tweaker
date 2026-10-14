@@ -3,7 +3,9 @@ package st.evening.mc.cbtweaker.multiblock
 import io.netty.buffer.Unpooled
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
+import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
 import net.minecraft.util.EnumFacing
@@ -11,6 +13,7 @@ import net.minecraft.util.EnumHand
 import net.minecraft.util.ITickable
 import net.minecraft.util.math.BlockPos
 import st.evening.mc.cbtweaker.CbTweaker
+import st.evening.mc.cbtweaker.common.BlockBehaviour
 import st.evening.mc.cbtweaker.common.LazyTileEntity
 import st.evening.mc.cbtweaker.common.MachineTileEntity
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
@@ -21,9 +24,10 @@ import st.evening.mc.cbtweaker.util.component.RedstoneControlHandler
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.onServer
+import java.util.Random
 
 class MultiBlockControllerTileEntity :
-    LazyTileEntity<MultiBlockData<*, *>>(), MachineTileEntity, CopiableConfigHost, ITickable {
+    LazyTileEntity<MultiBlockData<*, *>>(), MachineTileEntity, BlockBehaviour.Handler, CopiableConfigHost, ITickable {
 
     override fun initData(): MultiBlockData<*, *> {
         val mbType = (world.getBlockState(pos).block as MultiBlockControllerBlock).mbType
@@ -81,19 +85,28 @@ class MultiBlockControllerTileEntity :
         data.tick()
     }
 
-    fun handleInteraction(
-        state: IBlockState, player: EntityPlayer, hand: EnumHand,
+    override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
+        data.handlePlacement(blockState, placer, stack)
+    }
+
+    override fun handleInteraction(
+        blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean = data.handleInteraction(state, player, hand, face, hitX, hitY, hitZ)
+    ): Boolean = data.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ)
 
     @ServerSide
-    fun handleBlockUpdate(state: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-        data.handleBlockUpdate(state, fromBlock, fromPos)
+    override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
+        data.handleBlockUpdate(blockState, fromBlock, fromPos)
     }
 
     @ServerSide
-    fun handleDestruction(state: IBlockState) {
-        data.handleDestruction(state)
+    override fun handleDestruction(blockState: IBlockState) {
+        data.handleDestruction(blockState)
+    }
+
+    @ClientSide.Strong
+    override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
+        data.handleDisplayTick(blockState, rand)
     }
 
     @ServerSide

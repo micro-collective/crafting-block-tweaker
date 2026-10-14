@@ -7,12 +7,14 @@ import net.minecraft.block.material.MapColor
 import net.minecraft.block.material.Material
 import net.minecraft.block.state.BlockFaceShape
 import net.minecraft.block.state.IBlockState
+import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.item.EnumRarity
 import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
 import net.minecraft.util.BlockRenderLayer
 import net.minecraft.util.EnumFacing
+import net.minecraft.util.EnumHand
 import net.minecraft.util.math.AxisAlignedBB
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.IBlockAccess
@@ -33,10 +35,17 @@ import st.evening.mc.prelude.api.data.tjson.expectInt
 import st.evening.mc.prelude.api.data.tjson.expectString
 import st.evening.mc.prelude.api.data.tjson.useObject
 import st.evening.mc.prelude.api.data.tjson.useString
+import st.evening.mc.prelude.api.registration.ContainerType
+import st.evening.mc.prelude.api.registration.openContainer
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.InvHelper
 import st.evening.mc.prelude.api.util.game.RequireMod
+import st.evening.mc.prelude.api.util.game.SidednessAssertion
+import st.evening.mc.prelude.api.util.game.assertLogicalServer
+import st.evening.mc.prelude.api.util.game.assertStrongClient
 import st.evening.mc.prelude.api.util.system.Hoist
+import st.evening.mc.prelude.api.util.world.onServer
+import java.util.Random
 
 class BlockConfig(
     val material: Material,
@@ -169,6 +178,59 @@ abstract class CbtCustomBlock(blockConfig: BlockConfig) :
 
     @ClientSide.Physical
     override fun getRenderLayer(): BlockRenderLayer = blockType.blockConfig.renderLayer
+
+    abstract fun getBehaviourHandler(world: World, pos: BlockPos): BlockBehaviour.Handler?
+
+    open fun getContainerType(): ContainerType? = null
+
+    override fun onBlockPlacedBy(
+        world: World, pos: BlockPos, state: IBlockState, placer: EntityLivingBase, stack: ItemStack
+    ) {
+        getBehaviourHandler(world, pos)?.handlePlacement(state, placer, stack)
+    }
+
+    override fun onBlockActivated(
+        world: World, pos: BlockPos, state: IBlockState, player: EntityPlayer, hand: EnumHand,
+        facing: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
+    ): Boolean {
+        if (CoFHCoreCompat.tryWrenchDismantle(world, pos, state, player, hand)) return true
+        getBehaviourHandler(world, pos)?.let { handler ->
+            if (handler.handleInteraction(state, player, hand, facing, hitX, hitY, hitZ)) return true
+            // technically not coupled to the behaviour handler, but all implementations just return the tile entity at
+            // the block position, which is what we would check here anyways
+            getContainerType()?.let {
+                world.onServer {
+                    player.openContainer(it, world, pos)
+                }
+                return true
+            }
+        }
+        return false
+    }
+
+    @OptIn(SidednessAssertion::class)
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun neighborChanged(state: IBlockState, world: World, pos: BlockPos, block: Block, fromPos: BlockPos) {
+        assertLogicalServer {
+            getBehaviourHandler(world, pos)?.handleBlockUpdate(state, block, fromPos)
+        }
+    }
+
+    @OptIn(SidednessAssertion::class)
+    override fun breakBlock(world: World, pos: BlockPos, state: IBlockState) {
+        assertLogicalServer {
+            getBehaviourHandler(world, pos)?.handleDestruction(state)
+        }
+        super.breakBlock(world, pos, state)
+    }
+
+    @ClientSide.Physical
+    @OptIn(SidednessAssertion::class)
+    override fun randomDisplayTick(state: IBlockState, world: World, pos: BlockPos, rand: Random) {
+        assertStrongClient {
+            getBehaviourHandler(world, pos)?.handleDisplayTick(state, rand)
+        }
+    }
 
     @RequireMod(CoFHCoreCompat.MOD_ID)
     @Suppress("KIC_LEAKY_DECLARATION")

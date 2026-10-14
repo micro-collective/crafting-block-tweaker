@@ -4,7 +4,9 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap
 import it.unimi.dsi.fastutil.objects.Object2ObjectSortedMap
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
+import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
 import net.minecraft.util.EnumFacing
@@ -39,9 +41,11 @@ import st.evening.mc.prelude.api.util.data.getBoolOrNull
 import st.evening.mc.prelude.api.util.data.getCompoundOrNull
 import st.evening.mc.prelude.api.util.data.getListOrNull
 import st.evening.mc.prelude.api.util.data.runAction
+import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import st.evening.mc.prelude.api.util.world.BlockSide
 import st.evening.mc.prelude.api.util.world.RelativeFace
+import java.util.Random
 import kotlin.experimental.and
 
 interface BufferConfig<B> : CopiableConfigHost, ServerSideSerializable {
@@ -57,18 +61,28 @@ fun <B> BufferConfig<B>.collectComponents(components: MutableComponentSet) {
     bufType.collectComponents(components, buffer)
 }
 
+fun <B> BufferConfig<B>.handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
+    bufType.handlePlacement(buffer, blockState, placer, stack)
+}
+
 fun <B> BufferConfig<B>.handleInteraction(
-    state: IBlockState, player: EntityPlayer, hand: EnumHand, face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-): Boolean = bufType.handleInteraction(buffer, state, player, hand, face, hitX, hitY, hitZ)
+    blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
+    face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
+): Boolean = bufType.handleInteraction(buffer, blockState, player, hand, face, hitX, hitY, hitZ)
 
 @ServerSide
-fun <B> BufferConfig<B>.handleBlockUpdate(state: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-    bufType.handleBlockUpdate(buffer, state, fromBlock, fromPos)
+fun <B> BufferConfig<B>.handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
+    bufType.handleBlockUpdate(buffer, blockState, fromBlock, fromPos)
 }
 
 @ServerSide
-fun <B> BufferConfig<B>.handleDestruction(state: IBlockState) {
-    bufType.handleDestruction(buffer, state)
+fun <B> BufferConfig<B>.handleDestruction(blockState: IBlockState) {
+    bufType.handleDestruction(buffer, blockState)
+}
+
+@ClientSide
+fun <B> BufferConfig<B>.handleDisplayTick(blockState: IBlockState, rand: Random) {
+    bufType.handleDisplayTick(buffer, blockState, rand)
 }
 
 fun <B> BufferConfig<B>.getBufferSyncState(): Piecewise? = bufType.getBufferSyncState(buffer)

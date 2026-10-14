@@ -3,7 +3,9 @@ package st.evening.mc.cbtweaker.multiblock
 import it.unimi.dsi.fastutil.objects.Object2ObjectRBTreeMap
 import net.minecraft.block.Block
 import net.minecraft.block.state.IBlockState
+import net.minecraft.entity.EntityLivingBase
 import net.minecraft.entity.player.EntityPlayer
+import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.network.PacketBuffer
 import net.minecraft.util.EnumFacing
@@ -14,6 +16,7 @@ import st.evening.mc.cbtweaker.behaviour.MachineHost
 import st.evening.mc.cbtweaker.buffer.BufferGroup
 import st.evening.mc.cbtweaker.buffer.BufferGroups
 import st.evening.mc.cbtweaker.buffer.collectComponents
+import st.evening.mc.cbtweaker.common.BlockBehaviour
 import st.evening.mc.cbtweaker.common.CraftingBlockType
 import st.evening.mc.cbtweaker.gui.inventory.UiElement
 import st.evening.mc.cbtweaker.hatch.HatchTileEntity
@@ -34,6 +37,7 @@ import st.evening.mc.prelude.api.util.collection.WeakValidity
 import st.evening.mc.prelude.api.util.data.orNull
 import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
+import java.util.Random
 
 class MultiBlockAssembly<S>(
     private val mbData: MultiBlockData<S, *>,
@@ -41,7 +45,7 @@ class MultiBlockAssembly<S>(
     private val hatches: List<HatchTileEntity>,
     private val bufGroups: BufferGroups,
     oldAssembly: MultiBlockAssembly<S>?
-) : MachineHost, CopiableConfigHost, ServerSideSerializable {
+) : MachineHost, BlockBehaviour.Handler, CopiableConfigHost, ServerSideSerializable {
     companion object {
         fun <S> fromStructure(
             mbData: MultiBlockData<S, *>,
@@ -119,19 +123,28 @@ class MultiBlockAssembly<S>(
         behaviour.tick(machineState, ticker)
     }
 
-    fun handleInteraction(
+    override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
+        behaviour.handlePlacement(machineState, blockState, placer, stack)
+    }
+
+    override fun handleInteraction(
         blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
     ): Boolean = behaviour.handleInteraction(machineState, blockState, player, hand, face, hitX, hitY, hitZ)
 
     @ServerSide
-    fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
+    override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
         behaviour.handleBlockUpdate(machineState, blockState, fromBlock, fromPos)
     }
 
     @ServerSide
-    fun handleDestruction(blockState: IBlockState) {
+    override fun handleDestruction(blockState: IBlockState) {
         behaviour.handleDestruction(machineState, blockState)
+    }
+
+    @ClientSide.Strong
+    override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
+        behaviour.handleDisplayTick(machineState, blockState, rand)
     }
 
     @ServerSide
