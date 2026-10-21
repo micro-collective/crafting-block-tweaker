@@ -44,7 +44,7 @@ import st.evening.mc.prelude.api.util.game.getTileEntityWeakValidity
 import st.evening.mc.prelude.api.util.world.onServer
 import java.util.Random
 
-class SingleBlockData<S>(
+class SingleBlockState<S>(
     val sbMachine: SingleBlockMachineTileEntity,
     val sbType: SingleBlockType,
     sbTypeData: SingleBlockType.Data<S>

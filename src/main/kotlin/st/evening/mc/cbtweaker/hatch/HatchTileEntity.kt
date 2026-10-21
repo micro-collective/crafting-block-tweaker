@@ -23,16 +23,16 @@ import st.evening.mc.prelude.api.util.game.ClientSide
 import st.evening.mc.prelude.api.util.game.ServerSide
 import java.util.Random
 
-class HatchTileEntity : LazyTileEntity<HatchData<*>>(), BlockBehaviour.Handler, CopiableConfigHost, ITickable {
+class HatchTileEntity : LazyTileEntity<HatchState<*>>(), BlockBehaviour.Handler, CopiableConfigHost, ITickable {
     private val capabilities: CapabilityMap by lazy {
-        CapabilityMap().also { data.attachCapabilities(it) }
+        CapabilityMap().also { state.attachCapabilities(it) }
     }
 
-    override fun initData(): HatchData<*> {
+    override fun initData(): HatchState<*> {
         val state = world.getBlockState(getPos())
         val block = state.getBlock() as HatchBlock
         val hatchType = block.hatchType
-        val data = HatchData(this, hatchType, hatchType.data, state.getValue(block.tierProperty))
+        val data = HatchState(this, hatchType, hatchType.data, state.getValue(block.tierProperty))
         data.getSyncState()?.let {
             initSync(TileEntitySyncProxy(this, it))
         }
@@ -40,67 +40,67 @@ class HatchTileEntity : LazyTileEntity<HatchData<*>>(), BlockBehaviour.Handler, 
     }
 
     val hatchType: HatchType
-        get() = data.hatchType
+        get() = state.hatchType
 
     val tier: Int
-        get() = data.hatchTier
+        get() = state.hatchTier
 
-    val exportHandler: HatchData<*>.HatchAutoExportHandler?
-        get() = data.exportHandler
+    val exportHandler: HatchState<*>.HatchAutoExportHandler?
+        get() = state.exportHandler
 
     override fun hasCapability(capability: Capability<*>, facing: EnumFacing?): Boolean = capability in capabilities
 
     override fun <T : Any> getCapability(capability: Capability<T>, facing: EnumFacing?): T? = capabilities[capability]
 
     fun associate(mbCtrl: MultiBlockControllerTileEntity) {
-        data.associate(mbCtrl)
+        state.associate(mbCtrl)
     }
 
     fun disassociate(mbCtrl: MultiBlockControllerTileEntity) {
-        data.disassociate(mbCtrl)
+        state.disassociate(mbCtrl)
     }
 
     fun addToGroup(group: BufferGroup) {
-        data.addToGroup(group)
+        state.addToGroup(group)
     }
 
     override fun update() {
-        data.tick()
+        state.tick()
     }
 
     override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
-        data.handlePlacement(blockState, placer, stack)
+        state.handlePlacement(blockState, placer, stack)
     }
 
     override fun handleInteraction(
         blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean = data.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ)
+    ): Boolean = state.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ)
 
     @ServerSide
     override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-        data.handleBlockUpdate(blockState, fromBlock, fromPos)
+        state.handleBlockUpdate(blockState, fromBlock, fromPos)
     }
 
     @ServerSide
     override fun handleDestruction(blockState: IBlockState) {
-        data.handleDestruction(blockState)
+        state.handleDestruction(blockState)
     }
 
     @ClientSide.Strong
     override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
-        data.handleDisplayTick(blockState, rand)
+        state.handleDisplayTick(blockState, rand)
     }
 
     @ServerSide
     override fun writeConfig(dto: NBTTagCompound) {
-        data.writeConfig(dto)
+        state.writeConfig(dto)
     }
 
     @ServerSide
     override fun readConfig(dto: NBTTagCompound) {
-        data.readConfig(dto)
+        state.readConfig(dto)
     }
 
-    fun createUiElement(): UiElement? = data.createUiElement()
+    fun createUiElement(): UiElement? = state.createUiElement()
 }

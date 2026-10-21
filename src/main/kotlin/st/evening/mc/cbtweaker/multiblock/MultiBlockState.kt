@@ -33,7 +33,7 @@ import st.evening.mc.prelude.api.util.world.onClient
 import st.evening.mc.prelude.api.util.world.onServer
 import java.util.Random
 
-class MultiBlockData<S, M>(
+class MultiBlockState<S, M>(
     val mbCtrl: MultiBlockControllerTileEntity,
     val mbType: MultiBlockType,
     val mbTypeData: MultiBlockType.Data<S>,

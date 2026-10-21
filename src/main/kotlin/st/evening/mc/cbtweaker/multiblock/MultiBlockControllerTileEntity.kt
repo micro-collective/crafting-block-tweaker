@@ -27,36 +27,36 @@ import st.evening.mc.prelude.api.util.world.onServer
 import java.util.Random
 
 class MultiBlockControllerTileEntity :
-    LazyTileEntity<MultiBlockData<*, *>>(), MachineTileEntity, BlockBehaviour.Handler, CopiableConfigHost, ITickable {
+    LazyTileEntity<MultiBlockState<*, *>>(), MachineTileEntity, BlockBehaviour.Handler, CopiableConfigHost, ITickable {
 
-    override fun initData(): MultiBlockData<*, *> {
+    override fun initData(): MultiBlockState<*, *> {
         val mbType = (world.getBlockState(pos).block as MultiBlockControllerBlock).mbType
         val mbTypeData = mbType.data
-        return MultiBlockData(this, mbType, mbTypeData, mbTypeData.structureMatcher)
+        return MultiBlockState(this, mbType, mbTypeData, mbTypeData.structureMatcher)
     }
 
     val mbType: MultiBlockType
-        get() = data.mbType
+        get() = state.mbType
 
     val assembled: Boolean
-        get() = data.assembled
+        get() = state.assembled
 
     val assemblyStateClock: Int
-        get() = data.assemblyStateClock
+        get() = state.assemblyStateClock
 
     override val isActive: Boolean
-        get() = data.isActive
+        get() = state.isActive
 
     override val rsHandler: RedstoneControlHandler?
-        get() = data.rsHandler
+        get() = state.rsHandler
 
     override fun invalidate() {
         super.invalidate()
-        data.onInvalidated()
+        state.onInvalidated()
     }
 
     fun notifyHatchChanged(compsDirty: Boolean) {
-        data.notifyHatchChanged(compsDirty)
+        state.notifyHatchChanged(compsDirty)
     }
 
     fun onAssemblyChanged(assembly: MultiBlockAssembly<*>?) {
@@ -82,49 +82,49 @@ class MultiBlockControllerTileEntity :
     }
 
     override fun update() {
-        data.tick()
+        state.tick()
     }
 
     override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
-        data.handlePlacement(blockState, placer, stack)
+        state.handlePlacement(blockState, placer, stack)
     }
 
     override fun handleInteraction(
         blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean = data.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ)
+    ): Boolean = state.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ)
 
     @ServerSide
     override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-        data.handleBlockUpdate(blockState, fromBlock, fromPos)
+        state.handleBlockUpdate(blockState, fromBlock, fromPos)
     }
 
     @ServerSide
     override fun handleDestruction(blockState: IBlockState) {
-        data.handleDestruction(blockState)
+        state.handleDestruction(blockState)
     }
 
     @ClientSide.Strong
     override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
-        data.handleDisplayTick(blockState, rand)
+        state.handleDisplayTick(blockState, rand)
     }
 
     @ServerSide
     override fun writeConfig(dto: NBTTagCompound) {
-        data.writeConfig(dto)
+        state.writeConfig(dto)
     }
 
     @ServerSide
     override fun readConfig(dto: NBTTagCompound) {
-        data.readConfig(dto)
+        state.readConfig(dto)
     }
 
     @ClientSide
     fun bindSync(hostId: Int, syncData: PacketBuffer) {
-        data.bindSync(hostId, syncData)
+        state.bindSync(hostId, syncData)
     }
 
-    fun createMachineUiElement(): UiElement? = data.createMachineUiElement()
+    fun createMachineUiElement(): UiElement? = state.createMachineUiElement()
 
-    fun getStructureVisualization(): StructureVisualization = data.getStructureVisualization()
+    fun getStructureVisualization(): StructureVisualization = state.getStructureVisualization()
 }

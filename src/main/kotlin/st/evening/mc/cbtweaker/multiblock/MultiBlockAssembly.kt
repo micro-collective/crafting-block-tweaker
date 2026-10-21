@@ -40,7 +40,7 @@ import st.evening.mc.prelude.api.util.game.ServerSide
 import java.util.Random
 
 class MultiBlockAssembly<S>(
-    private val mbData: MultiBlockData<S, *>,
+    private val mbData: MultiBlockState<S, *>,
     private val baseComponents: ComponentSet,
     private val hatches: List<HatchTileEntity>,
     private val bufGroups: BufferGroups,
@@ -48,7 +48,7 @@ class MultiBlockAssembly<S>(
 ) : MachineHost, BlockBehaviour.Handler, CopiableConfigHost, ServerSideSerializable {
     companion object {
         fun <S> fromStructure(
-            mbData: MultiBlockData<S, *>,
+            mbData: MultiBlockState<S, *>,
             parts: StructureParts,
             oldAssembly: MultiBlockAssembly<S>?
         ): MultiBlockAssembly<S> {

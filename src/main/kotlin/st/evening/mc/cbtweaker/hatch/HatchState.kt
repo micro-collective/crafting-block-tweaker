@@ -40,7 +40,7 @@ import st.evening.mc.prelude.api.util.world.RelativeFace
 import st.evening.mc.prelude.api.util.world.onServer
 import java.util.Random
 
-class HatchData<B>(
+class HatchState<B>(
     private val hatch: HatchTileEntity,
     val hatchType: HatchType,
     private val hatchTypeData: HatchType.Data<B>,

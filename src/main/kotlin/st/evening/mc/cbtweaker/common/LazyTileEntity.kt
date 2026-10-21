@@ -25,16 +25,16 @@ abstract class LazyTileEntity<T : ServerSideSerializable> : TileEntity() {
         private const val SER_DATA: String = $$"p$data"
     }
 
-    private var dataCache: T? = null
+    private var stateCache: T? = null
     @ServerSide
     private var bufferedDataDeser: NBTTagCompound? = null
     private var syncProxy: SyncHost? = null
 
-    protected val data: T
+    protected val state: T
         get() {
-            dataCache?.let { return it }
+            stateCache?.let { return it }
             val data = initData()
-            dataCache = data
+            stateCache = data
             world.onServer {
                 bufferedDataDeser?.let {
                     data.readFromNbtServerSide(it)
@@ -81,14 +81,14 @@ abstract class LazyTileEntity<T : ServerSideSerializable> : TileEntity() {
         super.readFromNBT(tag)
         val hostId = tag.getIntOrNull(SER_SYNC_ID) ?: return
         world.onClient {
-            this.data // ensure the sync proxy is installed
+            this.state // ensure the sync proxy is installed
             val proxy = syncProxy
             if (proxy != null) {
                 val syncMgr = proxy.syncManager.getClient()
                 syncMgr.registerClientSide(hostId)
                 syncMgr.readFullState(PacketBuffer(Unpooled.wrappedBuffer(tag.getByteArray(SER_DATA))))
             } else {
-                (data as? BufferedSyncHolder)?.let {
+                (state as? BufferedSyncHolder)?.let {
                     val data = PacketBuffer(Unpooled.wrappedBuffer(tag.getByteArray(SER_DATA)))
                     data.retain()
                     it.bufferSyncData(hostId, data)
@@ -100,7 +100,7 @@ abstract class LazyTileEntity<T : ServerSideSerializable> : TileEntity() {
     override fun writeToNBT(tag: NBTTagCompound): NBTTagCompound {
         super.writeToNBT(tag)
         world.onServer {
-            data.writeToNbtServerSide(tag)
+            state.writeToNbtServerSide(tag)
         }
         return tag
     }
@@ -108,7 +108,7 @@ abstract class LazyTileEntity<T : ServerSideSerializable> : TileEntity() {
     override fun readFromNBT(tag: NBTTagCompound) {
         super.readFromNBT(tag)
         world.onServer {
-            val data = dataCache
+            val data = stateCache
             if (data != null) {
                 data.readFromNbtServerSide(tag)
             } else {

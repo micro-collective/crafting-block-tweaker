@@ -24,11 +24,11 @@ import st.evening.mc.prelude.api.util.game.ServerSide
 import java.util.Random
 
 class SingleBlockMachineTileEntity :
-    LazyTileEntity<SingleBlockData<*>>(), MachineTileEntity, BlockBehaviour.Handler, CopiableConfigHost, ITickable {
+    LazyTileEntity<SingleBlockState<*>>(), MachineTileEntity, BlockBehaviour.Handler, CopiableConfigHost, ITickable {
 
-    override fun initData(): SingleBlockData<*> {
+    override fun initData(): SingleBlockState<*> {
         val sbType = (world.getBlockState(pos).block as SingleBlockMachineBlock).sbType
-        val data = SingleBlockData(this, sbType, sbType.data)
+        val data = SingleBlockState(this, sbType, sbType.data)
         data.getSyncState()?.let {
             initSync(TileEntitySyncProxy(this, it))
         }
@@ -36,16 +36,16 @@ class SingleBlockMachineTileEntity :
     }
 
     val sbType: SingleBlockType
-        get() = data.sbType
+        get() = state.sbType
 
     val bufHandler: SidedBufferHandler
-        get() = data.bufHandler
+        get() = state.bufHandler
 
     override val isActive: Boolean
-        get() = data.isActive
+        get() = state.isActive
 
     override val rsHandler: RedstoneControlHandler?
-        get() = data.rsHandler
+        get() = state.rsHandler
 
     override fun hasCapability(capability: Capability<*>, facing: EnumFacing?): Boolean =
         bufHandler.hasCapability(capability, facing)
@@ -54,42 +54,42 @@ class SingleBlockMachineTileEntity :
         bufHandler.getCapability(capability, facing)
 
     override fun update() {
-        data.tick()
+        state.tick()
     }
 
     override fun handlePlacement(blockState: IBlockState, placer: EntityLivingBase, stack: ItemStack) {
-        data.handlePlacement(blockState, placer, stack)
+        state.handlePlacement(blockState, placer, stack)
     }
 
     override fun handleInteraction(
         blockState: IBlockState, player: EntityPlayer, hand: EnumHand,
         face: EnumFacing, hitX: Float, hitY: Float, hitZ: Float
-    ): Boolean = data.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ)
+    ): Boolean = state.handleInteraction(blockState, player, hand, face, hitX, hitY, hitZ)
 
     @ServerSide
     override fun handleBlockUpdate(blockState: IBlockState, fromBlock: Block, fromPos: BlockPos) {
-        data.handleBlockUpdate(blockState, fromBlock, fromPos)
+        state.handleBlockUpdate(blockState, fromBlock, fromPos)
     }
 
     @ServerSide
     override fun handleDestruction(blockState: IBlockState) {
-        data.handleDestruction(blockState)
+        state.handleDestruction(blockState)
     }
 
     @ClientSide.Strong
     override fun handleDisplayTick(blockState: IBlockState, rand: Random) {
-        data.handleDisplayTick(blockState, rand)
+        state.handleDisplayTick(blockState, rand)
     }
 
     @ServerSide
     override fun writeConfig(dto: NBTTagCompound) {
-        data.writeConfig(dto)
+        state.writeConfig(dto)
     }
 
     @ServerSide
     override fun readConfig(dto: NBTTagCompound) {
-        data.readConfig(dto)
+        state.readConfig(dto)
     }
 
-    fun createMachineUiElement(): UiElement? = data.createMachineUiElement()
+    fun createMachineUiElement(): UiElement? = state.createMachineUiElement()
 }
