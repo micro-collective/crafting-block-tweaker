@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack
 import net.minecraft.util.SoundEvent
 import net.minecraftforge.client.event.RenderTooltipEvent
 import net.minecraftforge.client.event.RenderWorldLastEvent
+import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.event.RegistryEvent
 import net.minecraftforge.fml.common.Loader
 import net.minecraftforge.fml.common.event.FMLInitializationEvent
@@ -26,6 +27,8 @@ import st.evening.mc.cbtweaker.buffer.impl.ItemStackBuffer
 import st.evening.mc.cbtweaker.compat.CbtCompat
 import st.evening.mc.cbtweaker.compat.jei.structure.StructureRecipeWrapper
 import st.evening.mc.cbtweaker.event.CbtIngredientHandlerRegistrationEvent
+import st.evening.mc.cbtweaker.event.CbtLoadDataEvent
+import st.evening.mc.cbtweaker.event.CbtLoadTemplatesEvent
 import st.evening.mc.cbtweaker.event.CbtRegistrationEvent
 import st.evening.mc.cbtweaker.gui.CbtFontRenderer
 import st.evening.mc.cbtweaker.hatch.HatchContainer
@@ -290,16 +293,19 @@ class CbtDefinitions(reg: ModRegistrar) {
 
     internal fun loadData() {
         templates.clear()
-        templates.loadWindowTemplates()
         recipeSets.clear()
+        templates.loadWindowTemplates()
+        MinecraftForge.EVENT_BUS.post(CbtLoadTemplatesEvent(templates.windowTemplates))
         if (CbTweaker.config.builtIns.loadBuiltInRecipeSets) {
             // do this before loading machine types so they grab existing recipe sets instead of creating new ones
             recipeSets.loadBuiltInRecipes()
         }
         hatches.load()
         templates.loadStructureBlockMatcherTemplates()
+        MinecraftForge.EVENT_BUS.post(CbtLoadTemplatesEvent(templates.structureBlockMatcherTemplates))
         singleBlocks.load()
         multiBlocks.load()
         recipeSets.loadRecipes()
+        MinecraftForge.EVENT_BUS.post(CbtLoadDataEvent())
     }
 }
