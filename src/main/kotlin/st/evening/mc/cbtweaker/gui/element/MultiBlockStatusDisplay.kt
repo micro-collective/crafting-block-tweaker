@@ -1,6 +1,7 @@
 package st.evening.mc.cbtweaker.gui.element
 
 import net.minecraft.client.resources.I18n
+import net.minecraft.util.math.BlockPos
 import net.minecraft.util.text.TextFormatting
 import st.evening.mc.cbtweaker.CbtLang
 import st.evening.mc.cbtweaker.gui.CbtGuiResources
@@ -61,11 +62,14 @@ class MultiBlockStatusDisplay(private val mbCtrl: MultiBlockControllerTileEntity
             val rot = world.getBlockState(ctrlPos).getValue(BlockSidedIfc.PROP_FACING).getRotationFromNorth()
             val mc = context.gui.mc
             val (matchers, mirrorX) = mbCtrl.getStructureVisualization()
-            val fx = mc.effectRenderer
+            val positions = mutableListOf<BlockPos>()
             matchers.forEach { (offset, matcher) ->
-                if (matcher.visualization.isEmpty()) return@forEach
-                val pos = ctrlPos.offsetWithRotation(offset, rot, mirrorX)
-                fx.addEffect(StructureHighlightParticle(world, pos, 100))
+                if (matcher.visualization.isNotEmpty()) {
+                    positions += ctrlPos.offsetWithRotation(offset, rot, mirrorX)
+                }
+            }
+            if (positions.isNotEmpty()) {
+                mc.effectRenderer.addEffect(StructureHighlightParticle(world, ctrlPos, positions, 100))
             }
             mc.soundHandler.playUiClick()
             return ClickResult.Consume

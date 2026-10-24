@@ -139,10 +139,9 @@ class MultiBlockState<S, M>(
                         bufferedAssemblyBind = null
                     }
                     onPhysicalClient {
-                        val fx = Minecraft.getMinecraft().effectRenderer
-                        match.parts.positions.forEach {
-                            fx.addEffect(StructureHighlightParticle(world, it, 16))
-                        }
+                        Minecraft.getMinecraft().effectRenderer.addEffect(
+                            StructureHighlightParticle(world, pos, match.parts.positions, 16)
+                        )
                     }
                 }
                 mbCtrl.onAssemblyChanged(assembly)

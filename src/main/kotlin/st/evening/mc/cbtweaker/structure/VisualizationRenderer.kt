@@ -6,6 +6,7 @@ import net.minecraft.block.state.IBlockState
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiScreen
 import net.minecraft.client.gui.ScaledResolution
+import net.minecraft.client.renderer.BufferBuilder
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.renderer.Tessellator
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats
@@ -194,8 +195,10 @@ class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
         // draw an invisible cube around each block to populate the depth buffer for hover detection later on
         GlStateManager.disableAlpha()
         GlStateManager.colorMask(false, false, false, false)
-        blocksToRender.forEach { (pos, _) -> // TODO should probably do this all in one draw call
-            drawCube(pos)
+        tessellateCubes(tess) { buf ->
+            blocksToRender.forEach { (pos, _) ->
+                drawCube(buf, pos)
+            }
         }
         GlStateManager.colorMask(true, true, true, true)
         GlStateManager.enableAlpha()
@@ -260,7 +263,9 @@ class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
         hoveredBlock = visWorld.blocks[hoveredPos]?.let { CbtClientHelper.indexByGlobalTimer(it.visualization) }
             ?: return
         GlStateManager.color(1F, 1F, 1F, 0.5F)
-        drawCube(hoveredPos)
+        tessellateCubes(Tessellator.getInstance()) {
+            drawCube(it, hoveredPos)
+        }
         RenderingHelper.resetColour()
     }
 
@@ -442,53 +447,55 @@ class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
             this += "${TextFormatting.DARK_GRAY}$modKeys ${TextFormatting.WHITE}${I18n.format(controlLangKey)}"
         }
 
-        fun drawCube(pos: Vec3i) {
+        inline fun tessellateCubes(tess: Tessellator, crossinline drawAction: (BufferBuilder) -> Unit) {
+            GlStateManager.disableTexture2D()
+            GlStateManager.enableBlend()
+            GlStateManager.enablePolygonOffset()
+            GlStateManager.doPolygonOffset(-1F, -300F)
+            tess.tessellate(GL11.GL_QUADS, DefaultVertexFormats.POSITION) { drawAction(this) }
+            GlStateManager.doPolygonOffset(0F, 0F)
+            GlStateManager.disablePolygonOffset()
+            GlStateManager.disableBlend()
+            GlStateManager.enableTexture2D()
+        }
+
+        fun drawCube(buf: BufferBuilder, pos: Vec3i) {
             val minX = pos.x.toDouble()
             val maxX = minX + 1.0
             val minY = pos.y.toDouble()
             val maxY = minY + 1.0
             val minZ = pos.z.toDouble()
             val maxZ = minZ + 1.0
-            val tess = Tessellator.getInstance()
-            GlStateManager.disableTexture2D()
-            GlStateManager.enableBlend()
-            GlStateManager.enablePolygonOffset()
-            GlStateManager.doPolygonOffset(-1F, -300F)
-
-            // draw sides
-            tess.tessellate(GL11.GL_QUAD_STRIP, DefaultVertexFormats.POSITION) {
-                pos(minX, minY, minZ).endVertex()
-                pos(minX, maxY, minZ).endVertex()
-                pos(maxX, minY, minZ).endVertex()
-                pos(maxX, maxY, minZ).endVertex()
-                pos(maxX, minY, maxZ).endVertex()
-                pos(maxX, maxY, maxZ).endVertex()
-                pos(minX, minY, maxZ).endVertex()
-                pos(minX, maxY, maxZ).endVertex()
-                pos(minX, minY, minZ).endVertex()
-                pos(minX, maxY, minZ).endVertex()
-            }
-
-            // draw top
-            tess.tessellate(GL11.GL_QUADS, DefaultVertexFormats.POSITION) {
-                pos(minX, maxY, minZ).endVertex()
-                pos(minX, maxY, maxZ).endVertex()
-                pos(maxX, maxY, maxZ).endVertex()
-                pos(maxX, maxY, minZ).endVertex()
-            }
-
-            // draw bottom
-            tess.tessellate(GL11.GL_QUADS, DefaultVertexFormats.POSITION) {
-                pos(minX, minY, minZ).endVertex()
-                pos(maxX, minY, minZ).endVertex()
-                pos(maxX, minY, maxZ).endVertex()
-                pos(minX, minY, maxZ).endVertex()
-            }
-
-            GlStateManager.doPolygonOffset(0F, 0F)
-            GlStateManager.disablePolygonOffset()
-            GlStateManager.disableBlend()
-            GlStateManager.enableTexture2D()
+            // north
+            buf.pos(minX, minY, minZ).endVertex()
+            buf.pos(minX, maxY, minZ).endVertex()
+            buf.pos(maxX, maxY, minZ).endVertex()
+            buf.pos(maxX, minY, minZ).endVertex()
+            // east
+            buf.pos(maxX, minY, minZ).endVertex()
+            buf.pos(maxX, maxY, minZ).endVertex()
+            buf.pos(maxX, maxY, maxZ).endVertex()
+            buf.pos(maxX, minY, maxZ).endVertex()
+            // south
+            buf.pos(maxX, minY, maxZ).endVertex()
+            buf.pos(maxX, maxY, maxZ).endVertex()
+            buf.pos(minX, maxY, maxZ).endVertex()
+            buf.pos(minX, minY, maxZ).endVertex()
+            // west
+            buf.pos(minX, minY, maxZ).endVertex()
+            buf.pos(minX, maxY, maxZ).endVertex()
+            buf.pos(minX, maxY, minZ).endVertex()
+            buf.pos(minX, minY, minZ).endVertex()
+            // top
+            buf.pos(minX, maxY, minZ).endVertex()
+            buf.pos(minX, maxY, maxZ).endVertex()
+            buf.pos(maxX, maxY, maxZ).endVertex()
+            buf.pos(maxX, maxY, minZ).endVertex()
+            // bottom
+            buf.pos(minX, minY, minZ).endVertex()
+            buf.pos(maxX, minY, minZ).endVertex()
+            buf.pos(maxX, minY, maxZ).endVertex()
+            buf.pos(minX, minY, maxZ).endVertex()
         }
 
         private val inWorldVisWorld: DummyBlockAccessor.MapBacked = DummyBlockAccessor.MapBacked()
@@ -545,17 +552,20 @@ class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
 
                 val ctrlY = state.ctrlPos.y
                 val blocksToDraw = mutableListOf<BlockPos>()
-                visBlocks.forEach { (pos, matcher) ->
-                    if
-                        ((level != null && pos.y != ctrlY + level) ||
-                        matcher.matchBlock(world, pos, rotation, visMirrorX) != null
-                    ) {
-                        return@forEach
-                    }
-                    if (world.isAirBlock(pos)) {
-                        blocksToDraw += pos
-                    } else {
-                        drawCube(pos)
+                val tess = Tessellator.getInstance()
+                tessellateCubes(tess) { buf ->
+                    visBlocks.forEach { (pos, matcher) ->
+                        if
+                            ((level != null && pos.y != ctrlY + level) ||
+                            matcher.matchBlock(world, pos, rotation, visMirrorX) != null
+                        ) {
+                            return@forEach
+                        }
+                        if (world.isAirBlock(pos)) {
+                            blocksToDraw += pos
+                        } else {
+                            drawCube(buf, pos)
+                        }
                     }
                 }
                 RenderingHelper.resetColour()
@@ -569,7 +579,6 @@ class VisualizationRenderer(structMatcher: StructureMatcher<*>) {
                 GL14.glBlendColor(1F, 1F, 1F, 0.3F)
                 GlStateManager.depthMask(false)
 
-                val tess = Tessellator.getInstance()
                 val blockRenderer = mc.blockRendererDispatcher
                 TextureResource.ITEM_BLOCK_ATLAS.bind()
                 BlockRenderLayer.entries.forEach { renderLayer ->

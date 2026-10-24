@@ -3,6 +3,7 @@ package st.evening.mc.cbtweaker.structure
 import net.minecraft.client.particle.Particle
 import net.minecraft.client.renderer.BufferBuilder
 import net.minecraft.client.renderer.GlStateManager
+import net.minecraft.client.renderer.Tessellator
 import net.minecraft.entity.Entity
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
@@ -11,9 +12,12 @@ import st.evening.mc.prelude.api.util.render.RenderingHelper
 
 
 @ClientSide.Physical
-class StructureHighlightParticle(world: World, private val blockPos: BlockPos, ttl: Int) :
-    Particle(world, blockPos.x.toDouble(), blockPos.y.toDouble(), blockPos.z.toDouble()) {
-
+class StructureHighlightParticle(
+    world: World,
+    rootPos: BlockPos,
+    private val positions: Collection<BlockPos>,
+    ttl: Int
+) : Particle(world, rootPos.x.toDouble(), rootPos.y.toDouble(), rootPos.z.toDouble()) {
     init {
         particleMaxAge = ttl
     }
@@ -48,7 +52,11 @@ class StructureHighlightParticle(world: World, private val blockPos: BlockPos, t
         GlStateManager.color(1F, 1F, 1F, t * t / 3F)
         RenderingHelper.pushMatrix {
             RenderingHelper.translateInverseMotionInterpolation(entity, partialTicks)
-            VisualizationRenderer.drawCube(blockPos)
+            VisualizationRenderer.tessellateCubes(Tessellator.getInstance()) { buf ->
+                positions.forEach {
+                    VisualizationRenderer.drawCube(buf, it)
+                }
+            }
         }
         GlStateManager.enableAlpha()
         RenderingHelper.resetColour()
