@@ -1,6 +1,6 @@
 plugins {
-    id("st.evening.mc.prelude.build") version "1.0.0"
-    id("st.evening.kt.invokecontrol") version "2.3.20-0.1.0"
+    id("st.evening.mc.prelude.build") version "1.0.1"
+    id("st.evening.kt.invokecontrol") version "2.4.20-0.1.0"
     id("maven-publish")
 }
 
