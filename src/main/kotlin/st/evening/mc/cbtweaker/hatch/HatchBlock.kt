@@ -1,12 +1,14 @@
 package st.evening.mc.cbtweaker.hatch
 
 import com.google.common.base.Optional
+import net.minecraft.block.ITileEntityProvider
 import net.minecraft.block.properties.IProperty
 import net.minecraft.block.state.BlockStateContainer
 import net.minecraft.block.state.IBlockState
 import net.minecraft.creativetab.CreativeTabs
 import net.minecraft.item.ItemBlock
 import net.minecraft.item.ItemStack
+import net.minecraft.tileentity.TileEntity
 import net.minecraft.util.NonNullList
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
@@ -16,14 +18,12 @@ import st.evening.mc.cbtweaker.common.BlockBehaviour
 import st.evening.mc.cbtweaker.common.CbtCustomBlock
 import st.evening.mc.cbtweaker.common.CustomBlockType
 import st.evening.mc.prelude.api.block.CustomItemBlock
-import st.evening.mc.prelude.api.block.TileEntityBlock
 import st.evening.mc.prelude.api.registration.ContainerType
-import st.evening.mc.prelude.api.registration.TileEntityType
 import st.evening.mc.prelude.api.util.collection.IntRangeSet
 import st.evening.mc.prelude.api.util.world.findTileEntity
 
 class HatchBlock private constructor(val hatchType: HatchType) :
-    CbtCustomBlock(hatchType.blockConfig), TileEntityBlock, CustomItemBlock {
+    CbtCustomBlock(hatchType.blockConfig), ITileEntityProvider, CustomItemBlock {
     companion object {
         private var ctorTierProp: IProperty<Int>? = null
 
@@ -61,7 +61,8 @@ class HatchBlock private constructor(val hatchType: HatchType) :
     @Suppress("OVERRIDE_DEPRECATION")
     override fun getStateFromMeta(meta: Int): IBlockState = defaultState.withProperty(tierProperty, meta)
 
-    override fun getTileEntityType(world: World, meta: Int): TileEntityType<*> = CbTweaker.defns.tileEntityHatch
+
+    override fun createNewTileEntity(world: World, meta: Int): TileEntity = HatchTileEntity()
 
     override fun getBehaviourHandler(world: World, pos: BlockPos): BlockBehaviour.Handler? =
         world.findTileEntity<HatchTileEntity>(pos)
